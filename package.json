@@ -1,0 +1,12 @@
+{
+  "name": "raabta-ai",
+  "private": true,
+  "packageManager": "pnpm@10.32.0",
+  "scripts": {
+    "admin:build": "pnpm -C admin build",
+    "widget:build": "pnpm -C widget build"
+  },
+  "devDependencies": {
+    "prettier": "^3"
+  }
+}

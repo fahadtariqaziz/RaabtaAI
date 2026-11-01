@@ -1,0 +1,6 @@
+packages:
+  - admin
+  - widget
+ignoredBuiltDependencies:
+  - sharp
+  - unrs-resolver

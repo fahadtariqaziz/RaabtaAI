@@ -1,0 +1,9 @@
+#!/usr/bin/env bash
+# Runs every verify script of completed steps, in order. Add new steps as they complete.
+set -uo pipefail
+DIR="$(dirname "$0")"
+rc=0
+for s in p0_s1; do
+  bash "$DIR/$s.sh" || rc=1
+done
+exit $rc
