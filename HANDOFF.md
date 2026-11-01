@@ -10,12 +10,12 @@
 
 | Field | Value |
 |---|---|
-| Phase / step in progress | **Phase 0 · Step 0.3** (config, model registry, logging) — not started |
-| Last completed step | 0.2 docker-compose & dev scripts (2026-11-01) |
-| Last verification run | `bash scripts/verify/p0_s2.sh` → `VERIFY p0_s2: OK` (12/12), p0_s1 re-run OK (2026-11-01) |
-| Next action | Start 0.3: `app/core/config.py` (pydantic-settings, fail-fast), `models_registry.py` with **D-12 hybrid keys `agent_simple`/`agent_complex`**, structlog + request_id, `/readyz`; write + run `p0_s3.sh` |
-| Blocked on user | 0.6 user tasks can start in parallel now: Meta business verification, API keys (see §7 user queue) |
-| Open decisions needing user confirmation | D-05 pricing (recompute after 3.9 evals with hybrid), D-01 embeddings, D-02 STT, D-03 WhatsApp number model, D-04 deploy target (see §5) |
+| Phase / step in progress | **Phase 0 · Step 0.6** ◐ awaiting user (keys in `.env`, Meta kickoff) → then **Phase 1 · Step 1.1** |
+| Last completed step | 0.5 Docs & ADR (2026-11-01); 0.1–0.5 all ☑ |
+| Last verification run | `bash scripts/verify/all.sh` → p0_s1…p0_s5 OK (2026-11-01); `p0_s6.sh` FAILS until user adds `VOYAGE_API_KEY` (expected) |
+| Next action | User: fill `.env` keys, run `LIVE=1 bash scripts/verify/p0_s6.sh` (expect `VERIFY p0_s6: OK`). Then start 1.1 (core tables + Alembic baseline, migrations as owner via `MIGRATIONS_DATABASE_URL`) |
+| Blocked on user | 0.6: keys in `.env`; Meta portfolio + developer app (see §7). Phase 1 can start without Meta |
+| Open decisions needing user confirmation | D-05 pricing (recompute after 3.9 evals with hybrid), D-01 embeddings, D-02 STT, D-03 WhatsApp number model (see §5); D-04 decided (Netlify, at the end) |
 
 ---
 
@@ -88,33 +88,36 @@ Ordering rationale: KB (2) precedes agent (3) because grounding depends on retri
 - Commit: `chore: add docker-compose and dev scripts`
 - Done notes: host ports **55432 (Postgres) / 56379 (Redis)** — the user's Mac already runs Homebrew Postgres/Redis on 5432/6379. api/worker/admin are in compose profile `app`; default dev = `scripts/dev.sh` (infra in Docker, apps on host with reload). `infra/db/init.sql` creates extensions + runtime role **`raabta_app` (NOSUPERUSER NOBYPASSRLS)** so RLS works in 1.3; migrations must run as owner `raabta` via `MIGRATIONS_DATABASE_URL`. init.sql only runs on a fresh volume (`docker compose down -v` to re-init). Admin uses Next `output: "standalone"`. Docker Desktop must be running (`open -a Docker`).
 
-#### 0.3 Config, model registry, logging — ☐
+#### 0.3 Config, model registry, logging — ☑ (2026-11-01)
 - PLAN §4, §8, §19
 - Sub-steps:
-  - 0.3.1 ☐ `app/core/config.py` pydantic-settings: DATABASE_URL, REDIS_URL, ANTHROPIC_API_KEY, EMBEDDINGS_*, STT_*, META_*, JWT secrets, ENV, TZ default `Asia/Karachi`; fail-fast validation
-  - 0.3.2 ☐ `app/core/models_registry.py`: `MODELS` (**D-12: `agent_simple` = `claude-haiku-5-5`, `agent_complex` = `claude-opus-5-5`**; extractor/vision/judge = `claude-opus-5-5`; guard/router/answer_check/tone/summarizer = `claude-haiku-5-5`), `EFFORT` per node, `MAX_TOKENS` per node, env override `RAABTA_MODEL_<NODE>`
-  - 0.3.3 ☐ `app/core/logging.py` structlog JSON + request_id middleware; `/readyz` checks db+redis
+  - 0.3.1 ☑ `app/core/config.py` pydantic-settings: DATABASE_URL, REDIS_URL, ANTHROPIC_API_KEY, EMBEDDINGS_*, STT_*, META_*, JWT secrets, ENV, TZ default `Asia/Karachi`; fail-fast validation
+  - 0.3.2 ☑ `app/core/models_registry.py`: `MODELS` (**D-12: `agent_simple` = `claude-haiku-5-5`, `agent_complex` = `claude-opus-5-5`**; extractor/vision/judge = `claude-opus-5-5`; guard/router/answer_check/tone/summarizer = `claude-haiku-5-5`), `EFFORT` per node, `MAX_TOKENS` per node, env override `RAABTA_MODEL_<NODE>`
+  - 0.3.3 ☑ `app/core/logging.py` structlog JSON + request_id middleware; `/readyz` checks db+redis
 - Acceptance: missing required env → startup error with clear message; registry unit test asserts pinned IDs and explicit effort for every node
 - Verify: `scripts/verify/p0_s3.sh` — `pytest tests/unit/test_config.py tests/unit/test_models_registry.py`; readyz 200 with compose
 - Commit: `feat(core): settings, model registry and structured logging`
+- Done notes: `Settings` (pydantic-settings) reads env + repo-root `.env`; **env vars override `.env`**; empty values = unset; prod validator requires real JWT secret + provider keys; `get_settings()` raises `SettingsError` naming fields only (never values). `models_registry.spec_for(node)`: hybrid D-12 keys, explicit effort for all 10 nodes, `RAABTA_MODEL_<NODE>` override. structlog JSON + `X-Request-ID` ASGI middleware. `/readyz` checks DB + Redis (503 on failure). Test env in `tests/conftest.py` (unit tests never need `.env`); new pytest marker `integration` (excluded by default, run by verify scripts with `IT_DATABASE_URL`/`IT_REDIS_URL`).
 
-#### 0.4 CI pipeline — ☐
+#### 0.4 CI pipeline — ☑ (2026-11-01)
 - PLAN §20
 - Sub-steps:
-  - 0.4.1 ☐ `.github/workflows/ci.yml`: jobs api (ruff, mypy, pytest with postgres+redis services), admin (lint, typecheck, test, build), widget (build + size ≤ 30KB gz), security (pip-audit, pnpm audit, gitleaks)
-  - 0.4.2 ☐ `.github/workflows/evals-live.yml` skeleton (manual dispatch + label `run-evals`; requires secret; no-op until Phase 3)
-  - 0.4.3 ☐ pre-commit config (ruff, prettier, gitleaks)
+  - 0.4.1 ☑ `.github/workflows/ci.yml`: jobs api (ruff, mypy, pytest with postgres+redis services), admin (lint, typecheck, test, build), widget (build + size ≤ 30KB gz), security (pip-audit, pnpm audit, gitleaks)
+  - 0.4.2 ⏭ deferred (user: minimal CI) → `.github/workflows/evals-live.yml` skeleton (manual dispatch + label `run-evals`; requires secret; no-op until Phase 3)
+  - 0.4.3 ⏭ deferred (user: minimal CI) → pre-commit config (ruff, prettier, gitleaks)
 - Acceptance: workflow YAML validates (`act -n` or `actionlint`); local `make lint test` mirrors CI
 - Verify: `scripts/verify/p0_s4.sh` — `actionlint` (installed via brew) on workflows; `make lint`; `make test`
 - Needs user: 👤 push to GitHub to see first green run (user commits); report the run URL
-- Commit: `ci: add lint, type, test, build and security workflows`
+- Commit: `ci: add minimal lint, type, test and build workflow`
+- Done notes (scope cut by user: "very minimal CI"): one workflow `.github/workflows/ci.yml`, jobs `api` (ruff, format, mypy, unit pytest) and `web` (admin lint/typecheck/build, widget typecheck/build/size). Deferred to Phase 8: security scans (pip-audit/pnpm audit/gitleaks), service-backed integration tests, `evals-live`, pre-commit. Verify lints the workflow with actionlint via Docker (no local install).
 
-#### 0.5 Docs & ADR scaffolding — ☐
-- Sub-steps: 0.5.1 ☐ `docs/adr/0001-stack.md`, `0002-embeddings.md` (pending bake-off), `0003-whatsapp-number-model.md`; 0.5.2 ☐ `docs/runbooks/README.md` index; 0.5.3 ☐ README links to PLAN/HANDOFF/CLAUDE
+#### 0.5 Docs & ADR scaffolding — ☑ (2026-11-01)
+- Sub-steps: 0.5.1 ☑ `docs/adr/0001-stack.md`, `0002-embeddings.md` (pending bake-off), `0003-whatsapp-number-model.md`; 0.5.2 ⏭ deferred to 8.7 `docs/runbooks/README.md` index; 0.5.3 ☑ README links to PLAN/HANDOFF/CLAUDE
 - Verify: `scripts/verify/p0_s5.sh` — files exist, markdown lint (`markdownlint-cli2` optional)
-- Commit: `docs: add ADR scaffold and runbook index`
+- Commit: `docs: add ADR index and free-hosting ADR`
+- Done notes: decisions stay in §5; ADRs only when rationale is long. ADR 0001: Netlify can host admin + widget only; API/worker/DB/Redis need a separate always-on free host (pick in 9.1).
 
-#### 0.6 User kickoff tasks (external) — ☐ 👤
+#### 0.6 User kickoff tasks (external) — ◐ 👤 awaiting user
 - PLAN §15.2, §4
 - Sub-steps (user):
   - 0.6.1 ☐ Create Meta Business Manager, start **business verification** (registration docs, utility bill); create Meta app (Business type), add WhatsApp product; note App ID, App Secret
@@ -123,7 +126,10 @@ Ordering rationale: KB (2) precedes agent (3) because grounding depends on retri
   - 0.6.4 ☐ GitHub repo secrets: `ANTHROPIC_API_KEY` (for `evals-live`), Sentry DSNs later
   - 0.6.5 ☐ Domain decision (e.g. `raabta.ai`) and Railway/Render account (D-04)
 - Verify: `scripts/verify/p0_s6.sh` — checks `.env` has non-empty `ANTHROPIC_API_KEY`, `META_APP_SECRET`, `META_VERIFY_TOKEN` placeholders (does not call APIs); session asks user to confirm Meta verification status
-- Commit: none (no repo changes) — record status in §7
+- Commit: `chore: add env template and provider key checker`
+- Progress: `.env` created from `.env.example` (git-ignored, chmod 600); `api/scripts/check_keys.py` (run `cd api && uv run python -m scripts.check_keys [--live]`) shows which keys are set and **whether they come from the shell or `.env`**; `--live` validates the Anthropic key + pinned models via the free Models API.
+- ⚠ The user's `~/.zshrc` exports `ANTHROPIC_API_KEY`, which **overrides `.env`** (env > dotenv). User to decide which key RaabtaAI uses (see I-06). `scripts/dev.sh` no longer sources `.env` (would blank shell keys).
+- Remaining (user): add `ANTHROPIC_API_KEY` + `VOYAGE_API_KEY` to `.env`; run `LIVE=1 bash scripts/verify/p0_s6.sh`; Meta portfolio + developer app (§7). Then mark ☑ and add `p0_s6` to `scripts/verify/all.sh`.
 
 ---
 
@@ -598,6 +604,7 @@ Ordering rationale: KB (2) precedes agent (3) because grounding depends on retri
 
 | Date | Session | Step(s) | What was done | Verification | Commit suggested |
 |---|---|---|---|---|---|
+| 2026-11-01 | S1 | 0.3–0.6 | Settings/registry/logging/readyz (+ secret-safe settings errors); minimal CI (1 workflow, 2 jobs); ADR 0001 Netlify hosting; `.env` + `check_keys`; D-04 updated (Netlify at end, personal email for now) | `all.sh` p0_s1–s5 OK; p0_s6 awaiting user keys | 0.3 `feat(core): settings, model registry and structured logging` · 0.4 `ci: add minimal lint, type, test and build workflow` · 0.5 `docs: add ADR index and free-hosting ADR` · 0.6 `chore: add env template and provider key checker` |
 | 2026-11-01 | S1 | 0.2 | docker-compose (pgvector pg16, redis, api/worker/admin profile), Dockerfiles, init.sql (extensions + non-owner `raabta_app` role), arq worker with `ping` job, `scripts/dev.sh`, `p0_s2.sh`; recorded D-12 = hybrid (user) | `p0_s2.sh` OK 12/12 | `chore: add docker-compose and dev scripts` |
 | 2026-11-01 | S1 | 0.1 | Scaffolded api (uv, FastAPI /healthz, ruff/mypy/pytest), admin (Next 16 + shadcn), widget (esbuild + size check), root Makefile/.gitignore/.env.example/README, `scripts/verify/_lib.sh`, `p0_s1.sh`, `all.sh` | `p0_s1.sh` OK 14/14 | `chore: scaffold api, admin and widget workspaces` |
 | 2026-11-01 | S1 | 0.0 | Plan drafted by Fable 5.1; reviewed by Opus 5.5: fixed widget streaming-before-check gap (D-11), flagged agent-model cost vs market (D-12, D-05) | files exist; review checklist (anatomy 16/16, 74 steps all have verify + commit) | `docs: add build plan, handoff tracker and CLAUDE.md` |
@@ -611,7 +618,7 @@ Ordering rationale: KB (2) precedes agent (3) because grounding depends on retri
 | D-01 | 2026-11-01 | Embeddings: interface + default Voyage `voyage-3.5`, alt `bge-m3`; final by Phase 2 bake-off | **needs user confirm** | PLAN §4 |
 | D-02 | 2026-11-01 | STT: interface + default OpenAI `gpt-4o-transcribe` (fallback `whisper-1`); bake-off in 6.4 | **needs user confirm** | PLAN §4 |
 | D-03 | 2026-11-01 | WhatsApp: RaabtaAI-owned WABA, one number per institution; Embedded Signup deferred | **needs user confirm** | PLAN §4, §15.2 |
-| D-04 | 2026-11-01 | Deploy target: Railway (fallback Render / VPS+compose) | **needs user confirm** | PLAN §22 |
+| D-04 | 2026-11-01 | Hosting (user): **free, at the end** — admin + widget on **Netlify**; API/worker/Postgres/Redis need a separate always-on free host (Netlify can't run them), chosen in 9.1 | **decided by user** (backend host open) | `docs/adr/0001-free-hosting-netlify.md` |
 | D-05 | 2026-11-01 | Plan pricing & caps: draft suggested PKR 30k/60k/120k tiers — review flagged this is far above Pakistani market (competitors PKR 1.5k–9k/month); depends on D-12 | **needs user decision** | PLAN §19 |
 | D-06 | 2026-11-01 | Opus 5.5 for agent (effort low/medium by complexity), Haiku 5.5 for classifiers; official SDK; no langchain-anthropic | decided | PLAN §4, §8 |
 | D-07 | 2026-11-01 | Context: append-only within turn; simple compaction across turns; no thinking replay | decided | PLAN §7 |
@@ -631,6 +638,7 @@ Ordering rationale: KB (2) precedes agent (3) because grounding depends on retri
 | I-02 | 2026-11-01 | Meta per-message template rates for Pakistan must be checked on the current rate card before pricing plans | open |
 | I-03 | 2026-11-01 | Haiku 5.5 has no server-side refusal fallback — classifier nodes use safe-default verdicts on `refusal` | noted |
 | I-04 | 2026-11-01 | Minimum cacheable prefix is 512 tokens on Opus/Haiku 5.5 per current docs; design keeps global prompt > 1k anyway | noted |
+| I-06 | 2026-11-01 | `ANTHROPIC_API_KEY` exported in user's `~/.zshrc` overrides `.env` for every process started from that shell; `check_keys` flags it | open (user) |
 | I-05 | 2026-11-01 | Preserved-thinking prefix check is enforced for accounts created on/after 2026-08-31 — confirm account age; design is append-only regardless | open |
 
 ---
@@ -642,10 +650,10 @@ Ordering rationale: KB (2) precedes agent (3) because grounding depends on retri
 | U-01 | Meta Business Manager + business verification started | Phase 6 (start now) | ☐ |
 | U-02 | Meta app (Business) with WhatsApp product; App ID/Secret | 6.1 | ☐ |
 | U-03 | Phone numbers for pilots + dev test number | 6.1 | ☐ |
-| U-04 | Anthropic API key + spend cap; GitHub secret for evals-live | 3.1 / 3.9 | ☐ |
-| U-05 | Voyage (or chosen) embeddings key | 2.4 | ☐ |
+| U-04 | Anthropic API key in `.env` + spend cap (user has key) | 0.6 | ◐ |
+| U-05 | Voyage key in `.env` as `VOYAGE_API_KEY` (user has key) | 0.6 | ◐ |
 | U-06 | STT provider key + 20 sample voice notes | 6.4 | ☐ |
 | U-07 | Confirm decisions D-01…D-05 | Phase 2 | ☐ |
-| U-08 | Domain + hosting account | 9.1 | ☐ |
+| U-08 | Hosting: Netlify (admin/widget) + free backend host — at the end; personal email for now; domain optional | 9.1 | ⏭ later |
 | U-09 | Sentry projects | 8.2 | ☐ |
 | U-10 | Sample redacted fee receipts (HBL/JazzCash/Easypaisa) | 7.5 | ☐ |

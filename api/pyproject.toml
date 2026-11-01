@@ -61,9 +61,10 @@ packages = ["app", "tests"]
 pythonpath = ["."]
 testpaths = ["tests"]
 asyncio_mode = "auto"
-addopts = "-q -m 'not live and not evals'"
+addopts = "-q -m 'not live and not evals and not integration'"
 markers = [
     "evals: agent evaluation cases (replay cassettes; no spend)",
     "live: calls real external APIs (Anthropic, Meta) — needs keys and spend approval",
     "isolation: tenant isolation tests",
+    "integration: needs docker compose postgres/redis",
 ]

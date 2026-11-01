@@ -6,7 +6,8 @@ ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$ROOT"
 
 [[ -f .env ]] || { echo "No .env — copy .env.example to .env first"; exit 1; }
-set -a; source .env; set +a
+# The API reads .env itself (pydantic-settings); we do not `source` it here, because exporting
+# empty values would mask keys set in the shell.
 
 docker compose up -d --wait postgres redis
 
