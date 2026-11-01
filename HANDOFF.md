@@ -14,7 +14,7 @@
 | Last completed step | 1.1 Core tables & Alembic baseline (2026-11-02); Phase 0 fully ☑ |
 | Last verification run | `bash scripts/verify/p1_s1.sh` → OK 7/7 (5 migration integration tests ran, 0 skipped) (2026-11-02) |
 | Next action | Start 1.2: argon2 hashing, login/refresh (rotating httpOnly cookie) + 15-min access JWT, `require_role`, `X-Institution` membership check, invitations, Redis lockout; write + run `p1_s2.sh` |
-| Blocked on user | Nothing. Meta business verification postponed by choice (needed before pilots, U-01) |
+| Blocked on user | Nothing for Phases 1–5. Live WhatsApp sends blocked until Meta business verification (U-01, I-07); user has no business-name documents yet → build Phase 6 against recorded webhook payloads |
 | Open decisions needing user confirmation | D-05 pricing (recompute after 3.9 evals with hybrid), D-01 embeddings, D-02 STT, D-03 WhatsApp number model (see §5); D-04 decided (Netlify, at the end) |
 
 ---
@@ -129,7 +129,7 @@ Ordering rationale: KB (2) precedes agent (3) because grounding depends on retri
 - Commit: `chore: add env template and provider key checker`
 - Progress: `.env` created from `.env.example` (git-ignored, chmod 600); `api/scripts/check_keys.py` (run `cd api && uv run python -m scripts.check_keys [--live]`) shows which keys are set and **whether they come from the shell or `.env`**; `--live` validates the Anthropic key + pinned models via the free Models API.
 - ⚠ The user's `~/.zshrc` exports `ANTHROPIC_API_KEY`, which **overrides `.env`** (env > dotenv). User to decide which key RaabtaAI uses (see I-06). `scripts/dev.sh` no longer sources `.env` (would blank shell keys).
-- Done 2026-11-02: user added keys; `LIVE=1 bash scripts/verify/p0_s6.sh` → OK (key valid, both pinned models available). Meta: developer app `RaabtaAi` + new business portfolio created; **business verification deliberately postponed** (user clicked "Verify later") — not needed for dev with the Meta test number; required before pilots go live (tracked U-01, step 6.1).
+- Done 2026-11-02: user added keys; `LIVE=1 bash scripts/verify/p0_s6.sh` → OK (key valid, both pinned models available). Meta: developer app `RaabtaAi` + new business portfolio created; **business verification deliberately postponed** (user clicked "Verify later"); required before pilots go live (tracked U-01, step 6.1). **Correction 2026-11-02:** the test number is blocked too — see I-07.
 
 ---
 
@@ -641,6 +641,7 @@ Ordering rationale: KB (2) precedes agent (3) because grounding depends on retri
 | I-03 | 2026-11-01 | Haiku 5.5 has no server-side refusal fallback — classifier nodes use safe-default verdicts on `refusal` | noted |
 | I-04 | 2026-11-01 | Minimum cacheable prefix is 512 tokens on Opus/Haiku 5.5 per current docs; design keeps global prompt > 1k anyway | noted |
 | I-06 | 2026-11-01 | `ANTHROPIC_API_KEY` exported in user's `~/.zshrc` overrides `.env` for every process started from that shell; `check_keys` flags it | open (user) |
+| I-07 | 2026-11-02 | Meta test-number send (`hello_world` → user's phone) accepted, then failed via webhook `131031 Business Account locked`; `account_update` event `BUSINESS_VERIFICATION_NEEDED` for WABA `2218657989053365`. So the test number **cannot send until business verification**. User has no SECP/business-name NTN yet. Workaround: develop/test 6.x with recorded webhook payloads + mocked Graph API; real-phone E2E after U-01 | open (user) |
 | I-05 | 2026-11-01 | Preserved-thinking prefix check is enforced for accounts created on/after 2026-08-31 — confirm account age; design is append-only regardless | open |
 
 ---
@@ -649,8 +650,8 @@ Ordering rationale: KB (2) precedes agent (3) because grounding depends on retri
 
 | # | Task | Needed by | Status |
 |---|---|---|---|
-| U-01 | Meta business verification (portfolio + app `RaabtaAi` created 2026-11-02; verification postponed — needs registration docs e.g. FBR NTN) | before pilots (6.1/9.x) | ◐ |
-| U-02 | Meta app (Business) with WhatsApp product; App ID/Secret | 6.1 | ☐ |
+| U-01 | Meta business verification (portfolio + app `RaabtaAi` created 2026-11-02; postponed — needs a document in the business name, e.g. SECP certificate or business-name NTN; portfolio name must match it exactly). Also blocks test-number sends (I-07) | before live WhatsApp E2E (6.x) / pilots | ◐ |
+| U-02 | Meta app with WhatsApp use case; `.env` has META_APP_ID, META_APP_SECRET, META_PHONE_NUMBER_ID, META_WABA_ID, META_VERIFY_TOKEN (2026-11-02); META_ACCESS_TOKEN empty until 6.1.2 | 6.1 | ☑ |
 | U-03 | Phone numbers for pilots + dev test number | 6.1 | ☐ |
 | U-04 | Anthropic API key in `.env` + spend cap (user has key) | 0.6 | ◐ |
 | U-05 | Voyage key in `.env` as `VOYAGE_API_KEY` (user has key) | 0.6 | ◐ |
