@@ -1,4 +1,4 @@
-.PHONY: install lint test build verify
+.PHONY: install lint test build verify migrate
 
 install:
 	cd api && uv sync
@@ -19,3 +19,7 @@ build:
 # Run all verification scripts of completed steps (see HANDOFF.md).
 verify:
 	bash scripts/verify/all.sh
+
+# Apply DB migrations to the dev database (uses MIGRATIONS_DATABASE_URL from .env — owner role).
+migrate:
+	cd api && uv run alembic upgrade head

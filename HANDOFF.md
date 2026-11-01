@@ -10,11 +10,11 @@
 
 | Field | Value |
 |---|---|
-| Phase / step in progress | **Phase 0 · Step 0.6** ◐ awaiting user (keys in `.env`, Meta kickoff) → then **Phase 1 · Step 1.1** |
-| Last completed step | 0.5 Docs & ADR (2026-11-01); 0.1–0.5 all ☑ |
-| Last verification run | `bash scripts/verify/all.sh` → p0_s1…p0_s5 OK (2026-11-01); `p0_s6.sh` FAILS until user adds `VOYAGE_API_KEY` (expected) |
-| Next action | User: fill `.env` keys, run `LIVE=1 bash scripts/verify/p0_s6.sh` (expect `VERIFY p0_s6: OK`). Then start 1.1 (core tables + Alembic baseline, migrations as owner via `MIGRATIONS_DATABASE_URL`) |
-| Blocked on user | 0.6: keys in `.env`; Meta portfolio + developer app (see §7). Phase 1 can start without Meta |
+| Phase / step in progress | **Phase 1 · Step 1.2** (auth & RBAC) — not started |
+| Last completed step | 1.1 Core tables & Alembic baseline (2026-11-02); Phase 0 fully ☑ |
+| Last verification run | `bash scripts/verify/p1_s1.sh` → OK 7/7 (5 migration integration tests ran, 0 skipped) (2026-11-02) |
+| Next action | Start 1.2: argon2 hashing, login/refresh (rotating httpOnly cookie) + 15-min access JWT, `require_role`, `X-Institution` membership check, invitations, Redis lockout; write + run `p1_s2.sh` |
+| Blocked on user | Nothing. Meta business verification postponed by choice (needed before pilots, U-01) |
 | Open decisions needing user confirmation | D-05 pricing (recompute after 3.9 evals with hybrid), D-01 embeddings, D-02 STT, D-03 WhatsApp number model (see §5); D-04 decided (Netlify, at the end) |
 
 ---
@@ -117,7 +117,7 @@ Ordering rationale: KB (2) precedes agent (3) because grounding depends on retri
 - Commit: `docs: add ADR index and free-hosting ADR`
 - Done notes: decisions stay in §5; ADRs only when rationale is long. ADR 0001: Netlify can host admin + widget only; API/worker/DB/Redis need a separate always-on free host (pick in 9.1).
 
-#### 0.6 User kickoff tasks (external) — ◐ 👤 awaiting user
+#### 0.6 User kickoff tasks (external) — ☑ (2026-11-02)
 - PLAN §15.2, §4
 - Sub-steps (user):
   - 0.6.1 ☐ Create Meta Business Manager, start **business verification** (registration docs, utility bill); create Meta app (Business type), add WhatsApp product; note App ID, App Secret
@@ -129,21 +129,22 @@ Ordering rationale: KB (2) precedes agent (3) because grounding depends on retri
 - Commit: `chore: add env template and provider key checker`
 - Progress: `.env` created from `.env.example` (git-ignored, chmod 600); `api/scripts/check_keys.py` (run `cd api && uv run python -m scripts.check_keys [--live]`) shows which keys are set and **whether they come from the shell or `.env`**; `--live` validates the Anthropic key + pinned models via the free Models API.
 - ⚠ The user's `~/.zshrc` exports `ANTHROPIC_API_KEY`, which **overrides `.env`** (env > dotenv). User to decide which key RaabtaAI uses (see I-06). `scripts/dev.sh` no longer sources `.env` (would blank shell keys).
-- Remaining (user): add `ANTHROPIC_API_KEY` + `VOYAGE_API_KEY` to `.env`; run `LIVE=1 bash scripts/verify/p0_s6.sh`; Meta portfolio + developer app (§7). Then mark ☑ and add `p0_s6` to `scripts/verify/all.sh`.
+- Done 2026-11-02: user added keys; `LIVE=1 bash scripts/verify/p0_s6.sh` → OK (key valid, both pinned models available). Meta: developer app `RaabtaAi` + new business portfolio created; **business verification deliberately postponed** (user clicked "Verify later") — not needed for dev with the Meta test number; required before pilots go live (tracked U-01, step 6.1).
 
 ---
 
 ### Phase 1 — Data & multi-tenancy
 
-#### 1.1 Core tables & Alembic baseline — ☐
+#### 1.1 Core tables & Alembic baseline — ☑ (2026-11-02)
 - PLAN §13
 - Sub-steps:
-  - 1.1.1 ☐ `app/db/base.py` (UUID pk, timestamps, `TenantMixin` with `institution_id`), `session.py` (async engine, request-scoped session)
-  - 1.1.2 ☐ models: `institutions`, `users`, `memberships`, `plans`, `audit_log`, `usage_daily`, `webhook_events`
-  - 1.1.3 ☐ Alembic async env; migration `0001_baseline`; `make migrate`
+  - 1.1.1 ☑ `app/db/base.py` (UUID pk, timestamps, `TenantMixin` with `institution_id`), `session.py` (async engine, request-scoped session)
+  - 1.1.2 ☑ models: `institutions`, `users`, `memberships`, `plans`, `audit_log`, `usage_daily`, `webhook_events`
+  - 1.1.3 ☑ Alembic async env; migration `0001_baseline`; `make migrate`
 - Acceptance: `alembic upgrade head` on empty DB creates tables; `alembic downgrade base` clean; model/migration drift check (`alembic check`) passes
 - Verify: `scripts/verify/p1_s1.sh` — upgrade/downgrade/upgrade on testcontainer; `pytest tests/integration/test_migrations.py`
 - Commit: `feat(db): core tenant tables and alembic baseline`
+- Done notes: `app/db/base.py` (naming convention for stable constraint names, `UUIDPkMixin` w/ `gen_random_uuid()`, `TimestampsMixin`, `TenantMixin`, `enum_check` = VARCHAR+CHECK; allowed values in `app/models/enums.py`). Models in `app/models/core.py` (+ `users.email` must be lowercase CHECK; `usage_daily` PK (institution_id, date)). `app/db/session.py` `get_session` dependency (one transaction per request); `Resources` now holds `sessionmaker`. Alembic async in `api/migrations/` (URL: `-x url=` > `MIGRATIONS_DATABASE_URL` > .env; post-write hook runs ruff format); migration `0001` also creates extensions (not dropped on downgrade). Tests use a disposable DB `raabta_test` (recreated by the verify script); dev DB migrated with `make migrate`. Verify uses compose Postgres instead of testcontainers (faster, same image).
 
 #### 1.2 Auth & RBAC — ☐
 - PLAN §4 (Auth), §18
@@ -604,6 +605,7 @@ Ordering rationale: KB (2) precedes agent (3) because grounding depends on retri
 
 | Date | Session | Step(s) | What was done | Verification | Commit suggested |
 |---|---|---|---|---|---|
+| 2026-11-02 | S1 | 0.6, 1.1 | 0.6 closed (keys OK, Meta app created, verification postponed); core models, Alembic async baseline 0001 with extensions, migration round-trip + constraint tests, `make migrate` | `p0_s6` OK (user), `p1_s1` OK 7/7 | `feat(db): core tenant tables and alembic baseline` |
 | 2026-11-01 | S1 | 0.3–0.6 | Settings/registry/logging/readyz (+ secret-safe settings errors); minimal CI (1 workflow, 2 jobs); ADR 0001 Netlify hosting; `.env` + `check_keys`; D-04 updated (Netlify at end, personal email for now) | `all.sh` p0_s1–s5 OK; p0_s6 awaiting user keys | 0.3 `feat(core): settings, model registry and structured logging` · 0.4 `ci: add minimal lint, type, test and build workflow` · 0.5 `docs: add ADR index and free-hosting ADR` · 0.6 `chore: add env template and provider key checker` |
 | 2026-11-01 | S1 | 0.2 | docker-compose (pgvector pg16, redis, api/worker/admin profile), Dockerfiles, init.sql (extensions + non-owner `raabta_app` role), arq worker with `ping` job, `scripts/dev.sh`, `p0_s2.sh`; recorded D-12 = hybrid (user) | `p0_s2.sh` OK 12/12 | `chore: add docker-compose and dev scripts` |
 | 2026-11-01 | S1 | 0.1 | Scaffolded api (uv, FastAPI /healthz, ruff/mypy/pytest), admin (Next 16 + shadcn), widget (esbuild + size check), root Makefile/.gitignore/.env.example/README, `scripts/verify/_lib.sh`, `p0_s1.sh`, `all.sh` | `p0_s1.sh` OK 14/14 | `chore: scaffold api, admin and widget workspaces` |
@@ -647,7 +649,7 @@ Ordering rationale: KB (2) precedes agent (3) because grounding depends on retri
 
 | # | Task | Needed by | Status |
 |---|---|---|---|
-| U-01 | Meta Business Manager + business verification started | Phase 6 (start now) | ☐ |
+| U-01 | Meta business verification (portfolio + app `RaabtaAi` created 2026-11-02; verification postponed — needs registration docs e.g. FBR NTN) | before pilots (6.1/9.x) | ◐ |
 | U-02 | Meta app (Business) with WhatsApp product; App ID/Secret | 6.1 | ☐ |
 | U-03 | Phone numbers for pilots + dev test number | 6.1 | ☐ |
 | U-04 | Anthropic API key in `.env` + spend cap (user has key) | 0.6 | ◐ |
