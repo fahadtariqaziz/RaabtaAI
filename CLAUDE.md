@@ -13,8 +13,8 @@ RaabtaAI: multi-tenant AI assistant for Pakistani schools/colleges/universities 
 ## Pinned models (`api/app/core/models_registry.py`)
 | Node | Model | Effort |
 |---|---|---|
-| agent (admissions/fees), facts_extractor, receipt_reader, eval judge | `claude-opus-5-5` | agent low (simple) / medium (complex); extractor high; vision medium; judge high |
-| guard_in, router, answer_check, tone_check, summarizer | `claude-haiku-5-5` | low |
+| agent_complex (bookings, fee module, multi-step, escalations), facts_extractor, receipt_reader, eval judge | `claude-opus-5-5` | agent medium; extractor high; vision medium; judge high |
+| agent_simple (router `complexity=simple` FAQ turns — D-12 hybrid), guard_in, router, answer_check, tone_check, summarizer | `claude-haiku-5-5` | low |
 Changing a model ID, prompt, skill, or effort = a release: `evals-live` must pass (PLAN §12).
 
 ## Claude API rules (official `anthropic` SDK only; no langchain-anthropic)

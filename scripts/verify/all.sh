@@ -3,7 +3,7 @@
 set -uo pipefail
 DIR="$(dirname "$0")"
 rc=0
-for s in p0_s1; do
+for s in p0_s1 p0_s2; do
   bash "$DIR/$s.sh" || rc=1
 done
 exit $rc

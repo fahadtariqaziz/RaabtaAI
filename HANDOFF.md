@@ -10,12 +10,12 @@
 
 | Field | Value |
 |---|---|
-| Phase / step in progress | **Phase 0 · Step 0.2** (docker-compose & dev scripts) — not started |
-| Last completed step | 0.1 Repo scaffold & tooling (2026-11-01) |
-| Last verification run | `bash scripts/verify/p0_s1.sh` → `VERIFY p0_s1: OK` (14/14 checks, 2026-11-01) |
-| Next action | Start 0.2: `docker-compose.yml` (pgvector pg16, redis, api, worker, admin), Dockerfiles in `infra/`, `scripts/dev.sh`, DB init SQL; write + run `scripts/verify/p0_s2.sh` (add to `all.sh`) |
+| Phase / step in progress | **Phase 0 · Step 0.3** (config, model registry, logging) — not started |
+| Last completed step | 0.2 docker-compose & dev scripts (2026-11-01) |
+| Last verification run | `bash scripts/verify/p0_s2.sh` → `VERIFY p0_s2: OK` (12/12), p0_s1 re-run OK (2026-11-01) |
+| Next action | Start 0.3: `app/core/config.py` (pydantic-settings, fail-fast), `models_registry.py` with **D-12 hybrid keys `agent_simple`/`agent_complex`**, structlog + request_id, `/readyz`; write + run `p0_s3.sh` |
 | Blocked on user | 0.6 user tasks can start in parallel now: Meta business verification, API keys (see §7 user queue) |
-| Open decisions needing user confirmation | **D-12 agent model/cost (before 3.1)**, D-05 pricing, D-01 embeddings, D-02 STT, D-03 WhatsApp number model, D-04 deploy target (see §5) |
+| Open decisions needing user confirmation | D-05 pricing (recompute after 3.9 evals with hybrid), D-01 embeddings, D-02 STT, D-03 WhatsApp number model, D-04 deploy target (see §5) |
 
 ---
 
@@ -76,22 +76,23 @@ Ordering rationale: KB (2) precedes agent (3) because grounding depends on retri
 - Commit: `chore: scaffold api, admin and widget workspaces`
 - Done notes: `api/` is a non-packaged uv app (`[tool.uv] package=false`), package `app/`, mypy strict, pytest default excludes `live`/`evals` markers. `admin/` = Next.js 16.4 + React 19.3 + Tailwind 4 + shadcn (style base-nova); **`admin/AGENTS.md` (from Next) says Next 16 differs from training data — read `admin/node_modules/next/dist/docs/` before admin code**; `typecheck` runs `next typegen` first (needed for global `LayoutProps`). shadcn `rtl:false` for now → enable in 5.1 for Urdu. `widget/` esbuild IIFE + gzip size check. Installed `anthropic` SDK is **2.x** — read the claude-api skill before writing 3.1.
 
-#### 0.2 docker-compose & dev scripts — ☐
+#### 0.2 docker-compose & dev scripts — ☑ (2026-11-01)
 - PLAN §2, §22
 - Sub-steps:
-  - 0.2.1 ☐ `docker-compose.yml`: postgres (`pgvector/pgvector:pg16`), redis, api, worker, admin; volumes; healthchecks
-  - 0.2.2 ☐ `infra/Dockerfile.api`, `Dockerfile.worker`, `Dockerfile.admin` (multi-stage)
-  - 0.2.3 ☐ `scripts/dev.sh` (compose up db/redis, run api+worker with reload, admin dev server); `make dev`
-  - 0.2.4 ☐ DB init SQL: `CREATE EXTENSION vector, pg_trgm, unaccent`
+  - 0.2.1 ☑ `docker-compose.yml`: postgres (`pgvector/pgvector:pg16`), redis, api, worker, admin; volumes; healthchecks
+  - 0.2.2 ☑ `infra/Dockerfile.api`, `Dockerfile.worker`, `Dockerfile.admin` (multi-stage)
+  - 0.2.3 ☑ `scripts/dev.sh` (compose up db/redis, run api+worker with reload, admin dev server); `make dev`
+  - 0.2.4 ☑ DB init SQL: `CREATE EXTENSION vector, pg_trgm, unaccent`
 - Acceptance: `docker compose up -d postgres redis` healthy; `curl localhost:8000/healthz` → `{"status":"ok"}`; extensions present
 - Verify: `scripts/verify/p0_s2.sh` — compose up db+redis, wait healthy, `psql -c "select extname from pg_extension"` contains vector/pg_trgm/unaccent, healthz 200
 - Commit: `chore: add docker-compose and dev scripts`
+- Done notes: host ports **55432 (Postgres) / 56379 (Redis)** — the user's Mac already runs Homebrew Postgres/Redis on 5432/6379. api/worker/admin are in compose profile `app`; default dev = `scripts/dev.sh` (infra in Docker, apps on host with reload). `infra/db/init.sql` creates extensions + runtime role **`raabta_app` (NOSUPERUSER NOBYPASSRLS)** so RLS works in 1.3; migrations must run as owner `raabta` via `MIGRATIONS_DATABASE_URL`. init.sql only runs on a fresh volume (`docker compose down -v` to re-init). Admin uses Next `output: "standalone"`. Docker Desktop must be running (`open -a Docker`).
 
 #### 0.3 Config, model registry, logging — ☐
 - PLAN §4, §8, §19
 - Sub-steps:
   - 0.3.1 ☐ `app/core/config.py` pydantic-settings: DATABASE_URL, REDIS_URL, ANTHROPIC_API_KEY, EMBEDDINGS_*, STT_*, META_*, JWT secrets, ENV, TZ default `Asia/Karachi`; fail-fast validation
-  - 0.3.2 ☐ `app/core/models_registry.py`: `MODELS` (agent/extractor/vision/judge = `claude-opus-5-5`; guard/router/answer_check/tone/summarizer = `claude-haiku-5-5`), `EFFORT` per node, `MAX_TOKENS` per node, env override `RAABTA_MODEL_<NODE>`
+  - 0.3.2 ☐ `app/core/models_registry.py`: `MODELS` (**D-12: `agent_simple` = `claude-haiku-5-5`, `agent_complex` = `claude-opus-5-5`**; extractor/vision/judge = `claude-opus-5-5`; guard/router/answer_check/tone/summarizer = `claude-haiku-5-5`), `EFFORT` per node, `MAX_TOKENS` per node, env override `RAABTA_MODEL_<NODE>`
   - 0.3.3 ☐ `app/core/logging.py` structlog JSON + request_id middleware; `/readyz` checks db+redis
 - Acceptance: missing required env → startup error with clear message; registry unit test asserts pinned IDs and explicit effort for every node
 - Verify: `scripts/verify/p0_s3.sh` — `pytest tests/unit/test_config.py tests/unit/test_models_registry.py`; readyz 200 with compose
@@ -597,6 +598,7 @@ Ordering rationale: KB (2) precedes agent (3) because grounding depends on retri
 
 | Date | Session | Step(s) | What was done | Verification | Commit suggested |
 |---|---|---|---|---|---|
+| 2026-11-01 | S1 | 0.2 | docker-compose (pgvector pg16, redis, api/worker/admin profile), Dockerfiles, init.sql (extensions + non-owner `raabta_app` role), arq worker with `ping` job, `scripts/dev.sh`, `p0_s2.sh`; recorded D-12 = hybrid (user) | `p0_s2.sh` OK 12/12 | `chore: add docker-compose and dev scripts` |
 | 2026-11-01 | S1 | 0.1 | Scaffolded api (uv, FastAPI /healthz, ruff/mypy/pytest), admin (Next 16 + shadcn), widget (esbuild + size check), root Makefile/.gitignore/.env.example/README, `scripts/verify/_lib.sh`, `p0_s1.sh`, `all.sh` | `p0_s1.sh` OK 14/14 | `chore: scaffold api, admin and widget workspaces` |
 | 2026-11-01 | S1 | 0.0 | Plan drafted by Fable 5.1; reviewed by Opus 5.5: fixed widget streaming-before-check gap (D-11), flagged agent-model cost vs market (D-12, D-05) | files exist; review checklist (anatomy 16/16, 74 steps all have verify + commit) | `docs: add build plan, handoff tracker and CLAUDE.md` |
 
@@ -617,7 +619,7 @@ Ordering rationale: KB (2) precedes agent (3) because grounding depends on retri
 | D-09 | 2026-11-01 | Fee reminders are templates (no LLM); LLM only for replies, tone-checked | decided | PLAN §6.2, §16 |
 | D-10 | 2026-11-01 | Phase order: KB → agent → widget → admin → WhatsApp → fees | decided | HANDOFF §2 |
 | D-11 | 2026-11-01 | Widget uses check-then-send (status events, then approved text) — never stream the unchecked draft | decided (plan review) | PLAN §8, §15.1 |
-| D-12 | 2026-11-01 | Agent model per turn: Opus 5.5 everywhere (~$0.25/conversation → ~PKR 55k/month at 800 convs, far above market PKR 1.5k–15k) vs hybrid (router `complexity=simple` → cheaper model, complex/booking/fee → Opus 5.5) vs Sonnet 5.5 agent. Registry already supports per-node override; must be decided before 3.1 and gated by evals | **needs user decision** | PLAN §19; drives D-05 |
+| D-12 | 2026-11-01 | **Hybrid agent routing**: router `complexity=simple` (FAQ: fees, timings, transport, greetings) → `claude-haiku-5-5` agent with the same tools + answer_check; `complex` (booking, fee module, multi-step, unhappy/escalation, low router confidence) → `claude-opus-5-5`. Eval gate in 3.9 compares simple-route quality Haiku vs Opus; if Haiku fails thresholds, try `claude-sonnet-5-5` for simple route. Implemented via `models_registry` keys `agent_simple` / `agent_complex` | **decided by user 2026-11-01** | PLAN §7, §19; unblocks D-05 |
 
 ---
 

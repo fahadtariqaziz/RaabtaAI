@@ -1,0 +1,75 @@
+# Local development stack.
+#   docker compose up -d postgres redis          # infra only (default dev flow, see scripts/dev.sh)
+#   docker compose --profile app up -d --build   # full stack in containers
+# Host ports 55432/56379 avoid clashing with a locally installed Postgres/Redis.
+name: raabta
+
+services:
+  postgres:
+    image: pgvector/pgvector:pg16
+    environment:
+      POSTGRES_USER: raabta
+      POSTGRES_PASSWORD: raabta
+      POSTGRES_DB: raabta
+    ports: ["55432:5432"]
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./infra/db/init.sql:/docker-entrypoint-initdb.d/00-init.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U raabta -d raabta"]
+      interval: 3s
+      timeout: 3s
+      retries: 20
+
+  redis:
+    image: redis:7-alpine
+    command: ["redis-server", "--appendonly", "yes"]
+    ports: ["56379:6379"]
+    volumes:
+      - redisdata:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 3s
+      timeout: 3s
+      retries: 20
+
+  api:
+    profiles: ["app"]
+    build: { context: ./api, dockerfile: ../infra/Dockerfile.api }
+    env_file: [{ path: .env, required: false }]
+    environment:
+      DATABASE_URL: postgresql+asyncpg://raabta_app:raabta_app@postgres:5432/raabta
+      REDIS_URL: redis://redis:6379/0
+    ports: ["8000:8000"]
+    depends_on:
+      postgres: { condition: service_healthy }
+      redis: { condition: service_healthy }
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/healthz')"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  worker:
+    profiles: ["app"]
+    build: { context: ./api, dockerfile: ../infra/Dockerfile.api }
+    command: ["arq", "app.jobs.worker.WorkerSettings"]
+    env_file: [{ path: .env, required: false }]
+    environment:
+      DATABASE_URL: postgresql+asyncpg://raabta_app:raabta_app@postgres:5432/raabta
+      REDIS_URL: redis://redis:6379/0
+    depends_on:
+      postgres: { condition: service_healthy }
+      redis: { condition: service_healthy }
+
+  admin:
+    profiles: ["app"]
+    build: { context: ., dockerfile: infra/Dockerfile.admin }
+    environment:
+      NEXT_PUBLIC_API_URL: http://localhost:8000
+    ports: ["3000:3000"]
+    depends_on: [api]
+
+volumes:
+  pgdata:
+  redisdata:
