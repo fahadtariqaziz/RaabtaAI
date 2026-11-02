@@ -69,6 +69,11 @@ def expand(query: str) -> list[str]:
     return [t for t in dict.fromkeys(out) if t not in STOPWORDS]
 
 
+def dense_query_text(query: str) -> str:
+    """What the dense leg embeds: the query plus its synonym expansions."""
+    return " ".join([query.strip(), *expand(query)])
+
+
 @dataclass
 class SearchHit:
     chunk_id: uuid.UUID
@@ -214,7 +219,7 @@ async def search(
         return ids
 
     if "vector" in legs and provider is not None:
-        texts = [" ".join([q, *terms]) for q, terms in zip(queries, expanded, strict=True)]
+        texts = [dense_query_text(q) for q in queries]
         try:
             vectors = await provider.embed(texts, "query")
         except EmbeddingError as exc:  # lexical legs still answer

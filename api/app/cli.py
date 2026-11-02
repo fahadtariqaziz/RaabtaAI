@@ -4,6 +4,7 @@ seed [--institution all|<slug>] [--reset]   load demo institutions (idempotent)
 seed-docs [--force]                         (re)build demo fee XLSX + prospectus DOCX
 ingest-seeds [--institution all|<slug>] [--no-approve]
                                             run demo documents through the KB pipeline
+reembed [--institution all|<slug>]          re-embed ready chunks with EMBEDDING_PROVIDER
 """
 
 import argparse
@@ -15,7 +16,7 @@ from app.core.tenancy import admin_session
 from app.db.session import make_engine, make_sessionmaker
 from app.kb.blobstore import make_blobstore
 from app.kb.embeddings import make_provider
-from app.kb.ingest import IngestDeps
+from app.kb.ingest import IngestDeps, reembed_all
 from app.llm.claude import ClaudeClient
 from app.seeds.documents import ensure_documents
 from app.seeds.ingest import ingest_seed_institution
@@ -89,6 +90,30 @@ async def ingest_seeds(target: str, approve: bool) -> int:
     return rc
 
 
+async def reembed(target: str) -> int:
+    from sqlalchemy import select
+
+    from app.models.core import Institution
+
+    settings = get_settings()
+    engine = make_engine(settings.database_url)
+    sm = make_sessionmaker(engine)
+    provider = make_provider(settings)
+    deps = IngestDeps(sm, make_blobstore(settings), settings, provider)
+    try:
+        async with admin_session(sm) as session:
+            stmt = select(Institution.id, Institution.slug)
+            if target != "all":
+                stmt = stmt.where(Institution.slug == target)
+            rows = (await session.execute(stmt)).all()
+        for inst_id, slug in rows:
+            docs = await reembed_all(deps, inst_id)
+            print(f"re-embedded {slug}: {docs} ready documents with {provider.name}")
+    finally:
+        await engine.dispose()
+    return 0
+
+
 def seed_docs(force: bool) -> int:
     for directory in seed_dirs():
         for path in ensure_documents(load_seed(directory), directory, force=force):
@@ -107,7 +132,11 @@ def main(argv: list[str] | None = None) -> int:
     p_ing = sub.add_parser("ingest-seeds", help="ingest demo documents into the KB")
     p_ing.add_argument("--institution", default="all")
     p_ing.add_argument("--no-approve", action="store_true")
+    p_re = sub.add_parser("reembed", help="re-embed chunks with the configured provider")
+    p_re.add_argument("--institution", default="all")
     args = parser.parse_args(argv)
+    if args.command == "reembed":
+        return asyncio.run(reembed(args.institution))
     if args.command == "seed":
         return asyncio.run(seed(args.institution, args.reset))
     if args.command == "ingest-seeds":

@@ -12,7 +12,8 @@ from app.models.kb import EMBEDDING_DIM
 
 URL = "https://api.voyageai.com/v1/embeddings"
 BATCH = 128
-RETRIES = 4
+RETRIES = 6
+RATE_WINDOW = 21.0  # seconds; free tier without billing = 3 requests/minute
 
 
 class VoyageProvider:
@@ -66,6 +67,10 @@ class VoyageProvider:
                     raise EmbeddingError(f"voyage HTTP {resp.status_code}: {resp.text[:200]}")
                 if attempt == RETRIES:
                     raise EmbeddingError(f"voyage HTTP {resp.status_code} after retries")
+                if resp.status_code == 429:
+                    wait = float(resp.headers.get("retry-after") or RATE_WINDOW)
+                    await asyncio.sleep(max(wait, RATE_WINDOW) * self.backoff)
+                    continue
             await asyncio.sleep(min(2**attempt + random.random(), 20) * self.backoff)  # noqa: S311
         raise EmbeddingError("unreachable")
 

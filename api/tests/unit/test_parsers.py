@@ -1,58 +1,60 @@
 """Step 2.2 — parsers: page numbers, headings, tables, Urdu round-trip, quality flags, sniffing."""
 
 import io
+from pathlib import Path
 
-import pymupdf
 import pytest
 from docx import Document as new_docx  # noqa: N813
 from openpyxl import Workbook
+from PIL import Image
 
 from app.kb.parsers import parse
 from app.kb.parsers.base import ParsedDoc, ParseError, urdu_quality
+from app.kb.parsers.pdf import render_page_png
 from app.kb.sniff import UnsupportedFileError, sniff
 from app.seeds.schema import SEEDS_DIR
 
 ABC = SEEDS_DIR / "abc_grammar_school" / "docs"
+FIXTURES = Path(__file__).resolve().parents[1] / "fixtures"  # made by fixtures/make_pdfs.sh
 
 
-def _pdf(pages: list[list[tuple[str, float]]], image_page: bool = False) -> bytes:
-    doc = pymupdf.open()
-    for lines in pages:
-        page = doc.new_page()
-        y = 72.0
-        for text, size in lines:
-            page.insert_text((72, y), text, fontsize=size)
-            y += size * 1.8
-    if image_page:
-        page = doc.new_page()
-        pix = pymupdf.Pixmap(pymupdf.csRGB, pymupdf.IRect(0, 0, 50, 50), False)
-        pix.clear_with(200)
-        page.insert_image(pymupdf.Rect(72, 72, 300, 300), pixmap=pix)
-    data: bytes = doc.tobytes()
-    doc.close()
-    return data
-
-
-def test_pdf_pages_and_headings() -> None:
-    data = _pdf(
-        [
-            [("Admission Policy", 20), ("Forms are available at the office.", 11)],
-            [("Fee Schedule", 20), ("Monthly tuition is billed in advance.", 11)],
-        ]
-    )
-    parsed = parse("pdf", data)
-    assert parsed.pages == 2
+def test_pdf_naskh_urdu_headings_tables_and_pages() -> None:
+    """Chrome-printed PDF (embedded fonts, like a Word export): English + Naskh Urdu + table."""
+    parsed = parse("pdf", (FIXTURES / "prospectus_naskh.pdf").read_bytes())
+    assert parsed.pages == 2 and parsed.flagged_pages == []
     heads = [(b.page, b.text) for b in parsed.blocks if b.kind == "heading"]
-    assert heads == [(1, "Admission Policy"), (2, "Fee Schedule")]
-    paras = [(b.page, b.text) for b in parsed.blocks if b.kind == "para"]
-    assert (2, "Monthly tuition is billed in advance.") in paras
-    assert parsed.flagged_pages == []
+    assert heads[0] == (1, "Crescent Public School — Prospectus 2027 (Naskh)")  # wrapped title
+    assert (1, "Fee structure") in heads and (2, "Transport") in heads
+    rows = [b.text for b in parsed.blocks if b.kind == "row"]
+    assert rows == [
+        "Class: All classes | Fee head: Admission fee | Amount (PKR): 18,000 | Frequency: One time",
+        "Class: Class 1 | Fee head: Tuition fee | Amount (PKR): 8,500 | Frequency: Monthly",
+        "Class: Class 5 | Fee head: Tuition fee | Amount (PKR): 10,250 | Frequency: Monthly",
+    ]
+    urdu = " ".join(b.text for b in parsed.blocks if b.page == 2 and b.kind == "para")
+    # logical order, joined letters, no presentation forms (pdfium path)
+    assert "داخلہ فارم اسکول کے دفتر سے پیر تا ہفتہ صبح آٹھ بجے" in urdu
+    assert "ماہانہ فیس ہر مہینے کی دس تاریخ تک جمع کروائیں۔" in urdu
+    assert not urdu_quality(urdu)[0]
+    english = next(b.text for b in parsed.blocks if b.text.startswith("Collect the admission"))
+    assert "The form fee is PKR 1,500." in english  # wrapped lines joined
 
 
-def test_pdf_image_only_page_is_flagged() -> None:
-    parsed = parse("pdf", _pdf([[("Welcome", 11), ("Some text on page one.", 11)]], True))
+def test_pdf_nastaliq_page_is_flagged_for_ocr() -> None:
+    parsed = parse("pdf", (FIXTURES / "prospectus_nastaliq.pdf").read_bytes())
     assert parsed.flagged_pages == [2]
+    assert "broken Urdu" in parsed.notes[0]
+    assert any("Fee head: Tuition fee" in b.text for b in parsed.blocks)  # page 1 still fine
+
+
+def test_pdf_image_only_page_is_flagged_and_renders() -> None:
+    buf = io.BytesIO()
+    Image.new("RGB", (600, 800), "white").save(buf, format="PDF")  # a "scanned" page
+    parsed = parse("pdf", buf.getvalue())
+    assert parsed.flagged_pages == [1] and parsed.blocks == []
     assert "scanned" in parsed.notes[0]
+    png = render_page_png((FIXTURES / "prospectus_naskh.pdf").read_bytes(), 2, dpi=50)
+    assert png.startswith(b"\x89PNG")
 
 
 def test_corrupt_pdf_raises() -> None:

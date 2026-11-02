@@ -232,3 +232,38 @@ def test_llm_extractor_in_pipeline_from_cassette(
         return [(r[0], r[1]) for r in rows.all()]
 
     assert run(as_tenant(it_settings, t.id, runs)) == [("facts_extractor", 2000)]
+
+
+@pytest.mark.parametrize(
+    "seed_name", ["abc_grammar_school", "punjab_model_college", "lits_university"]
+)
+def test_recorded_real_extractor_cassettes_replay(
+    client: TestClient, factory: Factory, it_settings: Settings, seed_name: str
+) -> None:
+    """Real Opus responses recorded 2026-11-02 (`evals/cassettes/facts_extractor/`). A prompt,
+    schema, model/effort or parser change alters the request hash → re-record (= a release)."""
+    t = factory.tenant()
+    h = auth_headers(client, t.emails["admin"], t.id)
+    seed = load_seed(SEEDS_DIR / seed_name)
+    doc = upload(
+        client, h, SEEDS_DIR / seed_name / "docs" / "prospectus.docx", title=seed.prospectus.title
+    ).json()
+    llm_settings = it_settings.model_copy(update={"kb_facts_llm": True})
+    replayer = ClaudeClient(None, mode="replay")
+    status = run(
+        ingest(
+            it_settings, t.id, uuid.UUID(doc["id"]), llm=replayer, override_settings=llm_settings
+        )
+    )
+    assert status == "ready", client.get(f"/api/v1/kb/documents/{doc['id']}", headers=h).json()
+    dates = client.get(f"{URL}/key_dates", headers=h).json()
+    assert {d["fields"]["date"] for d in dates} == {
+        k.date.isoformat() for k in seed.facts.key_dates
+    }
+    assert all(d["status"] == "pending" and d["origin"] == "llm" for d in dates)
+    seed_amounts = {f.amount_pkr for f in seed.facts.fee_items} | {
+        2000,
+        500,
+    }  # ABC form fee, surcharge
+    fees = client.get(f"{URL}/fee_items", headers=h).json()
+    assert fees and {f["fields"]["amount_pkr"] for f in fees} <= seed_amounts

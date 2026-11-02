@@ -10,12 +10,12 @@
 
 | Field | Value |
 |---|---|
-| Phase / step in progress | **Phase 3 · Step 3.1** (Claude wrapper — extend `app/llm/claude.py`) — not started. Phase 2 code complete; 2 user-gated checks open (2.4 bake-off, 2.6 live extractor) |
-| Last completed step | 2.8 Ingestion pipeline (2026-11-02); **Phase 2 ☑ except 👤 2.4/2.6 live runs** |
-| Last verification run | `bash scripts/verify/all.sh` → p0_s1–s6, p1_s1–s7, p2_s1–s8 all OK (2026-11-02, ~8 min) |
-| Next action | (user) confirm D-01 and run `RAABTA_BAKEOFF=1 bash scripts/verify/p2_s4.sh` (Voyage, cents); approve the live extractor run (§3 2.6). Then 3.1: `app/llm/claude.py` already has `parse()` (fallbacks, effort, stop_reason, backoff, cassettes) — add `complete`/`stream`/tool loop + `llm_runs` logging for agent nodes. New tenant tables: `TenantMixin` + `enable_rls()`; new routes → `tests/isolation/test_endpoints.py` (ID_RESOLVERS / SAMPLE_BODIES / SAMPLE_FILES / NON_ID_PARAMS) |
-| Blocked on user | Phase 3+ not blocked. Live WhatsApp sends blocked until Meta business verification (U-01, I-07) → build Phase 6 against recorded webhook payloads |
-| Open decisions needing user confirmation | D-01 embeddings (ADR 0002 proposed: Voyage default), D-05 pricing (after 3.9 evals), D-02 STT, D-03 WhatsApp number model; D-04 decided |
+| Phase / step in progress | **Phase 3 · Step 3.1** (Claude wrapper — extend `app/llm/claude.py`) — not started |
+| Last completed step | Phase 2 fully ☑ (2026-11-02): 2.4 Voyage bake-off + 2.6 live extractor run done; PDF parser moved off AGPL PyMuPDF |
+| Last verification run | `bash scripts/verify/all.sh` → p0_s1–s6, p1_s1–s7, p2_s1–s8 all OK (2026-11-02) |
+| Next action | 3.1: `app/llm/claude.py` already has `parse()` (fallbacks, effort, stop_reason, backoff, cassettes) — add `complete`/`stream`/tool loop + `llm_runs` logging for agent nodes. Dev `.env` now `EMBEDDING_PROVIDER=voyage` (tests/verify force `fake`). New tenant tables: `TenantMixin` + `enable_rls()`; new routes → `tests/isolation/test_endpoints.py` (ID_RESOLVERS / SAMPLE_BODIES / SAMPLE_FILES / NON_ID_PARAMS) |
+| Blocked on user | Nothing for Phase 3–5. Before pilots: Voyage billing (U-14), sample prospectus (U-12). Live WhatsApp sends blocked until Meta business verification (U-01, I-07) |
+| Open decisions needing user confirmation | D-05 pricing (after 3.9 evals), D-02 STT, D-03 WhatsApp number model; D-01 decided (Voyage), D-04 decided |
 
 ---
 
@@ -42,7 +42,7 @@ Verify-script conventions: `scripts/verify/pN_sM.sh` sources `scripts/verify/_li
 |---|---|---|---|
 | 0 Foundations | scaffold, tooling, compose, config, CI, Meta kickoff | 0.0–0.6 (7) | ☑ |
 | 1 Data & multi-tenancy | models, migrations, RLS, auth/RBAC, seeds, isolation tests | 1.1–1.7 (7) | ☑ (2026-11-02) |
-| 2 Knowledge base | ingestion, chunking, embeddings, hybrid search, facts, citations | 2.1–2.8 (8) | ☑ (2026-11-02; 👤 2.4/2.6 live runs pending) |
+| 2 Knowledge base | ingestion, chunking, embeddings, hybrid search, facts, citations | 2.1–2.8 (8) | ☑ (2026-11-02) |
 | 3 Agent core + evals | Claude wrapper, prompts, skills, tools, graph, guards, context, eval harness, CLI | 3.1–3.10 (10) | ☐ |
 | 4 Widget + chat API | public chat API (SSE), widget bundle, booking/lead UI, embed tests | 4.1–4.4 (4) | ☐ |
 | 5 Admin panel | Next.js foundation, onboarding, dashboard, inbox, leads, slots, KB, settings, super-admin, audit/usage, quality pass | 5.1–5.11 (11) | ☐ |
@@ -210,13 +210,13 @@ Ordering rationale: KB (2) precedes agent (3) because grounding depends on retri
 - Commit: `feat(kb): document upload, storage and versioning`
 - Done notes: migration `0004` = `documents`, `chunks`, 5 fact tables, all RLS'd. `app/kb/blobstore.py` (`LocalBlobStore` atomic writes + path-escape guard under `BLOB_DIR`, default `var/blobs` (git-ignored); `S3BlobStore` raises until 9.1). `app/kb/sniff.py` decides type from bytes (PDF magic, OOXML zip entries, CSV only with `.csv` name), never the client MIME. `services/kb_documents.py`: `create_document` (dedupe = same sha256 not superseded/failed → 409 with existing id; same title → version+1 + `supersedes_id`; refuses while previous version is in progress) + `upload` (audited). Upload/reindex enqueue the arq job via `BackgroundTasks` (= after commit). Statuses: uploaded → parsing → chunking → embedding → extracting → ready | failed | superseded. `Resources.redis` is now an `ArqRedis`; `Resources.blobstore` added.
 
-#### 2.2 Parsers — ☑ (2026-11-02; vision-OCR not live-tested 👤)
+#### 2.2 Parsers — ☑ (2026-11-02; PDF lib switched to pdfplumber + pypdfium2; vision-OCR not live-tested)
 - PLAN §5 KNOW
-- Sub-steps: 2.2.1 ☑ PDF via `pymupdf` (page-aware text + headings heuristics); 2.2.2 ☑ DOCX via `python-docx` (headings, tables → rows); 2.2.3 ☑ XLSX/CSV via `openpyxl`/stdlib csv (sheet → table rows with header); 2.2.4 ☑ Urdu quality heuristic → flag page; vision-OCR fallback `app/kb/ocr.py` behind `KB_VISION_OCR=1` (unit-tested plumbing only)
+- Sub-steps: 2.2.1 ☑ PDF via `pdfplumber` (layout, headings, tables) + `pypdfium2` (Urdu line text, page rendering) — PyMuPDF dropped (AGPL, I-11); 2.2.2 ☑ DOCX via `python-docx` (headings, tables → rows); 2.2.3 ☑ XLSX/CSV via `openpyxl`/stdlib csv (sheet → table rows with header); 2.2.4 ☑ Urdu quality heuristic → flag page; vision-OCR fallback `app/kb/ocr.py` behind `KB_VISION_OCR=1` (unit-tested plumbing only)
 - Verify: `scripts/verify/p2_s2.sh` — `pytest tests/unit/test_parsers.py`
 - Needs user: 👤 vision-OCR on a real scanned/InPage Urdu PDF spends tokens — ask before running (no such PDF in seeds)
 - Commit: `feat(kb): pdf, docx and xlsx parsers with urdu quality check`
-- Done notes: `app/kb/parsers/` → `ParsedDoc{blocks[Block(page, kind heading|para|row, text, level, table)], pages, flagged_pages, notes}` (JSON round-trip; stored as `parsed.json` next to the original). PDF headings = font ≥1.2× body median or short all-bold line; page flagged if replacement/PUA/presentation-form chars >5% of Urdu chars, or <30 chars on an image page. Table rows rendered `Header: value | …` (self-describing for retrieval); header row = first all-text row with ≥60% width; single-cell rows above it = titles. DOCX page = 1 + page breaks. CSV numeric strings → ints (not with leading 0). **PyMuPDF is AGPL** → I-11.
+- Done notes: `app/kb/parsers/` → `ParsedDoc{blocks[Block(page, kind heading|para|row, text, level, table)], pages, flagged_pages, notes}` (JSON round-trip; stored as `parsed.json` next to the original). PDF headings = font ≥1.2× body median or short all-bold line; page flagged if replacement/PUA/presentation-form chars >5% of Urdu chars, or <30 chars on an image page. PDF (after the switch): pdfplumber groups words into lines (font size/bold → headings, wrapped headings merged, paragraph gaps from the page's median line gap) and `find_tables()` → row blocks; any line with Arabic script is re-read from its bbox with PDFium `get_text_bounded` (pdfminer returns Urdu reversed/presentation forms/NULs). Tested on Chrome-printed fixtures `tests/fixtures/prospectus_{naskh,nastaliq}.pdf` (`make_pdfs.sh`): **Naskh Urdu extracts cleanly; Nastaliq does not extract cleanly with any library (PyMuPDF included) → caught by the new fragmentation score (share of 1-letter Urdu tokens > 25%) and flagged for vision OCR**; known PDFium glitch: a short word in a heading may come out letter-swapped ("کا"→"اک"). `urdu_quality` = max(broken-glyph ratio incl. NUL, fragment ratio). Table rows rendered `Header: value | …` (self-describing for retrieval); header row = first all-text row with ≥60% width; single-cell rows above it = titles. DOCX page = 1 + page breaks. CSV numeric strings → ints (not with leading 0). Licences now: pdfplumber/pdfminer.six MIT, pypdfium2 BSD-3/Apache-2.0, Pillow MIT-CMU.
 
 #### 2.3 Chunking — ☑ (2026-11-02)
 - Sub-steps: 2.3.1 ☑ heading-aware chunker, 400–800 tokens, 15% overlap, page refs, table rows kept intact; 2.3.2 ☑ `text_norm` (lowercase, unaccent, Roman-Urdu normalization map); 2.3.3 ☑ language tag per chunk (script detection + Roman-Urdu marker words; no LLM); 2.3.4 ☑ injection-pattern pre-filter → `suspicious`
@@ -224,13 +224,13 @@ Ordering rationale: KB (2) precedes agent (3) because grounding depends on retri
 - Commit: `feat(kb): heading-aware chunking and text normalization`
 - Done notes: `app/kb/chunking.py`: small sections merge until ≥400 tokens (heading lines stay inline), a table is never merged with the section after it; overlap carries trailing units (or trailing sentences of one long paragraph) of the same section. Token count = estimate (Latin ≈4 chars/token, Urdu ≈2.5) — no tokenizer dep. `app/kb/text.py`: `normalize()` (NFKC, Arabic→Urdu letter folding, Urdu digits, diacritics, thousands separators, Roman-Urdu canon map e.g. dakhila→dakhla, fees→fee) used for chunks **and** queries; `detect_lang` → en/ur/roman_ur/mixed; `looks_like_injection` (EN/UR/RU patterns). Suspicious chunks are stored but excluded from search. Seed docs give ~2 chunks each (corpus is small).
 
-#### 2.4 Embedding provider + bake-off — ◐ (code ☑; 👤 live bake-off + D-01)
+#### 2.4 Embedding provider + bake-off — ☑ (2026-11-02; D-01 = Voyage)
 - PLAN §4 (Embeddings), D-01
-- Sub-steps: 2.4.1 ☑ `EmbeddingProvider` interface, `VoyageProvider`, `BGEM3Provider` (TEI endpoint), `FakeProvider`; 2.4.2 ☑ `chunks.embedding vector(1024)` + HNSW (cosine) in 0004; 2.4.3 ☑ `evals/datasets/retrieval.yaml` (60 Q: 20 EN/20 UR/20 RU; gold = verbatim substrings, not chunk UUIDs — stable across re-ingest); 2.4.4 ◐ `scripts/bakeoff_embeddings.py` → `evals/reports/bakeoff-*.md`; `docs/adr/0002-embeddings.md` **proposed** with the offline baseline
+- Sub-steps: 2.4.1 ☑ `EmbeddingProvider` interface, `VoyageProvider`, `BGEM3Provider` (TEI endpoint), `FakeProvider`; 2.4.2 ☑ `chunks.embedding vector(1024)` + HNSW (cosine) in 0004; 2.4.3 ☑ `evals/datasets/retrieval.yaml` (60 Q: 20 EN/20 UR/20 RU; gold = verbatim substrings, not chunk UUIDs — stable across re-ingest); 2.4.4 ☑ `scripts/bakeoff_embeddings.py` run live (fake vs voyage, 60 Q): voyage hybrid recall@1 0.88 / MRR 0.94 / Urdu r@1 0.85 vs fake 0.83 / 0.91 / 0.70 → `docs/adr/0002-embeddings.md` **accepted**
 - Verify: `scripts/verify/p2_s4.sh` — `pytest tests/unit/test_embeddings.py`; with `RAABTA_BAKEOFF=1` also seeds+ingests the test DB and runs the bake-off subset (fake vs voyage)
-- Needs user: 👤 confirm D-01 + run `RAABTA_BAKEOFF=1 bash scripts/verify/p2_s4.sh` (needs `VOYAGE_API_KEY`; ~100 chunk + ~12 query embeddings ≈ cents). Expected: two markdown tables per provider (dense-only, hybrid) and `VERIFY p2_s4: OK`. Full set: `cd api && DATABASE_URL=… uv run python -m scripts.bakeoff_embeddings --providers fake,voyage`. Then set `EMBEDDING_PROVIDER=voyage` in `.env` and re-embed (`make ingest-seeds` won't re-embed ready docs — use the bake-off script with `--providers voyage` last)
+- Done (user approved 2026-11-02): `.env` → `EMBEDDING_PROVIDER=voyage`; dev DB re-embedded with `uv run python -m app.cli reembed` (new command); `make evals-retrieval` on dev: recall@1 0.92, Urdu 0.90, Roman Urdu 0.90
 - Commit: `feat(kb): embedding provider interface and bake-off`
-- Done notes: `EMBEDDING_DIM=1024` lives in `app/models/kb.py` (both candidates are 1024-d); provider picked by `EMBEDDING_PROVIDER` (default `fake`; prod refuses `fake`). Voyage via httpx REST (batches of 128, retries 429/5xx, client errors not retried, re-sorts by `index`, counts `total_tokens`). Chunks store `embedding_model`; `stage_embed` re-embeds rows whose model differs → provider switch = `reembed_all`.
+- Done notes: `EMBEDDING_DIM=1024` lives in `app/models/kb.py` (both candidates are 1024-d); provider picked by `EMBEDDING_PROVIDER` (default `fake`; prod refuses `fake`). Voyage via httpx REST (batches of 128, retries 429/5xx, client errors not retried, re-sorts by `index`, counts `total_tokens`). Chunks store `embedding_model`; `stage_embed` re-embeds rows whose model differs → provider switch = `reembed_all` / `app.cli reembed`. Voyage account has no billing → 3 RPM: provider waits ≥21 s on 429 (honours `retry-after`), evals pre-embed all queries in one call (`PrecomputedQueries`); `search.dense_query_text()` is the single definition of what the dense leg embeds.
 
 #### 2.5 Hybrid search — ☑ (2026-11-02; gate met with the fake provider)
 - PLAN §5 KNOW, §11
@@ -240,12 +240,12 @@ Ordering rationale: KB (2) precedes agent (3) because grounding depends on retri
 - Commit: `feat(kb): hybrid vector + keyword + trigram search with rrf`
 - Done notes: FTS query = OR of normalized content words + synonym expansions (stopwords EN+RU removed), ranked `ts_rank_cd`; trigram leg = `sum(word_similarity(term, text_norm))` over `term <% text_norm` (threshold 0.5 via transaction-local `set_config`), GIN trgm index. Only chunks of `ready` docs and not `suspicious`. If the embedding API errors, the dense leg is skipped (lexical legs still answer). `make evals-retrieval` runs the gate on the dev DB.
 
-#### 2.6 Structured facts extraction & approval — ◐ (code ☑; 👤 live extractor run)
+#### 2.6 Structured facts extraction & approval — ☑ (2026-11-02; live run done)
 - PLAN §5 KNOW, §7 (facts_extractor), §11 (2)
 - Sub-steps: 2.6.1 ☑ `programs`, `fee_items`, `key_dates`, `scholarships`, `transport_routes` (in 0004); 2.6.2 ☑ `app/kb/facts_extractor.py` (Opus `facts_extractor` node, effort high, `parse` → `FactsBatch`, ≤20 pages / ≤40k tokens per batch, page refs + quotes; amounts as text → `app/kb/pkr.py`); 2.6.3 ☑ `GET /kb/facts/{kind}`, `PATCH /kb/facts/{kind}` (bulk approve/reject), `PATCH /kb/facts/{kind}/{fact_id}` (edit/status); 2.6.4 ☑ `facts_version` bump whenever served (approved) data changes; 2.6.5 ☑ XLSX/CSV → `fee_items`/`transport_routes` with no LLM when columns are recognized
-- Acceptance: seed fee XLSX → rows match seed.yaml PKR exactly ✔; extractor path ✔ via record→replay cassette (stubbed `_live`, **not a real model response**); approval audited ✔
+- Acceptance: seed fee XLSX → rows match seed.yaml PKR exactly ✔; extractor ✔ **live Opus run** on the 3 seed prospectuses (user-approved; 3 calls, $0.16 total, ~15–25 s each, no refusal/fallback, 0 dropped rows): all 17 key dates match seed.yaml exactly, every fee amount correct (incl. 2 ABC heads present in the prospectus but not in seed.yaml), no invented scholarships; approval audited ✔
 - Verify: `scripts/verify/p2_s6.sh` — `pytest tests/unit/test_facts_unit.py tests/integration/test_facts.py`
-- Needs user: 👤 approve a live extractor run on the 3 seed prospectuses (Opus high, ~3 calls, ≈ $0.10–0.30): `cd api && KB_FACTS_LLM=1 RAABTA_LLM_RECORD=1 uv run python -m app.cli ingest-seeds --no-approve` on a fresh DB (or after deleting the prospectus documents) → real cassettes in `api/evals/cassettes/facts_extractor/`; compare pending programs/key_dates with `seed.yaml`
+- Cassettes: real responses recorded in `api/evals/cassettes/facts_extractor/` (commit them); `test_recorded_real_extractor_cassettes_replay` replays them per institution — a prompt/schema/model/effort/parser change → missing cassette → re-record with `KB_FACTS_LLM=1 RAABTA_LLM_RECORD=1 uv run python -m app.cli ingest-seeds --no-approve` on a fresh DB (= a release)
 - Commit: `feat(kb): structured facts extraction with admin approval`
 - Done notes: `app/llm/claude.py` (early slice of 3.1): `ClaudeClient.parse(node, …)` — registry model/effort/max_tokens, Opus via `client.beta.messages.parse` + `server-side-fallback-2026-07-01` + `fallbacks="default"`, Haiku via `messages.parse`, `stop_reason` refusal → `RefusalError`, `max_tokens` → one retry ×1.5, SDK retries off + own backoff, cassettes keyed by sha256(model, effort, system, messages, schema) under `evals/cassettes/<node>/` (`RAABTA_LLM_RECORD/REPLAY`). `app/llm/cost.py` price table; extractor runs logged to `llm_runs`. Prompt `app/prompts/facts_extractor.md` (v1) + loader `app/prompts/__init__.py`. Fact rows: `status` pending/approved/rejected/superseded, `origin` table/llm/seed/manual, `ordinal` (source order), source doc/page/quote. Re-ingest replaces only *pending* rows of the same origin; a new document version supersedes the old version's approved facts (no longer served, bump) and drops its pending/rejected ones. Seeds: without `KB_FACTS_LLM`, `ingest-seeds` loads prospectus facts from `seed.yaml` (origin `seed`) and approves everything (demo only).
 
@@ -610,6 +610,7 @@ Ordering rationale: KB (2) precedes agent (3) because grounding depends on retri
 
 | Date | Session | Step(s) | What was done | Verification | Commit suggested |
 |---|---|---|---|---|---|
+| 2026-11-02 | S3b | 2.4, 2.6, 2.2 | User decisions applied: D-01 Voyage (live bake-off; `.env` switched; `app.cli reembed`; 429-aware Voyage provider + batched eval queries), live Opus extractor run ($0.16) recorded as cassettes + replay test, PDF parser rewritten on pdfplumber + pypdfium2 (PyMuPDF removed) with Urdu fragmentation check and Chrome-printed Naskh/Nastaliq fixtures | `all.sh` OK (28 scripts) | `feat(kb): voyage embeddings, recorded extractor cassettes, permissive pdf parser` |
 | 2026-11-02 | S3 | 2.1–2.8 | Phase 2 (knowledge base): migration 0004 (documents, chunks w/ vector(1024)+HNSW+tsv+trgm, 5 fact tables, RLS); blob store + sniffed uploads with dedupe/versioning; PDF/DOCX/XLSX/CSV parsers + Urdu quality flags + vision-OCR fallback (opt-in); heading-aware chunker + normalization + lang + injection filter; embedding providers (fake/Voyage/bge-m3) + bake-off script + ADR 0002 (proposed); hybrid search (vector+FTS+trigram+synonyms, RRF, packing); facts (XLSX deterministic, Opus extractor via `ClaudeClient.parse` w/ cassettes, approval API, facts_version, supersede); citations + playground; arq ingestion pipeline + `ingest-seeds`; 60-Q retrieval eval. Bugs fixed on the way: re-index while newer version processing, fact ordering (ordinal), seed-facts duplication on re-run | `all.sh` OK (p0–p2, 28 scripts); retrieval recall@5 1.00 / recall@1 0.85 (fake) | per step blocks; one-shot: `feat: phase 2 — knowledge base ingestion, hybrid search, facts, citations` |
 | 2026-11-02 | S2 | 1.2–1.7 | Phase 1 completed: auth (argon2, JWT, Redis rotating refresh + reuse detection, lockout, invites), RBAC deps, roles + RLS (0002) + ORM tenant layer, conversation domain tables + LangGraph tables (0003), demo seeds (3 YAML + generated XLSX/DOCX, `seed` CLI), audit dependency + usage rollup cron + `/audit-log` `/usage`, OpenAPI-driven isolation suite. Fixed along the way: commit-after-response (scope=function), tenant scope cleared before final flush, LangGraph CONCURRENTLY deadlock, message ordering (`seq`) | `all.sh` OK (p0_s1–s6, p1_s1–s7) | see step blocks; one-shot: `feat: phase 1 — auth, rbac, rls, conversation tables, seeds, audit, isolation` |
 | 2026-11-02 | S1 | 0.6, 1.1 | 0.6 closed (keys OK, Meta app created, verification postponed); core models, Alembic async baseline 0001 with extensions, migration round-trip + constraint tests, `make migrate` | `p0_s6` OK (user), `p1_s1` OK 7/7 | `feat(db): core tenant tables and alembic baseline` |
@@ -624,7 +625,7 @@ Ordering rationale: KB (2) precedes agent (3) because grounding depends on retri
 
 | ID | Date | Decision | Status | Notes |
 |---|---|---|---|---|
-| D-01 | 2026-11-01 | Embeddings: interface + default Voyage `voyage-3.5`, alt `bge-m3`; final by Phase 2 bake-off | **needs user confirm** — code ready, ADR 0002 proposed; run the bake-off (2.4) | PLAN §4, `docs/adr/0002-embeddings.md` |
+| D-01 | 2026-11-01 | Embeddings: Voyage `voyage-3.5` (alt `bge-m3` behind the interface) | **decided by user 2026-11-02** after live bake-off (Urdu recall@1 0.85 vs 0.70) | PLAN §4, `docs/adr/0002-embeddings.md` |
 | D-02 | 2026-11-01 | STT: interface + default OpenAI `gpt-4o-transcribe` (fallback `whisper-1`); bake-off in 6.4 | **needs user confirm** | PLAN §4 |
 | D-03 | 2026-11-01 | WhatsApp: RaabtaAI-owned WABA, one number per institution; Embedded Signup deferred | **needs user confirm** | PLAN §4, §15.2 |
 | D-04 | 2026-11-01 | Hosting (user): **free, at the end** — admin + widget on **Netlify**; API/worker/Postgres/Redis need a separate always-on free host (Netlify can't run them), chosen in 9.1 | **decided by user** (backend host open) | `docs/adr/0001-free-hosting-netlify.md` |
@@ -639,6 +640,7 @@ Ordering rationale: KB (2) precedes agent (3) because grounding depends on retri
 | D-14 | 2026-11-02 | Refresh tokens + lockout in Redis (no DB table); invites return a shareable link (no email provider in MVP) | decided (impl.) — revisit if email needed | HANDOFF 1.2 notes |
 | D-15 | 2026-11-02 | KB: retrieval eval gold = verbatim substrings (not chunk UUIDs); numbers only from approved fact rows (D-08) — chunks may *show* fees but the agent must cite facts; suspicious chunks excluded from search; dense leg optional at query time (lexical fallback) | decided (impl.) | HANDOFF 2.3–2.6 notes |
 | D-16 | 2026-11-02 | Seed demo facts: without `KB_FACTS_LLM`, prospectus facts come from `seed.yaml` (origin `seed`) and `ingest-seeds` auto-approves (demo only); real tenants always go pending → admin approval | decided (impl.) | HANDOFF 2.6 notes |
+| D-17 | 2026-11-02 | PDF parsing on permissive libs: pdfplumber (layout/tables) + pypdfium2 (Urdu text, rendering); PyMuPDF (AGPL) removed. Nastaliq PDFs → flagged → vision OCR | **decided by user 2026-11-02** ("switch to a free library if it meets Urdu/table/PDF needs" — verified on fixtures) | HANDOFF 2.2 notes |
 | D-12 | 2026-11-01 | **Hybrid agent routing**: router `complexity=simple` (FAQ: fees, timings, transport, greetings) → `claude-haiku-5-5` agent with the same tools + answer_check; `complex` (booking, fee module, multi-step, unhappy/escalation, low router confidence) → `claude-opus-5-5`. Eval gate in 3.9 compares simple-route quality Haiku vs Opus; if Haiku fails thresholds, try `claude-sonnet-5-5` for simple route. Implemented via `models_registry` keys `agent_simple` / `agent_complex` | **decided by user 2026-11-01** | PLAN §7, §19; unblocks D-05 |
 
 ---
@@ -656,8 +658,9 @@ Ordering rationale: KB (2) precedes agent (3) because grounding depends on retri
 | I-08 | 2026-11-02 | CI runs no DB-backed tests (minimal CI by user choice) → integration + isolation suites run only via `scripts/verify/*.sh` locally. Add a CI job with postgres(pgvector)+redis services + `infra/db/init.sql` in Phase 8 (was 1.7.3) | open (Phase 8) |
 | I-09 | 2026-11-02 | Migration 0002 creates a BYPASSRLS role → migration role must be superuser (or have BYPASSRLS). Check the free backend host's Postgres allows it at 9.1; fallback = policy-based admin bypass GUC | open (9.1) |
 | I-10 | 2026-11-02 | Superadmin has no tenant access via `X-Institution` (needs membership); impersonation endpoint is step 5.9 | noted |
-| I-11 | 2026-11-02 | **PyMuPDF (PDF parser, PLAN choice) is AGPL-3.0**. Using it in a hosted SaaS may oblige releasing source of the service unless a commercial Artifex licence is bought. Options before pilots: buy licence, or swap to `pypdf`/`pdfplumber` (MIT/BSD; loses page rendering for vision-OCR → render via `pdf2image`/poppler). Isolated to `app/kb/parsers/pdf.py` + `render_page_png` | open (user decision before 9.x) |
+| I-11 | 2026-11-02 | ~~PyMuPDF is AGPL-3.0~~ → **resolved 2026-11-02**: replaced by pdfplumber + pypdfium2 (D-17). Original note: Using it in a hosted SaaS may oblige releasing source of the service unless a commercial Artifex licence is bought. Options before pilots: buy licence, or swap to `pypdf`/`pdfplumber` (MIT/BSD; loses page rendering for vision-OCR → render via `pdf2image`/poppler). Isolated to `app/kb/parsers/pdf.py` + `render_page_png` | resolved |
 | I-12 | 2026-11-02 | Demo corpus is tiny (~2 chunks per document, ~4 per institution) → recall@5 saturates at 1.00; recall@1/MRR are the useful signals. Need one real (anonymized) prospectus PDF, ideally with Urdu pages, to make the bake-off and the 90% gate meaningful (also tests the PDF parser + Urdu flags on real data, I-01) | open (user: provide a sample prospectus) |
+| I-13 | 2026-11-02 | Voyage account has no payment method → 3 requests/min, 10K tokens/min. Dev/evals cope (waits + batching); live widget/WhatsApp traffic would stall. Add billing before pilots (U-14) | open (user, before pilots) |
 | I-05 | 2026-11-01 | Preserved-thinking prefix check is enforced for accounts created on/after 2026-08-31 — confirm account age; design is append-only regardless | open |
 
 ---
@@ -672,10 +675,11 @@ Ordering rationale: KB (2) precedes agent (3) because grounding depends on retri
 | U-04 | Anthropic API key in `.env` + spend cap (user has key) | 0.6 | ◐ |
 | U-05 | Voyage key in `.env` as `VOYAGE_API_KEY` (user has key) | 0.6 | ◐ |
 | U-06 | STT provider key + 20 sample voice notes | 6.4 | ☐ |
-| U-07 | Confirm decisions D-01…D-05 (D-01: run the 2.4 bake-off first) | Phase 2 / 3 | ☐ |
-| U-11 | Approve small spends: 2.4 Voyage bake-off (cents), 2.6 live extractor on 3 seed prospectuses (≈$0.10–0.30) | before Phase 3 evals | ☐ |
-| U-12 | Provide one real (anonymized) prospectus PDF, ideally with Urdu pages (I-12, I-01) | before pilots | ☐ |
-| U-13 | Decide PyMuPDF licensing (I-11) | before 9.x | ☐ |
+| U-07 | Confirm decisions D-02, D-03, D-05 (D-01 ✔ Voyage, D-04 ✔) | Phase 3 / 6 | ◐ |
+| U-11 | Approve small spends: 2.4 Voyage bake-off, 2.6 live extractor ($0.16) | Phase 2 | ☑ (done 2026-11-02) |
+| U-12 | Provide one real (anonymized) prospectus PDF, ideally with Urdu pages (I-12, I-01) | before pilots | ⏭ later (user) |
+| U-13 | Decide PyMuPDF licensing (I-11) | — | ☑ switched to free libs (D-17) |
+| U-14 | Add a payment method to the Voyage account (lifts 3 RPM limit; free 200M tokens still apply) (I-13) | before pilots | ☐ |
 | U-08 | Hosting: Netlify (admin/widget) + free backend host — at the end; personal email for now; domain optional | 9.1 | ⏭ later |
 | U-09 | Sentry projects | 8.2 | ☐ |
 | U-10 | Sample redacted fee receipts (HBL/JazzCash/Easypaisa) | 7.5 | ☐ |

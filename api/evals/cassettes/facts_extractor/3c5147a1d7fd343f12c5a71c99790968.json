@@ -1,0 +1,219 @@
+{
+ "node": "facts_extractor",
+ "model": "claude-opus-5-5",
+ "stop_reason": "end_turn",
+ "input_tokens": 4157,
+ "output_tokens": 1931,
+ "output": {
+  "academic_year": "Fall 2027",
+  "fee_items": [
+   {
+    "class_name": null,
+    "program_name": "All programs",
+    "head": "Processing fee",
+    "amount_text": "PKR 3,000",
+    "frequency_text": null,
+    "notes": "Paid when applying online",
+    "page": 1,
+    "quote": "Apply online at https://admissions.lits.edu.pk/apply and pay the PKR 3,000 processing fee."
+   },
+   {
+    "class_name": null,
+    "program_name": "BS Computer Science",
+    "head": "Tuition fee",
+    "amount_text": "PKR 145,000",
+    "frequency_text": "per semester",
+    "notes": null,
+    "page": 1,
+    "quote": "BS Computer Science PKR 145,000."
+   },
+   {
+    "class_name": null,
+    "program_name": "BS Software Engineering",
+    "head": "Tuition fee",
+    "amount_text": "PKR 140,000",
+    "frequency_text": "per semester",
+    "notes": null,
+    "page": 1,
+    "quote": "BS Software Engineering PKR 140,000."
+   },
+   {
+    "class_name": null,
+    "program_name": "BS Electrical Engineering",
+    "head": "Tuition fee",
+    "amount_text": "PKR 150,000",
+    "frequency_text": "per semester",
+    "notes": null,
+    "page": 1,
+    "quote": "BS Electrical Engineering PKR 150,000."
+   },
+   {
+    "class_name": null,
+    "program_name": "BBA",
+    "head": "Tuition fee",
+    "amount_text": "PKR 120,000",
+    "frequency_text": "per semester",
+    "notes": null,
+    "page": 1,
+    "quote": "BBA PKR 120,000."
+   },
+   {
+    "class_name": null,
+    "program_name": "MS Computer Science",
+    "head": "Tuition fee",
+    "amount_text": "PKR 110,000",
+    "frequency_text": "per semester",
+    "notes": null,
+    "page": 1,
+    "quote": "MS Computer Science PKR 110,000."
+   },
+   {
+    "class_name": null,
+    "program_name": "All programs",
+    "head": "Admission fee",
+    "amount_text": "PKR 25,000",
+    "frequency_text": "one time",
+    "notes": null,
+    "page": 1,
+    "quote": "One-time admission fee PKR 25,000."
+   },
+   {
+    "class_name": null,
+    "program_name": "All programs",
+    "head": "Hostel fee (shared room)",
+    "amount_text": "PKR 35,000",
+    "frequency_text": "per semester",
+    "notes": "Mess charges separate",
+    "page": 1,
+    "quote": "Shared room: PKR 35,000 per semester, mess charges separate."
+   }
+  ],
+  "programs": [
+   {
+    "name": "BS Computer Science",
+    "level": "Undergraduate",
+    "duration": null,
+    "eligibility": null,
+    "deadline": null,
+    "seats": null,
+    "page": 1,
+    "quote": "BS Computer Science PKR 145,000."
+   },
+   {
+    "name": "BS Software Engineering",
+    "level": "Undergraduate",
+    "duration": null,
+    "eligibility": null,
+    "deadline": null,
+    "seats": null,
+    "page": 1,
+    "quote": "BS Software Engineering PKR 140,000."
+   },
+   {
+    "name": "BS Electrical Engineering",
+    "level": "Undergraduate",
+    "duration": null,
+    "eligibility": null,
+    "deadline": null,
+    "seats": null,
+    "page": 1,
+    "quote": "BS Electrical Engineering is accredited by the Pakistan Engineering Council (PEC)."
+   },
+   {
+    "name": "BBA",
+    "level": "Undergraduate",
+    "duration": null,
+    "eligibility": null,
+    "deadline": null,
+    "seats": null,
+    "page": 1,
+    "quote": "BBA PKR 120,000."
+   },
+   {
+    "name": "MS Computer Science",
+    "level": "Graduate",
+    "duration": null,
+    "eligibility": null,
+    "deadline": null,
+    "seats": null,
+    "page": 1,
+    "quote": "MS Computer Science PKR 110,000."
+   }
+  ],
+  "key_dates": [
+   {
+    "event": "Fall 2027 applications open",
+    "date": "2027-05-15",
+    "end_date": null,
+    "notes": null,
+    "page": 1,
+    "quote": "Event: Fall 2027 applications open | Date: 15 May 2027"
+   },
+   {
+    "event": "Last date to apply (Fall 2027)",
+    "date": "2027-07-15",
+    "end_date": null,
+    "notes": null,
+    "page": 1,
+    "quote": "Event: Last date to apply (Fall 2027) | Date: 15 July 2027"
+   },
+   {
+    "event": "Entry test",
+    "date": "2027-07-20",
+    "end_date": null,
+    "notes": "Computer-based; Maths, English, Analytical; NTS NAT/SAT also accepted",
+    "page": 1,
+    "quote": "Event: Entry test (Computer-based; Maths, English, Analytical; also accepted: NTS NAT/SAT) | Date: 20 July 2027"
+   },
+   {
+    "event": "First merit list",
+    "date": "2027-07-25",
+    "end_date": null,
+    "notes": null,
+    "page": 1,
+    "quote": "Event: First merit list | Date: 25 July 2027"
+   },
+   {
+    "event": "Second merit list",
+    "date": "2027-08-05",
+    "end_date": null,
+    "notes": null,
+    "page": 1,
+    "quote": "Event: Second merit list | Date: 05 August 2027"
+   },
+   {
+    "event": "Third (final) merit list",
+    "date": "2027-08-15",
+    "end_date": null,
+    "notes": null,
+    "page": 1,
+    "quote": "Event: Third (final) merit list | Date: 15 August 2027"
+   },
+   {
+    "event": "Classes begin (Fall 2027)",
+    "date": "2027-09-01",
+    "end_date": null,
+    "notes": null,
+    "page": 1,
+    "quote": "Event: Classes begin (Fall 2027) | Date: 01 September 2027"
+   }
+  ],
+  "scholarships": [
+   {
+    "name": "Need-based financial aid",
+    "rule": "After an income assessment and interview; continues if CGPA 3.0 or higher",
+    "amount": "up to 100% of tuition",
+    "page": 1,
+    "quote": "Need-based financial aid covers up to 100% of tuition after an income assessment and interview."
+   },
+   {
+    "name": "Merit scholarship",
+    "rule": "Awarded automatically on admission merit; continues if CGPA 3.0 or higher",
+    "amount": "25% to 75%",
+    "page": 1,
+    "quote": "Merit scholarships of 25% to 75% are awarded automatically on admission merit."
+   }
+  ],
+  "transport_routes": []
+ }
+}

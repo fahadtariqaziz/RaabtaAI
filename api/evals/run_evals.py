@@ -20,13 +20,32 @@ from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 from app.core.config import get_settings
 from app.core.tenancy import admin_session, tenant_session
 from app.db.session import make_engine, make_sessionmaker
-from app.kb.embeddings import EmbeddingProvider, make_provider
-from app.kb.search import LEGS, search
+from app.kb.embeddings import EmbeddingProvider, InputType, make_provider
+from app.kb.search import LEGS, dense_query_text, search
 from app.models.core import Institution
 from evals.graders.retrieval import RetrievalCase, RetrievalReport, first_hit_rank, load_cases
 
 REPORTS = Path(__file__).resolve().parent / "reports"
 GATE_ALL, GATE_RU = 0.90, 0.85
+
+
+class PrecomputedQueries:
+    """Wraps a provider: query vectors computed once in a batch, documents passed through."""
+
+    def __init__(self, inner: EmbeddingProvider, cache: dict[str, list[float]]) -> None:
+        self.inner, self.cache = inner, cache
+        self.name, self.dim = inner.name, inner.dim
+
+    @classmethod
+    async def build(cls, inner: EmbeddingProvider, queries: list[str]) -> "PrecomputedQueries":
+        texts = list(dict.fromkeys(dense_query_text(q) for q in queries))
+        vectors = await inner.embed(texts, "query")
+        return cls(inner, dict(zip(texts, vectors, strict=True)))
+
+    async def embed(self, texts: list[str], input_type: InputType) -> list[list[float]]:
+        if input_type == "query" and all(t in self.cache for t in texts):
+            return [self.cache[t] for t in texts]
+        return await self.inner.embed(texts, input_type)
 
 
 async def institution_ids(
@@ -52,6 +71,8 @@ async def run_retrieval(
     missing = {c.institution for c in cases} - set(ids)
     if missing:
         raise SystemExit(f"institutions not found (run make seed + ingest-seeds): {missing}")
+    if provider is not None:  # one batched call for all queries (rate-limited providers)
+        provider = await PrecomputedQueries.build(provider, [c.query for c in cases])
     report = RetrievalReport(label=label)
     for case in cases:
         async with tenant_session(sessionmaker, ids[case.institution]) as session:

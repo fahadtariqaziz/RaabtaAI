@@ -1,0 +1,173 @@
+{
+ "node": "facts_extractor",
+ "model": "claude-opus-5-5",
+ "stop_reason": "end_turn",
+ "input_tokens": 4181,
+ "output_tokens": 1854,
+ "output": {
+  "academic_year": "2027–29",
+  "fee_items": [
+   {
+    "class_name": null,
+    "program_name": "All programs",
+    "head": "Admission fee",
+    "amount_text": "PKR 15,000",
+    "frequency_text": "one time",
+    "notes": null,
+    "page": 1,
+    "quote": "Admission fee PKR 15,000 (one time)."
+   },
+   {
+    "class_name": null,
+    "program_name": "FSc Pre-Medical",
+    "head": "Tuition",
+    "amount_text": "PKR 11,000",
+    "frequency_text": "monthly",
+    "notes": null,
+    "page": 1,
+    "quote": "Monthly tuition: FSc Pre-Medical PKR 11,000"
+   },
+   {
+    "class_name": null,
+    "program_name": "FSc Pre-Engineering",
+    "head": "Tuition",
+    "amount_text": "PKR 10,500",
+    "frequency_text": "monthly",
+    "notes": null,
+    "page": 1,
+    "quote": "FSc Pre-Engineering PKR 10,500"
+   },
+   {
+    "class_name": null,
+    "program_name": "ICS",
+    "head": "Tuition",
+    "amount_text": "PKR 9,500",
+    "frequency_text": "monthly",
+    "notes": null,
+    "page": 1,
+    "quote": "ICS PKR 9,500"
+   },
+   {
+    "class_name": null,
+    "program_name": "ICom",
+    "head": "Tuition",
+    "amount_text": "PKR 8,000",
+    "frequency_text": "monthly",
+    "notes": null,
+    "page": 1,
+    "quote": "ICom PKR 8,000."
+   },
+   {
+    "class_name": null,
+    "program_name": "All programs",
+    "head": "Board registration and exam fee",
+    "amount_text": "PKR 6,500",
+    "frequency_text": "each year",
+    "notes": "Collected on behalf of BISE",
+    "page": 1,
+    "quote": "Board registration and exam fee of PKR 6,500 is collected each year on behalf of BISE."
+   }
+  ],
+  "programs": [
+   {
+    "name": "FSc Pre-Medical",
+    "level": "Intermediate",
+    "duration": null,
+    "eligibility": "Matric (Science) with at least 70% marks",
+    "deadline": null,
+    "seats": null,
+    "page": 1,
+    "quote": "FSc Pre-Medical: Matric (Science) with at least 70% marks."
+   },
+   {
+    "name": "FSc Pre-Engineering",
+    "level": "Intermediate",
+    "duration": null,
+    "eligibility": "Matric with at least 60% marks",
+    "deadline": null,
+    "seats": null,
+    "page": 1,
+    "quote": "FSc Pre-Engineering and ICS: at least 60%."
+   },
+   {
+    "name": "ICS",
+    "level": "Intermediate",
+    "duration": null,
+    "eligibility": "Matric with at least 60% marks",
+    "deadline": null,
+    "seats": null,
+    "page": 1,
+    "quote": "FSc Pre-Engineering and ICS: at least 60%."
+   },
+   {
+    "name": "ICom",
+    "level": "Intermediate",
+    "duration": null,
+    "eligibility": "Matric in any group with at least 60%",
+    "deadline": null,
+    "seats": null,
+    "page": 1,
+    "quote": "ICom: Matric in any group with at least 60%."
+   }
+  ],
+  "key_dates": [
+   {
+    "event": "Matric result (BISE Faisalabad, expected)",
+    "date": "2027-08-14",
+    "end_date": null,
+    "notes": "Expected date",
+    "page": 1,
+    "quote": "Event: Matric result (BISE Faisalabad, expected) | Date: 14 August 2027"
+   },
+   {
+    "event": "Admissions open",
+    "date": "2027-08-20",
+    "end_date": null,
+    "notes": "Provisional admission on Matric marks",
+    "page": 1,
+    "quote": "Event: Admissions open (Provisional admission on Matric marks) | Date: 20 August 2027"
+   },
+   {
+    "event": "First merit list",
+    "date": "2027-09-05",
+    "end_date": null,
+    "notes": null,
+    "page": 1,
+    "quote": "Event: First merit list | Date: 05 September 2027"
+   },
+   {
+    "event": "Last date to apply",
+    "date": "2027-09-20",
+    "end_date": null,
+    "notes": null,
+    "page": 1,
+    "quote": "Event: Last date to apply | Date: 20 September 2027"
+   },
+   {
+    "event": "Classes begin",
+    "date": "2027-10-01",
+    "end_date": null,
+    "notes": null,
+    "page": 1,
+    "quote": "Event: Classes begin | Date: 01 October 2027"
+   }
+  ],
+  "scholarships": [
+   {
+    "name": "Merit tuition waiver (90% and above)",
+    "rule": "90% or more marks in Matric; continues in second year if first-year result stays above 80%",
+    "amount": "50% tuition waiver",
+    "page": 1,
+    "quote": "Students with 90% or more marks in Matric get a 50% tuition waiver."
+   },
+   {
+    "name": "Merit tuition waiver (80% to 89.99%)",
+    "rule": "80% to 89.99% marks in Matric; continues in second year if first-year result stays above 80%",
+    "amount": "25%",
+    "page": 1,
+    "quote": "Students with 80% to 89.99% get 25%."
+   }
+  ],
+  "transport_routes": []
+ }
+}
