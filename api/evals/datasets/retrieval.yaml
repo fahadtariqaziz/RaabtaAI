@@ -1,0 +1,65 @@
+# Retrieval eval (step 2.4.3 / 2.5): 60 questions on the three demo institutions — 20 EN, 20 Urdu
+# script, 20 Roman Urdu. A case is a hit at k if any of the top-k chunks contains any `gold`
+# substring (gold = verbatim text of the seed documents, so it is stable across re-ingestion,
+# unlike chunk UUIDs). NOTE: the seed corpus is small (~4 chunks per institution), so recall@5 is
+# near-saturated by construction; recall@1 and MRR are the informative numbers.
+- {id: abc-en-01, institution: abc-grammar-school, lang: en, query: "What is the monthly tuition fee for Class 5?", gold: ["Class: Class 5 | Fee head: Tuition fee"]}
+- {id: abc-en-02, institution: abc-grammar-school, lang: en, query: "How much is the admission fee?", gold: ["Fee head: Admission fee"]}
+- {id: abc-en-03, institution: abc-grammar-school, lang: en, query: "Is the security deposit refundable?", gold: ["Fee head: Security deposit", "security deposit is refunded"]}
+- {id: abc-en-04, institution: abc-grammar-school, lang: en, query: "What are the school timings?", gold: ["Classes run Monday to Friday, 07:45 to 13:30"]}
+- {id: abc-en-05, institution: abc-grammar-school, lang: en, query: "Which areas does the DHA van route cover and what does it cost?", gold: ["Route: DHA"]}
+- {id: abc-en-06, institution: abc-grammar-school, lang: en, query: "Which documents are required for admission?", gold: ["B-Form of the child"]}
+- {id: abc-en-07, institution: abc-grammar-school, lang: en, query: "What is the uniform for girls?", gold: ["Girls: white shirt"]}
+- {id: abc-ur-01, institution: abc-grammar-school, lang: ur, query: "کلاس 5 کی ماہانہ فیس کتنی ہے؟", gold: ["Class: Class 5 | Fee head: Tuition fee"]}
+- {id: abc-ur-02, institution: abc-grammar-school, lang: ur, query: "داخلہ فیس کتنی ہے؟", gold: ["Fee head: Admission fee"]}
+- {id: abc-ur-03, institution: abc-grammar-school, lang: ur, query: "داخلہ فارم کہاں سے ملے گا؟", gold: ["داخلہ فارم اسکول کے دفتر"]}
+- {id: abc-ur-04, institution: abc-grammar-school, lang: ur, query: "اسکول کے اوقات کیا ہیں؟", gold: ["Classes run Monday to Friday"]}
+- {id: abc-ur-05, institution: abc-grammar-school, lang: ur, query: "ٹرانسپورٹ کی ماہانہ فیس کتنی ہے؟", gold: ["Monthly fee (PKR): 8,500"]}
+- {id: abc-ur-06, institution: abc-grammar-school, lang: ur, query: "یونیفارم کیسا ہوتا ہے؟", gold: ["Girls: white shirt"]}
+- {id: abc-ur-07, institution: abc-grammar-school, lang: ur, query: "داخلہ ٹیسٹ کن مضامین میں ہوتا ہے؟", gold: ["written admission test in English, Urdu and Maths", "داخلہ ٹیسٹ انگریزی"]}
+- {id: abc-ru-01, institution: abc-grammar-school, lang: roman_ur, query: "class 5 ki fees kitni hai", gold: ["Class: Class 5 | Fee head: Tuition fee"]}
+- {id: abc-ru-02, institution: abc-grammar-school, lang: roman_ur, query: "dakhla fee kitni hai", gold: ["Fee head: Admission fee"]}
+- {id: abc-ru-03, institution: abc-grammar-school, lang: roman_ur, query: "school ka time kya hai", gold: ["Classes run Monday to Friday"]}
+- {id: abc-ru-04, institution: abc-grammar-school, lang: roman_ur, query: "DHA ke liye van ki fees kitni hai", gold: ["Route: DHA"]}
+- {id: abc-ru-05, institution: abc-grammar-school, lang: roman_ur, query: "security wapis milti hai?", gold: ["Fee head: Security deposit", "security deposit is refunded"]}
+- {id: abc-ru-06, institution: abc-grammar-school, lang: roman_ur, query: "admission ke liye kaghzat kya chahiye", gold: ["B-Form of the child"]}
+- {id: abc-ru-07, institution: abc-grammar-school, lang: roman_ur, query: "garmiyon ki chuttiyan kab hain", gold: ["Summer vacation"]}
+- {id: pmc-en-01, institution: punjab-model-college, lang: en, query: "What is the monthly fee for FSc Pre-Medical?", gold: ["Program: FSc Pre-Medical | Fee head: Tuition fee", "FSc Pre-Medical PKR 11,000"]}
+- {id: pmc-en-02, institution: punjab-model-college, lang: en, query: "Minimum marks required for Pre-Engineering?", gold: ["FSc Pre-Engineering and ICS: at least 60%"]}
+- {id: pmc-en-03, institution: punjab-model-college, lang: en, query: "Does the college have a hostel?", gold: ["The college has no hostel"]}
+- {id: pmc-en-04, institution: punjab-model-college, lang: en, query: "When do classes begin?", gold: ["Classes begin on 1 October", "Event: Classes begin"]}
+- {id: pmc-en-05, institution: punjab-model-college, lang: en, query: "Is there a scholarship for students with 90% marks?", gold: ["90% or more marks in Matric get a 50% tuition waiver"]}
+- {id: pmc-en-06, institution: punjab-model-college, lang: en, query: "When can we book a counselling session?", gold: ["career counselling sessions"]}
+- {id: pmc-en-07, institution: punjab-model-college, lang: en, query: "How can I pay the fee?", gold: ["HBL or through JazzCash"]}
+- {id: pmc-ur-01, institution: punjab-model-college, lang: ur, query: "کیا ہاسٹل کی سہولت ہے؟", gold: ["ہاسٹل کی سہولت دستیاب نہیں", "The college has no hostel"]}
+- {id: pmc-ur-02, institution: punjab-model-college, lang: ur, query: "داخلے کے لیے کون سے کاغذات چاہئیں؟", gold: ["میٹرک کا رزلٹ کارڈ"]}
+- {id: pmc-ur-03, institution: punjab-model-college, lang: ur, query: "پری میڈیکل کی ماہانہ فیس کتنی ہے؟", gold: ["Program: FSc Pre-Medical | Fee head: Tuition fee", "FSc Pre-Medical PKR 11,000"]}
+- {id: pmc-ur-04, institution: punjab-model-college, lang: ur, query: "اسکالرشپ کس کو ملتی ہے؟", gold: ["50% tuition waiver"]}
+- {id: pmc-ur-05, institution: punjab-model-college, lang: ur, query: "میرٹ کیسے بنتا ہے؟", gold: ["Merit = Matric marks + entry interview"]}
+- {id: pmc-ur-06, institution: punjab-model-college, lang: ur, query: "کلاسیں کب شروع ہوں گی؟", gold: ["Classes begin on 1 October", "Event: Classes begin"]}
+- {id: pmc-ur-07, institution: punjab-model-college, lang: ur, query: "کونسلنگ کا وقت کیا ہے؟", gold: ["career counselling sessions"]}
+- {id: pmc-ru-01, institution: punjab-model-college, lang: roman_ur, query: "pre medical ki fees kitni hai", gold: ["Program: FSc Pre-Medical | Fee head: Tuition fee", "FSc Pre-Medical PKR 11,000"]}
+- {id: pmc-ru-02, institution: punjab-model-college, lang: roman_ur, query: "college mein hostel hai?", gold: ["The college has no hostel"]}
+- {id: pmc-ru-03, institution: punjab-model-college, lang: roman_ur, query: "90% walon ko scholarship kitni milti hai", gold: ["50% tuition waiver"]}
+- {id: pmc-ru-04, institution: punjab-model-college, lang: roman_ur, query: "ICS ke liye kitne number chahiye", gold: ["FSc Pre-Engineering and ICS: at least 60%"]}
+- {id: pmc-ru-05, institution: punjab-model-college, lang: roman_ur, query: "classes kab shuru hongi", gold: ["Classes begin on 1 October", "Event: Classes begin"]}
+- {id: pmc-ru-06, institution: punjab-model-college, lang: roman_ur, query: "merit list kahan lagti hai", gold: ["Merit lists are displayed on the notice board"]}
+- {id: lits-en-01, institution: lits-university, lang: en, query: "What is the BS Computer Science fee per semester?", gold: ["Program: BS Computer Science | Fee head: Tuition fee", "BS Computer Science PKR 145,000"]}
+- {id: lits-en-02, institution: lits-university, lang: en, query: "How do I apply online?", gold: ["admissions.lits.edu.pk/apply"]}
+- {id: lits-en-03, institution: lits-university, lang: en, query: "What does the entry test cover?", gold: ["entry test covers Mathematics, English and Analytical Reasoning"]}
+- {id: lits-en-04, institution: lits-university, lang: en, query: "How is merit calculated?", gold: ["Merit = 50% FSc/Intermediate marks"]}
+- {id: lits-en-05, institution: lits-university, lang: en, query: "How much are the hostel charges?", gold: ["Shared room: PKR 35,000 per semester"]}
+- {id: lits-en-06, institution: lits-university, lang: en, query: "Is need-based financial aid available?", gold: ["Need-based financial aid covers up to 100%"]}
+- {id: lits-ur-01, institution: lits-university, lang: ur, query: "بی ایس کمپیوٹر سائنس کی فیس کتنی ہے؟", gold: ["Program: BS Computer Science | Fee head: Tuition fee", "BS Computer Science PKR 145,000"]}
+- {id: lits-ur-02, institution: lits-university, lang: ur, query: "ہاسٹل کی فیس کتنی ہے؟", gold: ["Shared room: PKR 35,000"]}
+- {id: lits-ur-03, institution: lits-university, lang: ur, query: "انٹری ٹیسٹ میں کیا آتا ہے؟", gold: ["entry test covers"]}
+- {id: lits-ur-04, institution: lits-university, lang: ur, query: "اسکالرشپ کیسے ملتی ہے؟", gold: ["Merit scholarships of 25% to 75%", "Need-based financial aid"]}
+- {id: lits-ur-05, institution: lits-university, lang: ur, query: "آن لائن اپلائی کیسے کریں؟", gold: ["admissions.lits.edu.pk/apply"]}
+- {id: lits-ur-06, institution: lits-university, lang: ur, query: "میرٹ لسٹیں کتنی آتی ہیں؟", gold: ["Three merit lists are published", "Event: First merit list"]}
+- {id: lits-ru-01, institution: lits-university, lang: roman_ur, query: "bs cs ki semester fees kitni hai", gold: ["Program: BS Computer Science | Fee head: Tuition fee", "BS Computer Science PKR 145,000"]}
+- {id: lits-ru-02, institution: lits-university, lang: roman_ur, query: "hostel ki fees kitni hai", gold: ["Shared room: PKR 35,000"]}
+- {id: lits-ru-03, institution: lits-university, lang: roman_ur, query: "entry test mein kya aata hai", gold: ["entry test covers"]}
+- {id: lits-ru-04, institution: lits-university, lang: roman_ur, query: "online apply kaise karun", gold: ["admissions.lits.edu.pk/apply"]}
+- {id: lits-ru-05, institution: lits-university, lang: roman_ur, query: "scholarship kaise milegi", gold: ["Merit scholarships of 25% to 75%", "Need-based financial aid"]}
+- {id: lits-ru-06, institution: lits-university, lang: roman_ur, query: "kitni merit lists lagti hain", gold: ["Three merit lists are published", "Event: First merit list"]}
+- {id: lits-ru-07, institution: lits-university, lang: roman_ur, query: "apply karne ki last date kya hai", gold: ["Last date to apply (Fall 2027)"]}

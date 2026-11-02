@@ -51,8 +51,15 @@ def test_prod_rejects_placeholder_secret_and_missing_keys(monkeypatch: pytest.Mo
 
 
 def test_prod_accepts_real_settings() -> None:
-    s = make(env="prod", anthropic_api_key="sk-a", voyage_api_key="pa-v")
+    s = make(
+        env="prod", anthropic_api_key="sk-a", voyage_api_key="pa-v", embedding_provider="voyage"
+    )
     assert s.env == "prod"
+
+
+def test_prod_rejects_fake_embeddings() -> None:
+    with pytest.raises(ValidationError, match="EMBEDDING_PROVIDER=fake"):
+        make(env="prod", anthropic_api_key="sk-a", voyage_api_key="pa-v")
 
 
 def test_secrets_are_not_leaked_in_repr() -> None:

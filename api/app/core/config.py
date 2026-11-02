@@ -46,6 +46,17 @@ class Settings(BaseSettings):
 
     anthropic_api_key: SecretStr | None = None
     voyage_api_key: SecretStr | None = None
+
+    # Knowledge base (Phase 2, PLAN §5 KNOW)
+    blob_backend: Literal["local", "s3"] = "local"
+    blob_dir: Path = REPO_ROOT / "var" / "blobs"
+    kb_max_upload_mb: int = 25
+    # D-01: voyage (once confirmed) | bge_m3 (self-hosted TEI) | fake (tests/dev, no spend)
+    embedding_provider: Literal["fake", "voyage", "bge_m3"] = "fake"
+    embedding_model: str = "voyage-3.5"
+    bge_m3_url: str | None = None
+    kb_facts_llm: bool = False  # Opus facts extraction at ingestion (spends tokens)
+    kb_vision_ocr: bool = False  # Opus vision transcription of flagged PDF pages
     stt_provider: str = "openai"
     stt_api_key: SecretStr | None = None
 
@@ -76,6 +87,8 @@ class Settings(BaseSettings):
         for name in ("anthropic_api_key", "voyage_api_key"):
             if getattr(self, name) is None:
                 problems.append(f"{name.upper()} is required in prod")
+        if self.embedding_provider == "fake":
+            problems.append("EMBEDDING_PROVIDER=fake is not allowed in prod")
         if problems:
             raise ValueError("Invalid production settings: " + "; ".join(problems))
         return self

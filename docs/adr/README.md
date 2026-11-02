@@ -6,3 +6,4 @@ decision needs more rationale than one table row. Format: Context â†’ Decision â
 | ADR | Title | Status |
 |---|---|---|
 | [0001](0001-free-hosting-netlify.md) | Free hosting: Netlify for frontends, separate free backend host | accepted (backend host chosen in 9.1) |
+| [0002](0002-embeddings.md) | Embeddings provider (Voyage default, bge-m3 alt) + bake-off method | proposed (D-01) |

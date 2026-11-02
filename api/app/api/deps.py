@@ -14,9 +14,9 @@ import uuid
 from collections.abc import AsyncIterator, Callable, Coroutine
 from typing import Annotated, Any
 
+from arq.connections import ArqRedis
 from fastapi import Depends, Header, HTTPException, Request, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
-from redis.asyncio import Redis
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -24,6 +24,7 @@ from app.core.config import Settings
 from app.core.security import TokenError, decode_access_token
 from app.core.tenancy import TenantContext, scope_to_admin, scope_to_tenant
 from app.db.session import get_session
+from app.kb.blobstore import BlobStore
 from app.models.core import Membership, User
 from app.services.audit import MUTATING, audit
 
@@ -39,13 +40,19 @@ def get_settings_dep(request: Request) -> Settings:
     return settings
 
 
-def get_redis(request: Request) -> Redis:
-    redis: Redis = request.app.state.resources.redis
+def get_redis(request: Request) -> ArqRedis:
+    redis: ArqRedis = request.app.state.resources.redis
     return redis
 
 
+def get_blobstore(request: Request) -> BlobStore:
+    store: BlobStore = request.app.state.resources.blobstore
+    return store
+
+
 SettingsDep = Annotated[Settings, Depends(get_settings_dep)]
-RedisDep = Annotated[Redis, Depends(get_redis)]
+RedisDep = Annotated[ArqRedis, Depends(get_redis)]
+BlobStoreDep = Annotated[BlobStore, Depends(get_blobstore)]
 
 
 def _unauthorized(detail: str = "Not authenticated") -> HTTPException:

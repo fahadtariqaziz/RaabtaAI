@@ -7,9 +7,11 @@
 
 import asyncio
 import os
+import tempfile
 import uuid
 from collections.abc import Coroutine, Iterator
 from dataclasses import dataclass
+from pathlib import Path
 from typing import Any
 
 import pytest
@@ -42,6 +44,8 @@ def it_settings() -> Settings:
         database_url=db,
         redis_url=redis,
         jwt_secret="test-secret-0123456789abcdef0123456789",  # noqa: S106
+        blob_dir=Path(tempfile.mkdtemp(prefix="raabta-blobs-")),
+        embedding_provider="fake",
     )
 
 
@@ -138,3 +142,40 @@ def login(client: TestClient, email: str, password: str = PASSWORD) -> dict[str,
 def auth_headers(client: TestClient, email: str, institution_id: uuid.UUID) -> dict[str, str]:
     token = login(client, email)["access_token"]
     return {"Authorization": f"Bearer {token}", "X-Institution": str(institution_id)}
+
+
+async def ingest(
+    settings: Settings, institution_id: uuid.UUID, document_id: uuid.UUID, **kw: Any
+) -> str:
+    """Run the KB pipeline in-process (what the arq job does) on a throwaway engine."""
+    from app.kb.blobstore import make_blobstore
+    from app.kb.embeddings import make_provider
+    from app.kb.ingest import IngestDeps, ingest_document
+
+    engine = create_async_engine(settings.database_url, poolclass=NullPool)
+    try:
+        deps = IngestDeps(
+            sessionmaker=make_sessionmaker(engine),
+            blobstore=make_blobstore(settings),
+            settings=kw.pop("override_settings", settings),
+            provider=make_provider(settings),
+            llm=kw.pop("llm", None),
+        )
+        return await ingest_document(deps, institution_id, document_id)
+    finally:
+        await engine.dispose()
+
+
+def upload(
+    client: TestClient,
+    headers: dict[str, str],
+    path_or_bytes: Path | bytes,
+    filename: str | None = None,
+    title: str | None = None,
+) -> Any:
+    data = path_or_bytes.read_bytes() if isinstance(path_or_bytes, Path) else path_or_bytes
+    name = filename or (path_or_bytes.name if isinstance(path_or_bytes, Path) else "upload.bin")
+    form = {"title": title} if title else None
+    return client.post(
+        "/api/v1/kb/documents", headers=headers, files={"file": (name, data)}, data=form
+    )

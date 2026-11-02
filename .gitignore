@@ -24,3 +24,10 @@ next-env.d.ts
 .DS_Store
 .idea/
 .vscode/
+
+# Local blob store (uploaded documents)
+var/
+
+# Eval reports (generated)
+api/evals/reports/*
+!api/evals/reports/.gitkeep

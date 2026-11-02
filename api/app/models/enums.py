@@ -19,3 +19,19 @@ LEAD_STATUSES = ("new", "contacted", "visit_booked", "applied", "admitted", "los
 SLOT_KINDS = ("visit", "test", "counselling")
 BOOKING_STATUSES = ("booked", "confirmed", "cancelled", "attended", "no_show")
 FOLLOWUP_STATUSES = ("pending", "sent", "cancelled", "failed")
+DOCUMENT_KINDS = ("pdf", "docx", "xlsx", "csv")
+# Pipeline order (PLAN §5 STEER): uploaded → parsing → chunking → embedding → extracting → ready.
+DOCUMENT_STATUSES = (
+    "uploaded",
+    "parsing",
+    "chunking",
+    "embedding",
+    "extracting",
+    "ready",
+    "failed",
+    "superseded",
+)
+CHUNK_LANGS = ("en", "ur", "roman_ur", "mixed")
+FACT_STATUSES = ("pending", "approved", "rejected", "superseded")
+FACT_ORIGINS = ("table", "llm", "seed", "manual")
+FEE_FREQUENCIES = ("one_time", "monthly", "quarterly", "annual", "per_semester")

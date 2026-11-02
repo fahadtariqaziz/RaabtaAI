@@ -42,3 +42,14 @@ reset_test_db() { # recreate raabta_test and migrate it to head
 api_quality() { # ruff + format + mypy + unit tests
   cd "$ROOT/api" && uv run ruff check . && uv run ruff format --check . && uv run mypy && uv run pytest
 }
+
+# CLI/worker env against the disposable test DB (fake embeddings → no spend; temp blob dir).
+kb_test_env() {
+  export DATABASE_URL="$IT_APP_DATABASE_URL" REDIS_URL="$IT_REDIS_URL" EMBEDDING_PROVIDER=fake \
+    KB_FACTS_LLM=0 KB_VISION_OCR=0 BLOB_DIR="${BLOB_DIR:-/tmp/raabta-blobs-test}"
+}
+
+seed_and_ingest_test_db() { # demo institutions + their documents through the KB pipeline
+  kb_test_env && cd "$ROOT/api" && uv run python -m app.cli seed >/dev/null &&
+    uv run python -m app.cli ingest-seeds
+}
