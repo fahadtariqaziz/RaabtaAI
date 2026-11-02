@@ -10,10 +10,10 @@
 
 | Field | Value |
 |---|---|
-| Phase / step in progress | **Phase 1 · Step 1.2** (auth & RBAC) — not started |
-| Last completed step | 1.1 Core tables & Alembic baseline (2026-11-02); Phase 0 fully ☑ |
-| Last verification run | `bash scripts/verify/p1_s1.sh` → OK 7/7 (5 migration integration tests ran, 0 skipped) (2026-11-02) |
-| Next action | Start 1.2: argon2 hashing, login/refresh (rotating httpOnly cookie) + 15-min access JWT, `require_role`, `X-Institution` membership check, invitations, Redis lockout; write + run `p1_s2.sh` |
+| Phase / step in progress | **Phase 2 · Step 2.1** (document upload & storage) — not started |
+| Last completed step | 1.7 Tenant isolation suite (2026-11-02); **Phase 0 + Phase 1 fully ☑** |
+| Last verification run | `bash scripts/verify/all.sh` → p0_s1–p0_s6 + p1_s1–p1_s7 all OK (2026-11-02) |
+| Next action | Read Phase 2 block + PLAN §5 KNOW; start 2.1. Before 2.4: user confirms D-01 (embeddings). New tenant tables must use `TenantMixin` + `enable_rls()` in their migration (coverage lint fails otherwise); new routes must be added to `tests/isolation/test_endpoints.py` (ID_RESOLVERS / SAMPLE_BODIES / PUBLIC_ROUTES) |
 | Blocked on user | Nothing for Phases 1–5. Live WhatsApp sends blocked until Meta business verification (U-01, I-07); user has no business-name documents yet → build Phase 6 against recorded webhook payloads |
 | Open decisions needing user confirmation | D-05 pricing (recompute after 3.9 evals with hybrid), D-01 embeddings, D-02 STT, D-03 WhatsApp number model (see §5); D-04 decided (Netlify, at the end) |
 
@@ -40,8 +40,8 @@ Verify-script conventions: `scripts/verify/pN_sM.sh` sources `scripts/verify/_li
 
 | Phase | Goal | Steps | Status |
 |---|---|---|---|
-| 0 Foundations | scaffold, tooling, compose, config, CI, Meta kickoff | 0.0–0.6 (7) | ◐ (0.0 ☑) |
-| 1 Data & multi-tenancy | models, migrations, RLS, auth/RBAC, seeds, isolation tests | 1.1–1.7 (7) | ☐ |
+| 0 Foundations | scaffold, tooling, compose, config, CI, Meta kickoff | 0.0–0.6 (7) | ☑ |
+| 1 Data & multi-tenancy | models, migrations, RLS, auth/RBAC, seeds, isolation tests | 1.1–1.7 (7) | ☑ (2026-11-02) |
 | 2 Knowledge base | ingestion, chunking, embeddings, hybrid search, facts, citations | 2.1–2.8 (8) | ☐ |
 | 3 Agent core + evals | Claude wrapper, prompts, skills, tools, graph, guards, context, eval harness, CLI | 3.1–3.10 (10) | ☐ |
 | 4 Widget + chat API | public chat API (SSE), widget bundle, booking/lead UI, embed tests | 4.1–4.4 (4) | ☐ |
@@ -146,59 +146,59 @@ Ordering rationale: KB (2) precedes agent (3) because grounding depends on retri
 - Commit: `feat(db): core tenant tables and alembic baseline`
 - Done notes: `app/db/base.py` (naming convention for stable constraint names, `UUIDPkMixin` w/ `gen_random_uuid()`, `TimestampsMixin`, `TenantMixin`, `enum_check` = VARCHAR+CHECK; allowed values in `app/models/enums.py`). Models in `app/models/core.py` (+ `users.email` must be lowercase CHECK; `usage_daily` PK (institution_id, date)). `app/db/session.py` `get_session` dependency (one transaction per request); `Resources` now holds `sessionmaker`. Alembic async in `api/migrations/` (URL: `-x url=` > `MIGRATIONS_DATABASE_URL` > .env; post-write hook runs ruff format); migration `0001` also creates extensions (not dropped on downgrade). Tests use a disposable DB `raabta_test` (recreated by the verify script); dev DB migrated with `make migrate`. Verify uses compose Postgres instead of testcontainers (faster, same image).
 
-#### 1.2 Auth & RBAC — ☐
+#### 1.2 Auth & RBAC — ☑ (2026-11-02)
 - PLAN §4 (Auth), §18
 - Sub-steps:
-  - 1.2.1 ☐ argon2 password hashing; login/logout/refresh (rotating refresh in httpOnly cookie); access JWT 15m
-  - 1.2.2 ☐ `require_role(owner|admin|staff)` dependency; `require_superadmin`; active institution from `X-Institution` validated against membership
-  - 1.2.3 ☐ invitations (create, accept), lockout after 10 failures (Redis), password rules
-  - 1.2.4 ☐ `app/api/auth.py`, `members.py`; audit rows on member changes
+  - 1.2.1 ☑ argon2 password hashing; login/logout/refresh (rotating refresh in httpOnly cookie); access JWT 15m
+  - 1.2.2 ☑ `require_role(owner|admin|staff)` dependency; `require_superadmin`; active institution from `X-Institution` validated against membership
+  - 1.2.3 ☑ invitations (create, accept), lockout after 10 failures (Redis), password rules
+  - 1.2.4 ☑ `app/api/auth.py`, `members.py`; audit rows on member changes
 - Acceptance: tests for login, refresh rotation, role gating (403), invitation flow, lockout
 - Verify: `scripts/verify/p1_s2.sh` — `pytest tests/integration/test_auth.py tests/integration/test_members.py`
 - Commit: `feat(auth): jwt sessions, rbac and invitations`
-
-#### 1.3 Tenant context & Row-Level Security — ☐
+- Done notes: `app/core/security.py` (argon2id, rules: ≥10 chars, letters+digits, ≠ email; HS256 access JWT `sub/typ/iat/exp/jti`, no institution claim). `app/services/auth_tokens.py`: refresh tokens = opaque, Redis (`auth:rt:<sha256>`), rotation via atomic GETDEL, **reuse of a consumed token revokes the whole login family**; lockout per email-hash (10 fails / 15 min → 429 + Retry-After). Cookie `raabta_rt` httpOnly, SameSite=strict, Path=/api/v1/auth, Secure in prod. `app/api/deps.py`: `SessionDep` uses `Depends(get_session, scope="function")` — **commit before the response is sent** (FastAPI 0.162 default would commit after); `StaffCtx/AdminCtx/OwnerCtx` (rank owner>admin>staff); `X-Institution` missing/invalid → 400, not a member → 403. Invites: token hash + expiry on `memberships` (migration 0002); API returns `invite_url` (admin `/invite/accept#token=…`) — **no email sending in MVP**, admin shares the link; existing users accept with their current password. Owner rules: only owners grant/change/remove owner; ≥1 active owner kept (409). All routes under `/api/v1`.
+#### 1.3 Tenant context & Row-Level Security — ☑ (2026-11-02)
 - PLAN §18
 - Sub-steps:
-  - 1.3.1 ☐ DB roles `app_tenant` (RLS enforced) and `app_admin` (bypass); migration enabling RLS + policies on all tenant tables (template helper `enable_rls(table)`)
-  - 1.3.2 ☐ `app/core/tenancy.py`: per-request `SET LOCAL app.institution_id` + `SET LOCAL ROLE app_tenant`; worker helper `tenant_session(institution_id)`
-  - 1.3.3 ☐ ORM mixin auto-filter as second layer; lint rule/test that every tenant model has RLS policy
+  - 1.3.1 ☑ DB roles `app_tenant` (RLS enforced) and `app_admin` (bypass); migration enabling RLS + policies on all tenant tables (template helper `enable_rls(table)`)
+  - 1.3.2 ☑ `app/core/tenancy.py`: per-request `SET LOCAL app.institution_id` + `SET LOCAL ROLE app_tenant`; worker helper `tenant_session(institution_id)`
+  - 1.3.3 ☑ ORM mixin auto-filter as second layer; lint rule/test that every tenant model has RLS policy
 - Acceptance: query without GUC returns zero rows; cross-tenant insert rejected; superadmin path explicit
 - Verify: `scripts/verify/p1_s3.sh` — `pytest tests/isolation/test_rls_basics.py`
 - Commit: `feat(db): row-level security and tenant request context`
-
-#### 1.4 Conversation domain tables — ☐
+- Done notes: migration `0002` creates roles if missing (never dropped): `app_tenant` NOBYPASSRLS, `app_admin` BYPASSRLS, granted to `raabta_app` (admin WITH INHERIT FALSE) — **creating a BYPASSRLS role needs a superuser migration role** (true in compose; check at 9.1 hosting). SQL fn `app_current_institution()` = `NULLIF(current_setting('app.institution_id', true),'')::uuid`; `app/db/rls.py` `enable_rls(table)` = ENABLE + FORCE + one policy (USING + WITH CHECK); `GLOBAL_TABLES` allowlist (plans, users, webhook_events, LangGraph tables). `institutions` policy is on `id`. `users` is global on purpose (identity); tenants reach users only via memberships. Tenancy modes per transaction: `scope_to_tenant` (role + GUC via `set_config(..., true)` + ORM filter) / `scope_to_admin` (explicit, grep-able); switching tenant→admin or tenant A→B raises `TenancyError`; scope is cleared on outermost transaction end (event). ORM layer: `with_loader_criteria(TenantMixin, …)` on SELECT/UPDATE/DELETE + `before_flush` stamps/validates `institution_id` (AuditLog/UsageDaily are not TenantMixin → routes filter explicitly + RLS). Coverage lint: `test_every_tenant_table_has_rls_policy` (any table with `institution_id` must have forced RLS + policy).
+#### 1.4 Conversation domain tables — ☑ (2026-11-02)
 - PLAN §13
-- Sub-steps: 1.4.1 ☐ `contacts`, `conversations`, `messages`, `llm_runs`, `leads`, `slots`, `bookings`, `followups`; 1.4.2 ☐ migration `0002_conversations`; 1.4.3 ☐ repositories/services with tenant scoping; 1.4.4 ☐ LangGraph checkpoint tables created via `AsyncPostgresSaver.setup()` in migration or startup
+- Sub-steps: 1.4.1 ☑ `contacts`, `conversations`, `messages`, `llm_runs`, `leads`, `slots`, `bookings`, `followups`; 1.4.2 ☑ migration `0003_conversation_domain_tables` (0002 went to auth/RLS); 1.4.3 ☑ repositories/services with tenant scoping; 1.4.4 ☑ LangGraph checkpoint tables created in migration
 - Acceptance: CRUD tests; unique `(institution_id, wa_id)`; indexes present
 - Verify: `scripts/verify/p1_s4.sh` — `pytest tests/integration/test_conversation_models.py`
 - Commit: `feat(db): contacts, conversations, messages, leads, slots`
-
-#### 1.5 Seed three demo institutions — ☐
+- Done notes: models in `app/models/conversations.py`; all 8 tables RLS'd in 0003. `messages.seq` (BIGINT identity) = transcript order (timestamps tie inside a transaction). `conversations.thread_id = "{institution_id}:{contact_id}"` (not unique: shared across a contact's conversations). `messages.wa_message_id` unique; `(conversation_id, client_msg_id)` unique (widget idempotency). Slots: CHECK `0 ≤ booked_count ≤ capacity`; `services/bookings.book_slot` = one atomic `UPDATE … WHERE booked_count < capacity RETURNING` (6-char codes without 0/O/1/I). `services/conversations.py`: get_or_create_contact / open_conversation / add_message / list_messages (tenant session required). **LangGraph tables**: `PostgresSaver.setup()` uses `CREATE INDEX CONCURRENTLY`, which deadlocks inside a migration → 0003 replays the library's `MIGRATIONS` list without CONCURRENTLY and records versions in `checkpoint_migrations` (later `setup()` = no-op / only newer migrations); excluded from autogenerate via `include_name` in `migrations/env.py`.
+#### 1.5 Seed three demo institutions — ☑ (2026-11-02)
 - PLAN §1 (demo data), §13
 - Sub-steps:
-  - 1.5.1 ☐ `seeds/abc_grammar_school/` — profile (Lahore, school, tz, hours, quiet hours), classes Playgroup→Matric, fee structure XLSX (admission PKR 25,000; security 20,000 refundable; monthly 9,500–16,500 by class; annual charges 12,000; transport routes: DHA, Gulberg, Johar Town, Model Town PKR 6,000–8,500/month), prospectus DOCX (campus, timings, uniform, policies), slots (campus visits Mon–Sat 10:00–13:00), 12 contacts/leads, session 2026–27 dates (admissions Feb–Apr 2027)
-  - 1.5.2 ☐ `seeds/punjab_model_college/` — college: FSc Pre-Med, Pre-Eng, ICS, ICom; eligibility (matric ≥ 60%, pre-med ≥ 70%), fees (admission 15,000; monthly 8,000–11,000), merit-based scholarships (≥ 90% → 50%), counselling slots, admission dates after BISE results (Aug–Sep 2027), hostel: none, transport routes
-  - 1.5.3 ☐ `seeds/lits_university/` — university: BS CS, BS SE, BS BBA, BS EE, MS CS; eligibility (FSc ≥ 50–60%, entry test), semester fees (BS CS PKR 145,000/semester; BBA 120,000), merit list rounds, deadlines (Fall 2027: apply by 15 Jul), hostel PKR 35,000/semester, scholarships (need-based up to 100%, merit 25–75%), online application URL
-  - 1.5.4 ☐ `scripts/seed.sh` / `app/cli.py seed --institution all --reset`; demo users (owner/admin/staff per institution, superadmin)
+  - 1.5.1 ☑ `seeds/abc_grammar_school/` — profile (Lahore, school, tz, hours, quiet hours), classes Playgroup→Matric, fee structure XLSX (admission PKR 25,000; security 20,000 refundable; monthly 9,500–16,500 by class; annual charges 12,000; transport routes: DHA, Gulberg, Johar Town, Model Town PKR 6,000–8,500/month), prospectus DOCX (campus, timings, uniform, policies), slots (campus visits Mon–Sat 10:00–13:00), 12 contacts/leads, session 2026–27 dates (admissions Feb–Apr 2027)
+  - 1.5.2 ☑ `seeds/punjab_model_college/` — college: FSc Pre-Med, Pre-Eng, ICS, ICom; eligibility (matric ≥ 60%, pre-med ≥ 70%), fees (admission 15,000; monthly 8,000–11,000), merit-based scholarships (≥ 90% → 50%), counselling slots, admission dates after BISE results (Aug–Sep 2027), hostel: none, transport routes
+  - 1.5.3 ☑ `seeds/lits_university/` — university: BS CS, BS SE, BS BBA, BS EE, MS CS; eligibility (FSc ≥ 50–60%, entry test), semester fees (BS CS PKR 145,000/semester; BBA 120,000), merit list rounds, deadlines (Fall 2027: apply by 15 Jul), hostel PKR 35,000/semester, scholarships (need-based up to 100%, merit 25–75%), online application URL
+  - 1.5.4 ☑ `scripts/seed.sh` / `app/cli.py seed --institution all --reset`; demo users (owner/admin/staff per institution, superadmin)
 - Acceptance: seed idempotent; 3 institutions + users + facts rows + documents files on disk (ingestion runs in Phase 2)
 - Verify: `scripts/verify/p1_s5.sh` — run seed twice; counts match expected; login as each demo user via test client
 - Commit: `feat(seeds): three demo institutions with realistic PKR data`
-
-#### 1.6 Audit log & usage events plumbing — ☐
+- Done notes: one `api/seeds/<name>/seed.yaml` per institution (validated by `app/seeds/schema.py`) = single source for profile, users, slot rules, contacts+leads, **facts** (fee_items, programs, transport, key dates, scholarships) and prospectus text; `docs/fee_structure.xlsx` + `docs/prospectus.docx` are generated from it (`uv run python -m app.cli seed-docs [--force]`; Urdu sections right-aligned). Facts **rows** can't exist until the facts tables in 2.6 — 2.6.5 should load `seed.yaml` facts / the XLSX into them. Load: `scripts/seed.sh` / `make seed` (`--reset`, `--institution <slug>`): upserts institution/users/memberships, replaces demo tenant data; slots = rule × N weeks from next Monday (local tz → UTC). Counts: ABC 12 contacts/72 visit slots, PMC (Faisalabad) 8/90 counselling, LITS 10/8 entry-test slots. Demo logins: `owner|admin|staff@{abc,pmc,lits}.demo.raabta.pk`, superadmin `super@raabta.pk`, password = `SEED_DEMO_PASSWORD` or dev default `Raabta-demo-2027` (prod refuses without env). Dev DB is seeded.
+#### 1.6 Audit log & usage events plumbing — ☑ (2026-11-02)
 - PLAN §10 (G15), §19
-- Sub-steps: 1.6.1 ☐ `audit(action, entity, before, after)` service + middleware for mutating admin routes; 1.6.2 ☐ `usage_daily` rollup job skeleton (arq cron nightly) + `record_usage()` helper; 1.6.3 ☐ `GET /audit-log`, `GET /usage`
+- Sub-steps: 1.6.1 ☑ `audit(action, entity, before, after)` service + middleware for mutating admin routes; 1.6.2 ☑ `usage_daily` rollup job skeleton (arq cron nightly) + `record_usage()` helper; 1.6.3 ☑ `GET /audit-log`, `GET /usage`
 - Acceptance: member change creates audit row; rollup aggregates sample rows
 - Verify: `scripts/verify/p1_s6.sh` — `pytest tests/integration/test_audit.py tests/integration/test_usage_rollup.py`
 - Commit: `feat(core): audit log and usage rollup`
-
-#### 1.7 Tenant isolation test suite — ☐
+- Done notes: `services/audit.py` `audit()/audit_ctx()/snapshot()` (redacts password/token fields). "Middleware" = router dependency `audit_mutations` (in `api/deps.py`, scope=function): a successful POST/PUT/PATCH/DELETE that didn't call `audit()` gets a generic `"<METHOD> <route>"` row **in the same transaction**; failed requests leave no rows. **Every tenant router must include `dependencies=[audit_mutations]`.** `services/usage.py`: `record_usage()` = upsert-increment (live counters); `rollup_usage(day)` = one SQL statement recomputing the day for all institutions using each institution's timezone, overwrites (idempotent), keeps `fee_recovered_pkr`. Worker: `rollup_usage_job` cron 00:30 Asia/Karachi (yesterday), worker now has DB startup/shutdown. `GET /audit-log` (admin+, newest first, `entity/action/before/limit≤200`), `GET /usage?from&to` (admin+, ≤366 days, + totals).
+#### 1.7 Tenant isolation test suite — ☑ (2026-11-02; 1.7.3 deferred)
 - PLAN §18, §20
-- Sub-steps: 1.7.1 ☐ `tests/isolation/` fixtures: two institutions, users per role; 1.7.2 ☐ parametrized attempts: read/update/delete other tenant's rows via every existing endpoint (auto-discovered from app routes) → expect 404/403 and zero leakage; 1.7.3 ☐ CI job `isolation` required
+- Sub-steps: 1.7.1 ☑ `tests/isolation/` fixtures: two institutions, users per role; 1.7.2 ☑ parametrized attempts: read/update/delete other tenant's rows via every existing endpoint (auto-discovered from app routes) → expect 404/403 and zero leakage; 1.7.3 ⏭ CI job `isolation` — deferred to Phase 8 with the other service-backed CI jobs (minimal-CI decision 2026-11-01; see I-08)
 - Acceptance: 100% of endpoints covered (route coverage assertion), all pass
 - Verify: `scripts/verify/p1_s7.sh` — `pytest -m isolation`
 - Commit: `test: cross-tenant isolation suite`
-
+- Done notes: shared fixtures in `tests/support.py` (`Factory.tenant()/atenant()`, `as_admin`, `as_tenant`, `auth_headers`); integration/isolation conftests re-export them. `tests/isolation/test_endpoints.py` discovers routes from the **OpenAPI schema** (FastAPI 0.162 wraps included routers lazily, `app.routes` doesn't list them). Per tenant route: foreign `X-Institution` → 403 with B unchanged; foreign path ids → 404 with B unchanged; list GETs contain none of B's ids/emails. `test_every_route_is_classified` fails on any new route until it is listed in `PUBLIC_ROUTES` or has `ID_RESOLVERS`/`SAMPLE_BODIES`. Mutation check done: removing the membership filter in `get_tenant` makes 6 cases fail.
 ---
 
 ### Phase 2 — Knowledge base
@@ -605,6 +605,7 @@ Ordering rationale: KB (2) precedes agent (3) because grounding depends on retri
 
 | Date | Session | Step(s) | What was done | Verification | Commit suggested |
 |---|---|---|---|---|---|
+| 2026-11-02 | S2 | 1.2–1.7 | Phase 1 completed: auth (argon2, JWT, Redis rotating refresh + reuse detection, lockout, invites), RBAC deps, roles + RLS (0002) + ORM tenant layer, conversation domain tables + LangGraph tables (0003), demo seeds (3 YAML + generated XLSX/DOCX, `seed` CLI), audit dependency + usage rollup cron + `/audit-log` `/usage`, OpenAPI-driven isolation suite. Fixed along the way: commit-after-response (scope=function), tenant scope cleared before final flush, LangGraph CONCURRENTLY deadlock, message ordering (`seq`) | `all.sh` OK (p0_s1–s6, p1_s1–s7) | see step blocks; one-shot: `feat: phase 1 — auth, rbac, rls, conversation tables, seeds, audit, isolation` |
 | 2026-11-02 | S1 | 0.6, 1.1 | 0.6 closed (keys OK, Meta app created, verification postponed); core models, Alembic async baseline 0001 with extensions, migration round-trip + constraint tests, `make migrate` | `p0_s6` OK (user), `p1_s1` OK 7/7 | `feat(db): core tenant tables and alembic baseline` |
 | 2026-11-01 | S1 | 0.3–0.6 | Settings/registry/logging/readyz (+ secret-safe settings errors); minimal CI (1 workflow, 2 jobs); ADR 0001 Netlify hosting; `.env` + `check_keys`; D-04 updated (Netlify at end, personal email for now) | `all.sh` p0_s1–s5 OK; p0_s6 awaiting user keys | 0.3 `feat(core): settings, model registry and structured logging` · 0.4 `ci: add minimal lint, type, test and build workflow` · 0.5 `docs: add ADR index and free-hosting ADR` · 0.6 `chore: add env template and provider key checker` |
 | 2026-11-01 | S1 | 0.2 | docker-compose (pgvector pg16, redis, api/worker/admin profile), Dockerfiles, init.sql (extensions + non-owner `raabta_app` role), arq worker with `ping` job, `scripts/dev.sh`, `p0_s2.sh`; recorded D-12 = hybrid (user) | `p0_s2.sh` OK 12/12 | `chore: add docker-compose and dev scripts` |
@@ -628,6 +629,8 @@ Ordering rationale: KB (2) precedes agent (3) because grounding depends on retri
 | D-09 | 2026-11-01 | Fee reminders are templates (no LLM); LLM only for replies, tone-checked | decided | PLAN §6.2, §16 |
 | D-10 | 2026-11-01 | Phase order: KB → agent → widget → admin → WhatsApp → fees | decided | HANDOFF §2 |
 | D-11 | 2026-11-01 | Widget uses check-then-send (status events, then approved text) — never stream the unchecked draft | decided (plan review) | PLAN §8, §15.1 |
+| D-13 | 2026-11-02 | Tenancy: runtime login `raabta_app` + per-transaction `SET LOCAL ROLE app_tenant` (RLS) or explicit `app_admin` (BYPASSRLS) for auth lookups/superadmin/seeds/platform jobs; ORM filter as 2nd layer; `users` global | decided (impl.) | PLAN §18; HANDOFF 1.3 notes |
+| D-14 | 2026-11-02 | Refresh tokens + lockout in Redis (no DB table); invites return a shareable link (no email provider in MVP) | decided (impl.) — revisit if email needed | HANDOFF 1.2 notes |
 | D-12 | 2026-11-01 | **Hybrid agent routing**: router `complexity=simple` (FAQ: fees, timings, transport, greetings) → `claude-haiku-5-5` agent with the same tools + answer_check; `complex` (booking, fee module, multi-step, unhappy/escalation, low router confidence) → `claude-opus-5-5`. Eval gate in 3.9 compares simple-route quality Haiku vs Opus; if Haiku fails thresholds, try `claude-sonnet-5-5` for simple route. Implemented via `models_registry` keys `agent_simple` / `agent_complex` | **decided by user 2026-11-01** | PLAN §7, §19; unblocks D-05 |
 
 ---
@@ -642,6 +645,9 @@ Ordering rationale: KB (2) precedes agent (3) because grounding depends on retri
 | I-04 | 2026-11-01 | Minimum cacheable prefix is 512 tokens on Opus/Haiku 5.5 per current docs; design keeps global prompt > 1k anyway | noted |
 | I-06 | 2026-11-01 | `ANTHROPIC_API_KEY` exported in user's `~/.zshrc` overrides `.env` for every process started from that shell; `check_keys` flags it | open (user) |
 | I-07 | 2026-11-02 | Meta test-number send (`hello_world` → user's phone) accepted, then failed via webhook `131031 Business Account locked`; `account_update` event `BUSINESS_VERIFICATION_NEEDED` for WABA `2218657989053365`. So the test number **cannot send until business verification**. User has no SECP/business-name NTN yet. Workaround: develop/test 6.x with recorded webhook payloads + mocked Graph API; real-phone E2E after U-01 | open (user) |
+| I-08 | 2026-11-02 | CI runs no DB-backed tests (minimal CI by user choice) → integration + isolation suites run only via `scripts/verify/*.sh` locally. Add a CI job with postgres(pgvector)+redis services + `infra/db/init.sql` in Phase 8 (was 1.7.3) | open (Phase 8) |
+| I-09 | 2026-11-02 | Migration 0002 creates a BYPASSRLS role → migration role must be superuser (or have BYPASSRLS). Check the free backend host's Postgres allows it at 9.1; fallback = policy-based admin bypass GUC | open (9.1) |
+| I-10 | 2026-11-02 | Superadmin has no tenant access via `X-Institution` (needs membership); impersonation endpoint is step 5.9 | noted |
 | I-05 | 2026-11-01 | Preserved-thinking prefix check is enforced for accounts created on/after 2026-08-31 — confirm account age; design is append-only regardless | open |
 
 ---

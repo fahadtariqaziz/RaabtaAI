@@ -1,0 +1,103 @@
+# Lahore Institute of Technology & Sciences (LITS) — demo tenant (university). Fictional; PKR demo values.
+institution:
+  slug: lits-university
+  name: Lahore Institute of Technology & Sciences
+  type: university
+  city: Lahore
+  timezone: Asia/Karachi
+  languages: [en, ur, roman_ur]
+  quiet_hours: {start: "22:00", end: "09:00"}
+  settings:
+    address: 3-KM Raiwind Road, Lahore
+    phone: "+92 42 111 548 700"
+    website: https://lits.edu.pk
+    apply_url: https://admissions.lits.edu.pk/apply
+    office_hours: Mon–Fri 09:00–17:00, Sat 09:00–13:00
+    cta: apply_online
+    escalation: {fee_disputes: admin, unhappy_parent: owner}
+
+users:
+  - {role: owner, email: owner@lits.demo.raabta.pk, name: Dr. Farah Naz (Registrar)}
+  - {role: admin, email: admin@lits.demo.raabta.pk, name: Hamid Mahmood (Director Admissions)}
+  - {role: staff, email: staff@lits.demo.raabta.pk, name: Sadia Noor (Admissions Officer)}
+
+slots:
+  kind: test
+  weekdays: [sat]
+  times: ["09:00", "12:00"]
+  duration_minutes: 120
+  capacity: 60
+  weeks: 4
+  location: Exam Hall A, Academic Block 2
+
+contacts:
+  - {name: Ali Raza, wa_id: "923009871401", lang: en, lead: {student_name: Ali Raza, interest: BS Computer Science, status: new, source: widget}}
+  - {name: Mariam Iqbal, wa_id: "923219871402", lang: roman_ur, lead: {student_name: Mariam Iqbal, interest: BS Software Engineering, status: contacted, source: whatsapp}}
+  - {name: Hafsa Tariq, wa_id: "923339871403", lang: en, lead: {student_name: Hafsa Tariq, interest: BBA, status: applied, source: widget}}
+  - {name: Shahzad Anwar, wa_id: "923019871404", lang: ur, lead: {student_name: Umer Shahzad, interest: BS Electrical Engineering, status: visit_booked, source: whatsapp}}
+  - {name: Zoha Kamal, wa_id: "923459871405", lang: roman_ur, lead: {student_name: Zoha Kamal, interest: BS Computer Science, status: new, source: whatsapp}}
+  - {name: Danish Saleem, wa_id: "923129871406", lang: en, lead: {student_name: Danish Saleem, interest: MS Computer Science, status: contacted, source: widget}}
+  - {name: Amna Rasheed, wa_id: "923089871407", lang: roman_ur, lead: {student_name: Amna Rasheed, interest: BS Computer Science, status: admitted, source: whatsapp}}
+  - {name: Junaid Akram, wa_id: "923229871408", lang: en, lead: {student_name: Junaid Akram, interest: BBA, status: lost, source: widget}}
+  - {name: Saba Gul, wa_id: "923319871409", lang: roman_ur, lead: {student_name: Saba Gul, interest: BS Software Engineering, status: new, source: whatsapp}}
+  - {name: Rizwan Haider, wa_id: "923009871410", lang: ur, lead: {student_name: Ahmad Rizwan, interest: BS Electrical Engineering, status: new, source: manual}}
+
+facts:
+  academic_year: "Fall 2027"
+  programs:
+    - {name: BS Computer Science, level: undergraduate, duration: 4 years (8 semesters), eligibility: "FSc Pre-Engineering / ICS / FSc Pre-Medical with Maths, at least 50% marks + LITS entry test", seats: 180}
+    - {name: BS Software Engineering, level: undergraduate, duration: 4 years (8 semesters), eligibility: "FSc Pre-Engineering / ICS, at least 50% marks + LITS entry test", seats: 120}
+    - {name: BS Electrical Engineering, level: undergraduate, duration: 4 years (8 semesters), eligibility: "FSc Pre-Engineering with at least 60% marks (PEC requirement) + entry test", seats: 100}
+    - {name: BBA, level: undergraduate, duration: 4 years (8 semesters), eligibility: "Intermediate (any group) with at least 45% marks + entry test", seats: 150}
+    - {name: MS Computer Science, level: graduate, duration: 2 years (4 semesters), eligibility: "16 years of education in CS/IT, CGPA 2.5+ and GAT-General 50+ or LITS test", seats: 40}
+  fee_items:
+    - {program: All programs, head: Admission fee, amount_pkr: 25000, frequency: one_time, notes: Non-refundable}
+    - {program: All programs, head: Application processing fee, amount_pkr: 3000, frequency: one_time, notes: Paid online with the application}
+    - {program: BS Computer Science, head: Tuition fee, amount_pkr: 145000, frequency: per_semester}
+    - {program: BS Software Engineering, head: Tuition fee, amount_pkr: 140000, frequency: per_semester}
+    - {program: BS Electrical Engineering, head: Tuition fee, amount_pkr: 150000, frequency: per_semester}
+    - {program: BBA, head: Tuition fee, amount_pkr: 120000, frequency: per_semester}
+    - {program: MS Computer Science, head: Tuition fee, amount_pkr: 110000, frequency: per_semester}
+    - {program: Hostel, head: "Hostel fee (shared room, without mess)", amount_pkr: 35000, frequency: per_semester}
+  transport_routes:
+    - {name: Township–Raiwind Road, areas: "Township, Green Town, Thokar Niaz Baig", monthly_pkr: 7500}
+    - {name: Johar Town–Valencia, areas: "Johar Town, Valencia, Wapda Town", monthly_pkr: 8000}
+    - {name: Bahria Town, areas: "Bahria Town, Lake City", monthly_pkr: 6500}
+  key_dates:
+    - {event: Fall 2027 applications open, date: "2027-05-15"}
+    - {event: Last date to apply (Fall 2027), date: "2027-07-15"}
+    - {event: Entry test, date: "2027-07-20", notes: "Computer-based; Maths, English, Analytical; also accepted: NTS NAT/SAT"}
+    - {event: First merit list, date: "2027-07-25"}
+    - {event: Second merit list, date: "2027-08-05"}
+    - {event: Third (final) merit list, date: "2027-08-15"}
+    - {event: Classes begin (Fall 2027), date: "2027-09-01"}
+  scholarships:
+    - {name: Need-based financial aid, rule: "Household income assessment and interview", amount: Up to 100% of tuition}
+    - {name: Merit scholarship, rule: "Based on FSc marks and entry test: 85%+ → 75%, 80–84.99% → 50%, 75–79.99% → 25%", amount: 25–75% of tuition}
+    - {name: Sibling / LITS alumni family, rule: "Sibling currently enrolled or parent an alumnus", amount: 10% of tuition}
+
+prospectus:
+  title: LITS Admissions Guide — Fall 2027
+  sections:
+    - heading: About LITS
+      body: |
+        Lahore Institute of Technology & Sciences is an HEC-recognized private university on Raiwind Road, Lahore, with schools of Computing, Engineering and Business. BS Electrical Engineering is accredited by the Pakistan Engineering Council (PEC).
+    - heading: How to apply
+      body: |
+        Apply online at https://admissions.lits.edu.pk/apply and pay the PKR 3,000 processing fee. Upload your Matric and FSc/Intermediate result cards (or Part-I marks if Part-II result is awaited), CNIC/B-Form and a photograph.
+        Applicants awaiting their Part-II result may apply on the basis of Part-I marks; admission stays provisional until the final result.
+    - heading: Entry test and merit
+      body: |
+        The LITS entry test covers Mathematics, English and Analytical Reasoning. NTS NAT and SAT scores are also accepted.
+        Merit = 50% FSc/Intermediate marks + 40% entry test + 10% Matric marks. Three merit lists are published; seats left after the third list are offered on a waiting-list basis.
+    - heading: Fee structure (per semester)
+      body: |
+        BS Computer Science PKR 145,000. BS Software Engineering PKR 140,000. BS Electrical Engineering PKR 150,000. BBA PKR 120,000. MS Computer Science PKR 110,000.
+        One-time admission fee PKR 25,000. Fees are payable per semester; an installment plan of two parts per semester is available on request.
+    - heading: Scholarships and financial aid
+      body: |
+        Need-based financial aid covers up to 100% of tuition after an income assessment and interview. Merit scholarships of 25% to 75% are awarded automatically on admission merit.
+        Scholarships continue if the student keeps a CGPA of 3.0 or higher.
+    - heading: Hostel
+      body: |
+        Separate hostels for male and female students are on campus. Shared room: PKR 35,000 per semester, mess charges separate. Rooms are allotted after admission on a first-come basis.

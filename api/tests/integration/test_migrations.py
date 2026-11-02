@@ -21,6 +21,16 @@ EXPECTED_TABLES = {
     "usage_daily",
     "users",
     "webhook_events",
+    "contacts",
+    "conversations",
+    "messages",
+    "llm_runs",
+    "leads",
+    "slots",
+    "bookings",
+    "followups",
+    "checkpoints",
+    "checkpoint_writes",
 }
 
 

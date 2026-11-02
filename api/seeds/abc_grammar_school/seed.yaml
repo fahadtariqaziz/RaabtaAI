@@ -1,0 +1,127 @@
+# ABC Grammar School — demo tenant (school). Source of truth for demo data, the generated
+# fee_structure.xlsx / prospectus.docx, and (Phase 2/3) facts + eval expectations.
+# Fictional institution; all numbers are demo values in PKR.
+institution:
+  slug: abc-grammar-school
+  name: ABC Grammar School
+  type: school
+  city: Lahore
+  timezone: Asia/Karachi
+  languages: [en, ur, roman_ur]
+  quiet_hours: {start: "21:00", end: "09:00"}
+  settings:
+    address: 45-B Gulberg III, Lahore
+    phone: "+92 42 3575 1100"
+    website: https://abcgrammar.edu.pk
+    office_hours: Mon–Sat 08:00–15:00
+    school_hours: Mon–Fri 07:45–13:30 (Playgroup–Prep until 12:00)
+    cta: book_campus_visit
+    escalation: {fee_disputes: admin, unhappy_parent: owner}
+
+users:
+  - {role: owner, email: owner@abc.demo.raabta.pk, name: Mrs. Saima Rauf (Principal)}
+  - {role: admin, email: admin@abc.demo.raabta.pk, name: Imran Siddiqui (Admissions Office)}
+  - {role: staff, email: staff@abc.demo.raabta.pk, name: Nadia Akram (Front Desk)}
+
+slots:
+  kind: visit
+  weekdays: [mon, tue, wed, thu, fri, sat]
+  times: ["10:00", "11:00", "12:00"]
+  duration_minutes: 60
+  capacity: 5
+  weeks: 4
+  location: Main campus reception, 45-B Gulberg III
+
+contacts:
+  - {name: Ayesha Malik, wa_id: "923004561201", lang: roman_ur, lead: {student_name: Hamza Malik, interest: Class 3, status: new, source: whatsapp}}
+  - {name: Usman Tariq, wa_id: "923214561202", lang: en, lead: {student_name: Zainab Usman, interest: Playgroup, status: contacted, source: widget}}
+  - {name: فاطمہ نذیر, wa_id: "923334561203", lang: ur, lead: {student_name: علی نذیر, interest: Class 6, status: visit_booked, source: whatsapp}}
+  - {name: Bilal Ahmed, wa_id: "923014561204", lang: roman_ur, lead: {student_name: Ibrahim Bilal, interest: Nursery, status: new, source: whatsapp}}
+  - {name: Sana Javed, wa_id: "923454561205", lang: en, lead: {student_name: Mahnoor Javed, interest: Class 9, status: applied, source: widget}}
+  - {name: Kashif Iqbal, wa_id: "923124561206", lang: roman_ur, lead: {student_name: Ayaan Kashif, interest: Prep, status: contacted, source: whatsapp}}
+  - {name: Rabia Shahid, wa_id: "923084561207", lang: ur, lead: {student_name: Hoorain Shahid, interest: Class 1, status: admitted, source: whatsapp}}
+  - {name: Faisal Qureshi, wa_id: "923224561208", lang: en, lead: {student_name: Rayyan Faisal, interest: Class 7, status: lost, source: widget}}
+  - {name: Nida Hassan, wa_id: "923314561209", lang: roman_ur, lead: {student_name: Eshal Hassan, interest: Class 2, status: new, source: whatsapp}}
+  - {name: Adnan Butt, wa_id: "923004561210", lang: roman_ur, lead: {student_name: Musa Adnan, interest: Class 4, status: visit_booked, source: whatsapp}}
+  - {name: Hira Khalid, wa_id: "923364561211", lang: en, lead: {student_name: Anaya Khalid, interest: Playgroup, status: new, source: widget}}
+  - {name: Tahir Mehmood, wa_id: "923024561212", lang: ur, lead: {student_name: Abdullah Tahir, interest: Class 10, status: contacted, source: manual}}
+
+facts:
+  academic_year: "2026-27"
+  classes: [Playgroup, Nursery, Prep, Class 1, Class 2, Class 3, Class 4, Class 5, Class 6, Class 7, Class 8, Class 9, Class 10]
+  fee_items:
+    - {class_name: All classes, head: Admission fee, amount_pkr: 25000, frequency: one_time, notes: Non-refundable; payable on confirmation of admission}
+    - {class_name: All classes, head: Security deposit, amount_pkr: 20000, frequency: one_time, notes: Refundable on leaving with a clearance certificate}
+    - {class_name: All classes, head: Annual charges, amount_pkr: 12000, frequency: annual, notes: "Charged in April; covers lab, library and activities"}
+    - {class_name: Playgroup, head: Tuition fee, amount_pkr: 9500, frequency: monthly}
+    - {class_name: Nursery, head: Tuition fee, amount_pkr: 9500, frequency: monthly}
+    - {class_name: Prep, head: Tuition fee, amount_pkr: 10500, frequency: monthly}
+    - {class_name: Class 1, head: Tuition fee, amount_pkr: 11500, frequency: monthly}
+    - {class_name: Class 2, head: Tuition fee, amount_pkr: 11500, frequency: monthly}
+    - {class_name: Class 3, head: Tuition fee, amount_pkr: 12500, frequency: monthly}
+    - {class_name: Class 4, head: Tuition fee, amount_pkr: 12500, frequency: monthly}
+    - {class_name: Class 5, head: Tuition fee, amount_pkr: 12500, frequency: monthly}
+    - {class_name: Class 6, head: Tuition fee, amount_pkr: 14500, frequency: monthly}
+    - {class_name: Class 7, head: Tuition fee, amount_pkr: 14500, frequency: monthly}
+    - {class_name: Class 8, head: Tuition fee, amount_pkr: 14500, frequency: monthly}
+    - {class_name: Class 9, head: Tuition fee, amount_pkr: 16500, frequency: monthly}
+    - {class_name: Class 10, head: Tuition fee, amount_pkr: 16500, frequency: monthly}
+  transport_routes:
+    - {name: DHA, areas: "DHA Phase 1–6, Cantt", monthly_pkr: 8500}
+    - {name: Gulberg, areas: "Gulberg I–V, Liberty, Main Boulevard", monthly_pkr: 7000}
+    - {name: Johar Town, areas: "Johar Town, Wapda Town, Expo Centre", monthly_pkr: 6000}
+    - {name: Model Town, areas: "Model Town, Faisal Town, Garden Town", monthly_pkr: 6500}
+  key_dates:
+    - {event: Admissions open (session 2027–28), date: "2027-02-01"}
+    - {event: Admission test — Class 1 to Class 9, date: "2027-03-13", notes: "Saturday 09:00; English, Urdu, Maths"}
+    - {event: Last date to apply, date: "2027-04-30"}
+    - {event: New session begins, date: "2027-04-05"}
+    - {event: Summer vacation, date: "2027-06-01", notes: "Until 2027-07-31"}
+  scholarships:
+    - {name: Sibling discount, rule: "10% tuition discount for the second child, 15% for the third", amount: 10–15% of tuition}
+    - {name: Merit scholarship (Class 6+), rule: "90%+ in the annual exam", amount: 25% of tuition}
+
+prospectus:
+  title: ABC Grammar School — Prospectus 2026–27
+  sections:
+    - heading: Welcome
+      body: |
+        ABC Grammar School has served families in Lahore since 1998. We teach from Playgroup to Class 10 (Matric, BISE Lahore) in a co-educational, English-medium setting with strong Urdu and Islamiat teaching.
+        Our campus at 45-B Gulberg III has air-conditioned classrooms, a science lab, a computer lab, a library and a covered play area.
+    - heading: School timings
+      body: |
+        Classes run Monday to Friday, 07:45 to 13:30. Playgroup, Nursery and Prep finish at 12:00.
+        The admissions office is open Monday to Saturday, 08:00 to 15:00.
+        Winter timings (December–February) start at 08:15.
+    - heading: Admission procedure
+      body: |
+        1. Book a campus visit or collect the admission form from the office (form fee PKR 2,000).
+        2. Playgroup to Prep: interview of the child with a parent. Class 1 to Class 9: written admission test in English, Urdu and Maths.
+        3. Successful candidates receive an offer letter. Admission is confirmed when the admission fee, security deposit and first month's tuition are paid.
+        Documents: B-Form of the child, CNIC copies of both parents, last school's result card and school leaving certificate (Class 1 and above), four passport-size photographs.
+    - heading: Age criteria
+      body: |
+        Playgroup: 2 years 9 months to 3 years 6 months on 1 April. Nursery: 3 years 6 months to 4 years 6 months. Prep: 4 years 6 months to 5 years 6 months.
+    - heading: Fee policy
+      body: |
+        Tuition is billed monthly and is due by the 10th of each month. A late payment surcharge of PKR 500 applies after the due date.
+        Fees can be paid at any Meezan Bank branch using the fee voucher, or through the bank app using the voucher number.
+        Annual charges are billed with the April voucher. The security deposit is refunded within 60 days of the clearance certificate.
+    - heading: Uniform
+      body: |
+        Boys: white shirt with school monogram, grey trousers, navy sweater in winter, black shoes.
+        Girls: white shirt with school monogram, grey skirt or shalwar, navy sweater in winter, black shoes.
+        Uniform is available from the school shop on campus.
+    - heading: Transport
+      body: |
+        Air-conditioned vans run on four routes: DHA, Gulberg, Johar Town and Model Town. Seats are limited and given on a first-come basis. Transport fee is charged for 12 months.
+    - heading: Policies
+      body: |
+        Minimum attendance of 85% is required for promotion. Mobile phones are not allowed in class.
+        Parent–teacher meetings are held after every term. The school follows the Punjab Curriculum and Textbook Board syllabus with Oxford supplementary books.
+    - heading: داخلہ کا طریقہ کار
+      lang: ur
+      body: |
+        داخلہ فارم اسکول کے دفتر سے پیر تا ہفتہ صبح آٹھ بجے سے سہ پہر تین بجے تک حاصل کیا جا سکتا ہے۔
+        کلاس اول سے نہم تک داخلہ ٹیسٹ انگریزی، اردو اور ریاضی میں ہوتا ہے۔
+        داخلہ فیس، سیکیورٹی اور پہلے مہینے کی ٹیوشن فیس جمع کروانے پر داخلہ کنفرم ہو جاتا ہے۔

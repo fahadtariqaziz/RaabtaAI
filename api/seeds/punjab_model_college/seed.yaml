@@ -1,0 +1,104 @@
+# Punjab Model College — demo tenant (college, intermediate FSc/ICS/ICom). Fictional; PKR demo values.
+institution:
+  slug: punjab-model-college
+  name: Punjab Model College
+  type: college
+  city: Faisalabad
+  timezone: Asia/Karachi
+  languages: [en, ur, roman_ur]
+  quiet_hours: {start: "21:00", end: "09:00"}
+  settings:
+    address: 12 Susan Road, Madina Town, Faisalabad
+    phone: "+92 41 871 2200"
+    website: https://pmc.edu.pk
+    office_hours: Mon–Sat 08:30–16:00
+    college_hours: Mon–Sat 08:00–14:00
+    cta: book_counselling
+    hostel: none
+    escalation: {fee_disputes: admin, unhappy_parent: owner}
+
+users:
+  - {role: owner, email: owner@pmc.demo.raabta.pk, name: Prof. Javed Akhtar (Principal)}
+  - {role: admin, email: admin@pmc.demo.raabta.pk, name: Shazia Parveen (Admissions In-charge)}
+  - {role: staff, email: staff@pmc.demo.raabta.pk, name: Waqas Ali (Counselling Desk)}
+
+slots:
+  kind: counselling
+  weekdays: [mon, tue, wed, thu, fri]
+  times: ["11:00", "11:30", "12:00", "12:30", "13:00", "13:30"]
+  duration_minutes: 30
+  capacity: 3
+  weeks: 3
+  location: Counselling room, admin block
+
+contacts:
+  - {name: Muhammad Asif, wa_id: "923006781301", lang: roman_ur, lead: {student_name: Hassan Asif, interest: FSc Pre-Medical, status: new, source: whatsapp}}
+  - {name: Rukhsana Bibi, wa_id: "923216781302", lang: ur, lead: {student_name: Iqra Rukhsana, interest: FSc Pre-Medical, status: contacted, source: whatsapp}}
+  - {name: Ahmed Raza, wa_id: "923336781303", lang: en, lead: {student_name: Talha Raza, interest: ICS, status: visit_booked, source: widget}}
+  - {name: Shabana Yousaf, wa_id: "923016781304", lang: roman_ur, lead: {student_name: Laiba Yousaf, interest: ICom, status: new, source: whatsapp}}
+  - {name: Zahid Hussain, wa_id: "923456781305", lang: roman_ur, lead: {student_name: Ali Zahid, interest: FSc Pre-Engineering, status: applied, source: whatsapp}}
+  - {name: Nasreen Akhtar, wa_id: "923126781306", lang: ur, lead: {student_name: Maryam Nasreen, interest: FSc Pre-Medical, status: admitted, source: manual}}
+  - {name: Kamran Shah, wa_id: "923086781307", lang: en, lead: {student_name: Daniyal Kamran, interest: ICS, status: lost, source: widget}}
+  - {name: Tariq Mehmood, wa_id: "923226781308", lang: roman_ur, lead: {student_name: Hamna Tariq, interest: FSc Pre-Engineering, status: contacted, source: whatsapp}}
+
+facts:
+  academic_year: "2027-29"
+  programs:
+    - {name: FSc Pre-Medical, level: intermediate, duration: 2 years, eligibility: "Matric (Science) with at least 70% marks", seats: 240}
+    - {name: FSc Pre-Engineering, level: intermediate, duration: 2 years, eligibility: "Matric (Science) with at least 60% marks", seats: 200}
+    - {name: ICS (Computer Science), level: intermediate, duration: 2 years, eligibility: "Matric (Science) with at least 60% marks", seats: 120}
+    - {name: ICom, level: intermediate, duration: 2 years, eligibility: "Matric (any group) with at least 60% marks", seats: 80}
+  fee_items:
+    - {program: All programs, head: Admission fee, amount_pkr: 15000, frequency: one_time, notes: Non-refundable}
+    - {program: All programs, head: Board registration & exam fee, amount_pkr: 6500, frequency: annual, notes: Collected on behalf of BISE Faisalabad}
+    - {program: FSc Pre-Medical, head: Tuition fee, amount_pkr: 11000, frequency: monthly}
+    - {program: FSc Pre-Engineering, head: Tuition fee, amount_pkr: 10500, frequency: monthly}
+    - {program: ICS (Computer Science), head: Tuition fee, amount_pkr: 9500, frequency: monthly}
+    - {program: ICom, head: Tuition fee, amount_pkr: 8000, frequency: monthly}
+  transport_routes:
+    - {name: Peoples Colony, areas: "Peoples Colony 1 & 2, D-Ground", monthly_pkr: 4500}
+    - {name: Jaranwala Road, areas: "Jaranwala Road, Abdullahpur, Eden Valley", monthly_pkr: 5500}
+    - {name: Satiana Road, areas: "Satiana Road, Gulistan Colony", monthly_pkr: 5000}
+    - {name: Canal Road, areas: "Canal Road, Canal Park, Wapda City", monthly_pkr: 4000}
+  key_dates:
+    - {event: "Matric result (BISE Faisalabad, expected)", date: "2027-08-14"}
+    - {event: Admissions open, date: "2027-08-20", notes: "Provisional admission on Matric marks"}
+    - {event: First merit list, date: "2027-09-05"}
+    - {event: Last date to apply, date: "2027-09-20"}
+    - {event: Classes begin, date: "2027-10-01"}
+  scholarships:
+    - {name: Merit scholarship (90%+), rule: "Matric marks 90% or above", amount: 50% tuition waiver}
+    - {name: Merit scholarship (80–89%), rule: "Matric marks 80% to 89.99%", amount: 25% tuition waiver}
+    - {name: Hafiz-e-Quran, rule: "Certificate from a registered madrassa", amount: 20 extra marks for merit (not a fee waiver)}
+
+prospectus:
+  title: Punjab Model College — Prospectus 2027–29
+  sections:
+    - heading: About the college
+      body: |
+        Punjab Model College, Faisalabad offers intermediate programs affiliated with BISE Faisalabad: FSc Pre-Medical, FSc Pre-Engineering, ICS and ICom. Separate campuses for boys and girls share the same faculty and labs.
+        The college has no hostel. Students from outside Faisalabad usually stay in private hostels near Susan Road.
+    - heading: Eligibility
+      body: |
+        FSc Pre-Medical: Matric (Science) with at least 70% marks. FSc Pre-Engineering and ICS: at least 60%. ICom: Matric in any group with at least 60%.
+        Admission is on merit. Merit = Matric marks + entry interview. Hafiz-e-Quran candidates get 20 extra marks.
+    - heading: Admission schedule
+      body: |
+        Admissions open after the BISE Matric result, usually in late August. Students may apply provisionally on the basis of their Matric result card printout.
+        Merit lists are displayed on the notice board and the website. Classes begin on 1 October.
+    - heading: Fee structure
+      body: |
+        Admission fee PKR 15,000 (one time). Monthly tuition: FSc Pre-Medical PKR 11,000; FSc Pre-Engineering PKR 10,500; ICS PKR 9,500; ICom PKR 8,000.
+        Board registration and exam fee of PKR 6,500 is collected each year on behalf of BISE.
+        Fee is due by the 10th of each month at HBL or through JazzCash using the voucher number.
+    - heading: Scholarships
+      body: |
+        Students with 90% or more marks in Matric get a 50% tuition waiver. Students with 80% to 89.99% get 25%. Waivers continue in second year if the first-year result stays above 80%.
+    - heading: Counselling
+      body: |
+        Free career counselling sessions (30 minutes) are available Monday to Friday, 11:00 to 14:00. Parents are welcome. Please book in advance.
+    - heading: داخلے کے لیے ضروری کاغذات
+      lang: ur
+      body: |
+        میٹرک کا رزلٹ کارڈ، ب فارم یا شناختی کارڈ کی کاپی، والد کے شناختی کارڈ کی کاپی اور چار تصاویر۔
+        ہاسٹل کی سہولت دستیاب نہیں ہے۔

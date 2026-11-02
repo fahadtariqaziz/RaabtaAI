@@ -1,4 +1,4 @@
-.PHONY: install lint test build verify migrate
+.PHONY: install lint test build verify migrate seed
 
 install:
 	cd api && uv sync
@@ -23,3 +23,7 @@ verify:
 # Apply DB migrations to the dev database (uses MIGRATIONS_DATABASE_URL from .env — owner role).
 migrate:
 	cd api && uv run alembic upgrade head
+
+# Load the three demo institutions + demo users into the dev DB (idempotent; --reset via ARGS).
+seed:
+	bash scripts/seed.sh $(ARGS)

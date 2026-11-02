@@ -18,6 +18,15 @@ from app.db.base import Base
 config = context.config
 target_metadata = Base.metadata
 
+# Library-managed tables (LangGraph checkpointer, created in 0003 via its own `setup()`).
+EXTERNAL_TABLES = frozenset(
+    {"checkpoints", "checkpoint_blobs", "checkpoint_writes", "checkpoint_migrations"}
+)
+
+
+def include_name(name: str | None, type_: str, parent_names: object) -> bool:
+    return not (type_ == "table" and name in EXTERNAL_TABLES)
+
 
 def _url() -> str:
     x_url = context.get_x_argument(as_dictionary=True).get("url")
@@ -34,14 +43,23 @@ def _url() -> str:
 
 def run_migrations_offline() -> None:
     context.configure(
-        url=_url(), target_metadata=target_metadata, literal_binds=True, compare_type=True
+        url=_url(),
+        target_metadata=target_metadata,
+        literal_binds=True,
+        compare_type=True,
+        include_name=include_name,
     )
     with context.begin_transaction():
         context.run_migrations()
 
 
 def _do_run_migrations(connection: Connection) -> None:
-    context.configure(connection=connection, target_metadata=target_metadata, compare_type=True)
+    context.configure(
+        connection=connection,
+        target_metadata=target_metadata,
+        compare_type=True,
+        include_name=include_name,
+    )
     with context.begin_transaction():
         context.run_migrations()
 

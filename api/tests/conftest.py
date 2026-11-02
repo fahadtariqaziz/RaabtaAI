@@ -10,6 +10,6 @@ import os
 os.environ["ENV"] = "test"
 os.environ.setdefault("DATABASE_URL", "postgresql+asyncpg://nobody:nobody@127.0.0.1:1/none")
 os.environ.setdefault("REDIS_URL", "redis://127.0.0.1:1/0")
-os.environ.setdefault("JWT_SECRET", "test-secret")
+os.environ.setdefault("JWT_SECRET", "test-secret-0123456789abcdef0123456789")
 for key in ("ANTHROPIC_API_KEY", "VOYAGE_API_KEY"):
     os.environ.setdefault(key, "")

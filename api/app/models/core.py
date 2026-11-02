@@ -119,6 +119,9 @@ class Membership(UUIDPkMixin, TenantMixin, CreatedAtMixin, Base):
     invited_by: Mapped[uuid.UUID | None] = mapped_column(
         UUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL")
     )
+    # Pending invitation: SHA-256 of the one-time token (raw token is shown once to the inviter).
+    invite_token_hash: Mapped[str | None] = mapped_column(String(64), unique=True)
+    invite_expires_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
 
 
 class AuditLog(UUIDPkMixin, CreatedAtMixin, Base):

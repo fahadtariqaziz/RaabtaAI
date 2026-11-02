@@ -35,6 +35,15 @@ class Settings(BaseSettings):
     redis_url: str
     jwt_secret: SecretStr
 
+    # Auth (PLAN §4 Auth, §18)
+    access_token_ttl_minutes: int = 15
+    refresh_token_ttl_days: int = 14
+    invite_ttl_days: int = 7
+    login_lockout_threshold: int = 10
+    login_lockout_window_seconds: int = 900
+    admin_base_url: str = "http://localhost:3000"
+    seed_demo_password: SecretStr | None = None  # demo users (step 1.5); required to seed in prod
+
     anthropic_api_key: SecretStr | None = None
     voyage_api_key: SecretStr | None = None
     stt_provider: str = "openai"
