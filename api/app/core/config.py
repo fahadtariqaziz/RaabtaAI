@@ -60,6 +60,14 @@ class Settings(BaseSettings):
     stt_provider: str = "openai"
     stt_api_key: SecretStr | None = None
 
+    # Agent runtime for the public chat API (Phase 4): claude = real models; demo = deterministic
+    # zero-spend stand-in for local widget work (app/llm/demo.py), refused in prod.
+    agent_llm: Literal["claude", "demo"] = "claude"
+    # Public widget (PLAN §15.1)
+    widget_session_ttl_hours: int = 24
+    widget_dist_dir: Path = REPO_ROOT / "widget" / "dist"
+    widget_script_url: str = "http://localhost:8000/widget/v1/widget.js"
+
     meta_app_id: str | None = None
     meta_app_secret: SecretStr | None = None
     meta_verify_token: SecretStr | None = None
@@ -87,6 +95,8 @@ class Settings(BaseSettings):
         for name in ("anthropic_api_key", "voyage_api_key"):
             if getattr(self, name) is None:
                 problems.append(f"{name.upper()} is required in prod")
+        if self.agent_llm == "demo":
+            problems.append("AGENT_LLM=demo is not allowed in prod")
         if self.embedding_provider == "fake":
             problems.append("EMBEDDING_PROVIDER=fake is not allowed in prod")
         if problems:

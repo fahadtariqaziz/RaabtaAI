@@ -53,3 +53,16 @@ seed_and_ingest_test_db() { # demo institutions + their documents through the KB
   kb_test_env && cd "$ROOT/api" && uv run python -m app.cli seed >/dev/null &&
     uv run python -m app.cli ingest-seeds
 }
+
+# Phase 4: API on the seeded test DB with the zero-spend demo agent (AGENT_LLM=demo).
+DEMO_API_PORT="${DEMO_API_PORT:-8010}"
+DEMO_API="http://localhost:$DEMO_API_PORT"
+start_demo_api() {
+  stop_demo_api
+  (kb_test_env && cd "$ROOT/api" && ENV=test AGENT_LLM=demo \
+    uv run uvicorn app.main:app --port "$DEMO_API_PORT" >/tmp/raabta-demo-api.log 2>&1 &)
+  for _ in $(seq 1 60); do curl -sf "$DEMO_API/healthz" >/dev/null && return 0; sleep 0.5; done
+  tail -20 /tmp/raabta-demo-api.log; return 1
+}
+stop_demo_api() { pkill -f "uvicorn app.main:app --port $DEMO_API_PORT" 2>/dev/null; sleep 0.5; true; }
+flush_test_redis() { cd "$ROOT" && docker compose exec -T redis redis-cli -n 15 flushdb >/dev/null; }

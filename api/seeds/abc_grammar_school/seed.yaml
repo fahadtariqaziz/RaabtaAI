@@ -17,6 +17,8 @@ institution:
     school_hours: Mon–Fri 07:45–13:30 (Playgroup–Prep until 12:00)
     cta: book_campus_visit
     escalation: {fee_disputes: admin, unhappy_parent: owner}
+    # Public widget (step 4.1): origin allowlist (localhost is always allowed in dev), theme, wa.me number (demo)
+    widget: {allowed_origins: ["https://abcgrammar.edu.pk"], primary_color: "#0f766e", whatsapp_number: "923001110001"}
 
 users:
   - {role: owner, email: owner@abc.demo.raabta.pk, name: Mrs. Saima Rauf (Principal)}

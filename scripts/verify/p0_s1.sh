@@ -17,7 +17,7 @@ check "admin: lint"                pnpm -C admin lint
 check "admin: typecheck"           pnpm -C admin typecheck
 check "admin: build"               pnpm -C admin build
 check "widget: typecheck"          pnpm -C widget typecheck
-check "widget: build dist/widget.js" bash -c "pnpm -C widget build && test -f widget/dist/widget.js"
+check "widget: build dist/v1/widget.js" bash -c "pnpm -C widget build && test -f widget/dist/v1/widget.js"
 check "widget: size <= 30KB gz"    pnpm -C widget size
 
 finish

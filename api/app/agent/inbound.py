@@ -74,6 +74,7 @@ class TurnResult:
     citations: list[dict[str, Any]] = field(default_factory=list)
     quick_replies: list[str] = field(default_factory=list)
     tool_calls: list[dict[str, Any]] = field(default_factory=list)
+    tool_outputs: list[dict[str, Any]] = field(default_factory=list)
     check: dict[str, Any] | None = None
     route: dict[str, Any] | None = None
     guard: dict[str, Any] | None = None
@@ -249,6 +250,7 @@ async def run_inbound(
         citations=final.get("citations", []),
         quick_replies=final.get("quick_replies", []),
         tool_calls=final.get("tool_calls", []),
+        tool_outputs=final.get("tool_outputs", []),
         check=final.get("check"),
         route=final.get("route"),
         guard=final.get("guard"),

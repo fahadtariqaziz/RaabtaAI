@@ -6,10 +6,12 @@
   "scripts": {
     "build": "node scripts/build.mjs",
     "typecheck": "tsc --noEmit",
-    "size": "node scripts/size-check.mjs"
+    "size": "node scripts/size-check.mjs",
+    "e2e": "node scripts/e2e.mjs"
   },
   "devDependencies": {
     "esbuild": "^0.28.2",
+    "playwright-core": "^1.64.1",
     "typescript": "^5.9.3"
   }
 }

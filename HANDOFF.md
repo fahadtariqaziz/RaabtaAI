@@ -10,10 +10,10 @@
 
 | Field | Value |
 |---|---|
-| Phase / step in progress | **Phase 3 done except the first live eval** (3.9.4/3.9.6 ◐, ~$15–25, user deferred). 3.1 live smoke ✔, 3.10 live transcripts ✔ (2026-11-03) |
-| Last completed step | Phase 3 offline (2026-11-03): wrapper complete/stream, prompts, skills, strict tools, LangGraph graph + handoff, context, guards, summarizer, eval harness + datasets, chat CLI |
-| Last verification run | `bash scripts/verify/all.sh` → p0_s1–s6, p1_s1–s7, p2_s1–s8, p3_s1–s10 all OK (2026-11-03) |
-| Next action | When approved: `bash scripts/verify/p3_s9.sh --live` (records cassettes + reports on the test DB), fix failing cases, save `evals/reports/baseline.md`, decide D-05 (Haiku simple route vs Opus; demo cost ≈ $0.001/simple turn, ≈ $0.03–0.07/complex turn). Otherwise start Phase 4.1 (public chat API, SSE status events via `AgentDeps.status_hooks`, `run_inbound`) |
+| Phase / step in progress | **Phase 4 done** (2026-11-03) · 👤 visual check of the widget pending. Phase 3 first live eval (3.9.4/3.9.6 ◐, ~$15–25) still deferred by user |
+| Last completed step | Phase 4 (2026-11-03): public widget API (sessions, SSE check-then-send, lead, wa-link, limits), Shadow-DOM widget 7.3 KB gz, served bundle + embed test pages + Chrome e2e, install/theming docs |
+| Last verification run | `bash scripts/verify/all.sh` → p0–p4 (35 scripts) — see §4 S5 row (2026-11-03) |
+| Next action | Start Phase 5.1 (Next.js admin foundation — read `admin/AGENTS.md` + the Next 16 docs first). 5.4 inbox must also deliver staff replies to the widget (I-18). When approved: `bash scripts/verify/p3_s9.sh --live` (first live eval) |
 | Blocked on user | Nothing for Phase 3–5. Before pilots: Voyage billing (U-14), sample prospectus (U-12). Live WhatsApp sends blocked until Meta business verification (U-01, I-07) |
 | Open decisions needing user confirmation | D-05 pricing (after 3.9 evals), D-02 STT, D-03 WhatsApp number model; D-01 decided (Voyage), D-04 decided |
 
@@ -44,7 +44,7 @@ Verify-script conventions: `scripts/verify/pN_sM.sh` sources `scripts/verify/_li
 | 1 Data & multi-tenancy | models, migrations, RLS, auth/RBAC, seeds, isolation tests | 1.1–1.7 (7) | ☑ (2026-11-02) |
 | 2 Knowledge base | ingestion, chunking, embeddings, hybrid search, facts, citations | 2.1–2.8 (8) | ☑ (2026-11-02) |
 | 3 Agent core + evals | Claude wrapper, prompts, skills, tools, graph, guards, context, eval harness, CLI | 3.1–3.10 (10) | ◐ all ☑ except first live eval (2026-11-03) |
-| 4 Widget + chat API | public chat API (SSE), widget bundle, booking/lead UI, embed tests | 4.1–4.4 (4) | ☐ |
+| 4 Widget + chat API | public chat API (SSE), widget bundle, booking/lead UI, embed tests | 4.1–4.4 (4) | ☑ (2026-11-03) · 👤 visual check |
 | 5 Admin panel | Next.js foundation, onboarding, dashboard, inbox, leads, slots, KB, settings, super-admin, audit/usage, quality pass | 5.1–5.11 (11) | ☐ |
 | 6 WhatsApp | Meta app, webhook, sender + 24h window, voice notes, templates, handoff, follow-ups, channel guards | 6.1–6.8 (8) | ☐ |
 | 7 Fee recovery | data/import, identity, sequences, fee agent, receipts, fee UI, fee evals | 7.1–7.7 (7) | ☐ |
@@ -328,28 +328,29 @@ Ordering rationale: KB (2) precedes agent (3) because grounding depends on retri
 
 ### Phase 4 — Web widget + chat API
 
-#### 4.1 Public chat API (SSE) — ☐
+#### 4.1 Public chat API (SSE) — ☑ (2026-11-03)
 - PLAN §14 (Widget), §15.1 (security)
-- Sub-steps: 4.1.1 ☐ `GET /widget/config/{slug}` (theme, languages, suggested questions, WhatsApp number); 4.1.2 ☐ `POST /widget/sessions` (origin allowlist, visitor id, session JWT 24h); 4.1.3 ☐ `POST /widget/sessions/{id}/messages` SSE with **check-then-send** (`status` events while tools run → `message` with the answer_check-approved text → `citation`, `quick_replies`, `slots`, `lead_form`, `done`); never stream the unchecked draft (D-11); test asserts no `message` event is emitted before the check verdict; 4.1.4 ☐ rate limits (IP + session), message cap, abuse lockout; 4.1.5 ☐ `POST /widget/sessions/{id}/lead`, `GET .../whatsapp-link` (session code)
-- Verify: `scripts/verify/p4_s1.sh` — `pytest tests/integration/test_widget_api.py` (fake LLM streaming)
+- Sub-steps: 4.1.1 ☑ `GET /widget/config/{slug}` (theme, languages, welcome, 3 suggested questions by type × language, whatsapp flag; from `institutions.settings.widget` — a dict, so it never enters the cached tenant prompt block); 4.1.2 ☑ `POST /widget/sessions` (Origin must be in `settings.widget.allowed_origins`, localhost always allowed outside prod; visitor id `v_…` reused or minted; contact created up front; 24h HS256 JWT `typ=widget` bound to session/institution/contact/visitor/origin); 4.1.3 ☑ `POST /widget/sessions/{id}/messages` SSE: `status` (thinking + per-tool lines via `AgentDeps.status_hooks`) → `message` (only after the graph incl. `answer_check` finished) → `citation`, `slots` (parsed from the `get_visit_slots` tool output; `TurnResult.tool_outputs` added), `quick_replies` (dropped when slots shown), `lead_form` (booking intents/slots and no lead-with-phone/booking yet), `error`, `done`; the turn runs as a detached task so a closed tab still persists; 4.1.4 ☑ Redis fixed windows: sessions 30/h/IP, messages 60/10 min/IP + 30/10 min/session, 1000-char cap (422), 3 guard-blocked turns → session locked 1 h; 4.1.5 ☑ `POST …/lead` (deterministic `upsert_lead`, PK phone normalisation → 422), `GET …/whatsapp-link` (wa.me + `W…` code → Redis `widget:wa_code:*` 30 days for Phase 6 linking); `GET /institution/widget-snippet` (staff+)
+- Also: `app/agent/runtime.py` (lazy `AgentDeps` + graph on the Postgres checkpointer, closed in lifespan; tests inject via `app.state.agent.set`); `AGENT_LLM=claude|demo` — `app/llm/demo.py` is a deterministic zero-spend agent for local widget work (refused in prod); `WidgetCorsMiddleware` (any origin may preflight `/api/v1/widget/*`; allowlist enforced in the endpoint + token); `psycopg[binary]` added (API image had no libpq once the API imports the checkpointer)
+- Verify: `scripts/verify/p4_s1.sh` — `tests/integration/test_widget_api.py` (D-11: failed-check draft never streamed; approved reply after tool status) + `scripts.widget_smoke` against a live demo API (27 checks: config, origin 403, CORS, session, SSE order, slots, lead form, lead 422, wa link, 401/403/422)
 - Commit: `feat(widget-api): public session and streaming chat endpoints`
 
-#### 4.2 Widget bundle — ☐ 👤
+#### 4.2 Widget bundle — ☑ (2026-11-03) · 👤 visual check
 - PLAN §15.1
-- Sub-steps: 4.2.1 ☐ Shadow DOM mount, launcher, panel (mobile full-screen), theme via CSS vars from config; 4.2.2 ☐ message list, status line ("searching prospectus…"), progressive client-side render of the approved reply, typing indicator, citation chips, quick replies, slot picker, lead mini-form; 4.2.3 ☐ language toggle EN/UR/RU, RTL + Noto Nastaliq lazy-load; 4.2.4 ☐ "Continue on WhatsApp" (wa.me link w/ session code); 4.2.5 ☐ build ≤ 30KB gz, versioned output `dist/v1/widget.js`, size check in CI
-- Verify: `scripts/verify/p4_s2.sh` — build + size check + Vitest unit tests for state/renderer
-- Needs user: 👤 visual check on desktop + phone (test page URL printed)
+- Sub-steps: 4.2.1 ☑ Shadow DOM mount (`:host{all:initial}`), launcher, panel (≤ 480 px full-screen), theme via CSS vars from config, `data-lang/-position/-primary/-api/-open`; 4.2.2 ☑ message list, status line with dots, progressive client-side reveal of the approved reply (cosmetic; respects reduced motion), safe mini-markdown → DOM (no innerHTML of model text; bold, lists, tables), citation chips (expand to quote), quick replies, slot picker → "I'd like the slot on …", lead mini-form (422 → inline error; after a slot pick it sends the details so the agent books); 4.2.3 ☑ EN/اردو/Roman toggle, RTL + Noto Nastaliq lazy-loaded into the document head; 4.2.4 ☑ "Continue on WhatsApp" (shown when configured); 4.2.5 ☑ esbuild → `dist/v1/widget.js` **7.3 KB gz** (≤ 30 KB, CI size check); localStorage = visitor id + session token only, transcript in sessionStorage
+- Verify: `scripts/verify/p4_s2.sh` — typecheck + prettier + build + size (behaviour covered by the browser e2e in p4_s3; no Vitest per user preference: minimal tests)
+- Needs user: 👤 `bash scripts/verify/p4_s3.sh --headed` (or open `http://localhost:8010/widget/test/plain.html` while the demo API runs) and look on desktop + phone; screenshots in `/tmp/raabta-shots`
 - Commit: `feat(widget): shadow-dom chat widget with rtl and whatsapp handoff`
 
-#### 4.3 Widget served by API + embed test pages — ☐
-- Sub-steps: 4.3.1 ☐ api serves `/widget/v1/widget.js` with long cache + version header (CDN later); 4.3.2 ☐ `widget/test-pages/` plain.html, wordpress-like.html, rtl.html; 4.3.3 ☐ Playwright e2e: open, ask seed question, see citation, book slot, lead form
-- Verify: `scripts/verify/p4_s3.sh` — `pnpm -C widget e2e` against local api (fake LLM mode)
-- Needs user: 👤 confirm on a real WordPress/Wix page if available
+#### 4.3 Widget served by API + embed test pages — ☑ (2026-11-03)
+- Sub-steps: 4.3.1 ☑ `GET /widget/v1/widget.js` (`Cache-Control: public, max-age=3600, stale-while-revalidate=86400`, ETag/`X-Widget-Version` = content hash, 304) — CDN later; 4.3.2 ☑ `widget/test-pages/` plain.html, wordpress-like.html (hostile `!important` theme CSS, fixed header, left position), rtl.html (Urdu, `dir=rtl`) served at `/widget/test/<page>` outside prod; 4.3.3 ☑ `widget/scripts/e2e.mjs` (playwright-core + system Chrome, no browser download): ask → answer, slots, lead form (bad phone → error → good phone), host CSS isolation, left position, RTL + Nastaliq, mobile full-screen, language toggle, no JS errors (19 checks)
+- Verify: `scripts/verify/p4_s3.sh` (`--headed` to watch)
+- Needs user: 👤 confirm on a real WordPress/Wix page if available (needs the API reachable from that site + its origin in `allowed_origins`)
 - Commit: `feat(widget): embed test pages and e2e`
 
-#### 4.4 Widget docs & install guides — ☐
-- Sub-steps: 4.4.1 ☐ `docs/widget/install.md` (WordPress, Wix, custom HTML, CSP notes); 4.4.2 ☐ theming reference
-- Verify: `scripts/verify/p4_s4.sh` — docs exist; snippet in docs matches `GET /institution/widget-snippet` output
+#### 4.4 Widget docs & install guides — ☑ (2026-11-03)
+- Sub-steps: 4.4.1 ☑ `docs/widget/install.md` (snippet, allowed origins, WordPress plugin/theme, Wix custom code, other builders, attributes, CSP, troubleshooting); 4.4.2 ☑ `docs/widget/theming.md` (settings.widget keys, CSS vars)
+- Verify: `scripts/verify/p4_s4.sh` — docs exist + the documented snippet equals `snippet()` (the `/institution/widget-snippet` output) for the prod script URL
 - Commit: `docs(widget): install and theming guides`
 
 ---
@@ -602,6 +603,7 @@ Ordering rationale: KB (2) precedes agent (3) because grounding depends on retri
 
 | Date | Session | Step(s) | What was done | Verification | Commit suggested |
 |---|---|---|---|---|---|
+| 2026-11-03 | S5 | 4.1–4.4 | Phase 4: widget API (`/widget/config`, sessions w/ origin allowlist + 24h JWT, SSE turn with status hooks → approved message → citation/slots/quick_replies/lead_form, lead + wa-link, IP/session limits + abuse lockout, `/institution/widget-snippet`), lazy agent runtime in the API + `AGENT_LLM=demo` zero-spend agent, widget bundle (Shadow DOM, i18n EN/UR/RU + RTL + Nastaliq, slot picker, lead form, citations, WhatsApp), `/widget/v1/widget.js` + test pages, Chrome e2e via playwright-core, install/theming docs. Found: API image lacked libpq → `psycopg[binary]`. Minimal tests per user (1 integration test for D-11; rest via smoke/e2e scripts) | `all.sh` (see below) · p4_s1 smoke 27/27 · p4_s3 e2e 19/19 | per step blocks; one-shot: `feat: phase 4 — widget chat api, embeddable widget, embed e2e, docs` |
 | 2026-11-03 | S4 | 3.1–3.10 | Phase 3 (agent core) offline: wrapper `complete`/`stream` + prefix guard + cost rows, FakeLLM; 10 prompts + loader; 9 skills + loader; strict registry + 12 admissions/common tools + 6 gated fee stubs + `/internal/tools`; LangGraph inbound graph (guard → router → context → agent tool loop → check → repair/fallback → compose → persist → summarize → handoff interrupt/resume) + `run_inbound` gates; context builder; guards + numeric grounding; summarizer/LTM; eval harness (6 suites, 330 cases, judge, reports, evals-live workflow, CI smoke); chat CLI + 9 demo scripts | `all.sh` OK (31 scripts); live smoke ✔ (cache hit), 9 live demo transcripts ($0.13; 2 live bugs fixed: system-role placement, checker profile/CTA); live eval deferred by user | per step blocks; one-shot: `feat: phase 3 — agent core, tools, langgraph graph, guards, eval harness` |
 | 2026-11-02 | S3b | 2.4, 2.6, 2.2 | User decisions applied: D-01 Voyage (live bake-off; `.env` switched; `app.cli reembed`; 429-aware Voyage provider + batched eval queries), live Opus extractor run ($0.16) recorded as cassettes + replay test, PDF parser rewritten on pdfplumber + pypdfium2 (PyMuPDF removed) with Urdu fragmentation check and Chrome-printed Naskh/Nastaliq fixtures | `all.sh` OK (28 scripts) | `feat(kb): voyage embeddings, recorded extractor cassettes, permissive pdf parser` |
 | 2026-11-02 | S3 | 2.1–2.8 | Phase 2 (knowledge base): migration 0004 (documents, chunks w/ vector(1024)+HNSW+tsv+trgm, 5 fact tables, RLS); blob store + sniffed uploads with dedupe/versioning; PDF/DOCX/XLSX/CSV parsers + Urdu quality flags + vision-OCR fallback (opt-in); heading-aware chunker + normalization + lang + injection filter; embedding providers (fake/Voyage/bge-m3) + bake-off script + ADR 0002 (proposed); hybrid search (vector+FTS+trigram+synonyms, RRF, packing); facts (XLSX deterministic, Opus extractor via `ClaudeClient.parse` w/ cassettes, approval API, facts_version, supersede); citations + playground; arq ingestion pipeline + `ingest-seeds`; 60-Q retrieval eval. Bugs fixed on the way: re-index while newer version processing, fact ordering (ordinal), seed-facts duplication on re-run | `all.sh` OK (p0–p2, 28 scripts); retrieval recall@5 1.00 / recall@1 0.85 (fake) | per step blocks; one-shot: `feat: phase 2 — knowledge base ingestion, hybrid search, facts, citations` |
@@ -637,6 +639,8 @@ Ordering rationale: KB (2) precedes agent (3) because grounding depends on retri
 | D-18 | 2026-11-03 | Model never sees DB ids: deterministic content-hash source ids (`S-`/`F-`), slots addressed by local `slot_time`; ToolContext from graph state only | decided (impl.) | HANDOFF 3.4 notes |
 | D-19 | 2026-11-03 | Numeric grounding is deterministic and runs alongside the Haiku checker (either failing → one repair → fallback + flag) | decided (impl.) | PLAN §10 G2; `guards/grounding.py` |
 | D-20 | 2026-11-03 | Eval CI smoke replays only router/tone (request hashes independent of DB state); agent suites are live-only (tool results depend on seeded slots/ids); evals run against the disposable test DB (they write contacts/leads/bookings) | decided (impl.) | §6 I-14 |
+| D-21 | 2026-11-03 | Widget: stateless session JWT (no sessions table) bound to institution/contact/visitor/origin; contact created at session start so status hooks can be keyed before the turn; slots/lead form derived deterministically from tool outputs/route (no prompt changes → cassettes unaffected); transcript only in sessionStorage | decided (impl.) | HANDOFF 4.1/4.2 |
+| D-22 | 2026-11-03 | Testing style from Phase 4 on (user): only invariant tests in pytest; behaviour verified by runnable scripts (API smoke, browser e2e) inside the verify scripts | decided by user | HANDOFF 4.x |
 | D-12 | 2026-11-01 | **Hybrid agent routing**: router `complexity=simple` (FAQ: fees, timings, transport, greetings) → `claude-haiku-5-5` agent with the same tools + answer_check; `complex` (booking, fee module, multi-step, unhappy/escalation, low router confidence) → `claude-opus-5-5`. Eval gate in 3.9 compares simple-route quality Haiku vs Opus; if Haiku fails thresholds, try `claude-sonnet-5-5` for simple route. Implemented via `models_registry` keys `agent_simple` / `agent_complex` | **decided by user 2026-11-01** | PLAN §7, §19; unblocks D-05 |
 
 ---
@@ -659,6 +663,9 @@ Ordering rationale: KB (2) precedes agent (3) because grounding depends on retri
 | I-13 | 2026-11-02 | Voyage account has no payment method → 3 requests/min, 10K tokens/min. Dev/evals cope (waits + batching); live widget/WhatsApp traffic would stall. Add billing before pilots (U-14) | open (user, before pilots) |
 | I-14 | 2026-11-03 | Agent-node cassettes are only replayable on the same DB state (seeded slots are relative to seed time; booking codes random) → CI smoke replays router/tone only; agent suites need `--mode live` | noted (D-20) |
 | I-15 | 2026-11-03 | API: `role: system` must follow a user message (or tool results) — not the assistant's final text. Fixed via `append_operator_note` (marked user turn in that case). **CLAUDE.md "Operator notes = appended role:system" needs this nuance (user to update)** | resolved 2026-11-03 |
+| I-18 | 2026-11-03 | Widget in human mode shows "our team will reply here" but staff replies have no path back to the widget yet (no polling/stream for outbound staff messages) → add `GET /widget/sessions/{id}/messages?after=` or an SSE channel in 5.4 | open (5.4) |
+| I-19 | 2026-11-03 | `widget:wa_code:*` (Redis, 30 d) maps the wa.me prefill code → (institution, contact); Phase 6 webhook must read it to link the WhatsApp thread to the widget contact | open (6.2) |
+| I-20 | 2026-11-03 | Allowed origins are only editable via `institutions.settings.widget` (seed/SQL) until the 5.8 settings page | open (5.8) |
 | I-17 | 2026-11-03 | Haiku answer_check false negatives: 2/27 demo turns fell back although drafts were correct (pass on rerun). Measure in the live eval (`fallback_rate`); options: checker effort/prompt tweak, or let deterministic numeric check + Haiku disagreement retry once | open (3.9 live run) |
 | I-16 | 2026-11-03 | Fee tools are stubs ("not enabled → hand off") until Phase 7; fee-module turns always end in handoff | noted (Phase 7) |
 | I-05 | 2026-11-01 | Preserved-thinking prefix check is enforced for accounts created on/after 2026-08-31 — confirm account age; design is append-only regardless | open |

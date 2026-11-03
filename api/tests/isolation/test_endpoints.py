@@ -33,6 +33,13 @@ PUBLIC_ROUTES = {
     ("POST", "/auth/logout"): "refresh cookie",
     ("POST", "/auth/invitations/accept"): "one-time invite token",
     ("GET", "/auth/me"): "user-scoped (own memberships only), no X-Institution",
+    # Public widget (4.1): tenant comes from the slug (config/session) or from the signed session
+    # JWT (sub == path session_id; institution/contact claims) — never from a header or body.
+    ("GET", "/widget/config/{slug}"): "public theme/welcome only (no tenant data)",
+    ("POST", "/widget/sessions"): "slug + origin allowlist → signed session token",
+    ("POST", "/widget/sessions/{session_id}/messages"): "session JWT bound to institution",
+    ("POST", "/widget/sessions/{session_id}/lead"): "session JWT bound to institution/contact",
+    ("GET", "/widget/sessions/{session_id}/whatsapp-link"): "session JWT bound to institution",
 }
 # Static dict or `fn(world) -> dict` (bodies that must carry the other tenant's ids).
 SAMPLE_BODIES: dict[tuple[str, str], Any] = {

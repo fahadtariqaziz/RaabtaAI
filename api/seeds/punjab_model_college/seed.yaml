@@ -16,6 +16,8 @@ institution:
     cta: book_counselling
     hostel: none
     escalation: {fee_disputes: admin, unhappy_parent: owner}
+    # Public widget (step 4.1): origin allowlist (localhost is always allowed in dev), theme, wa.me number (demo)
+    widget: {allowed_origins: ["https://pmc.edu.pk"], primary_color: "#1d4ed8", whatsapp_number: "923001110002"}
 
 users:
   - {role: owner, email: owner@pmc.demo.raabta.pk, name: Prof. Javed Akhtar (Principal)}

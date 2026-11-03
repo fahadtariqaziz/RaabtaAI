@@ -6,7 +6,7 @@ await build({
   minify: true,
   format: "iife",
   target: ["es2020"],
-  outfile: "dist/widget.js",
+  outfile: "dist/v1/widget.js",
   legalComments: "none",
 });
-console.log("built dist/widget.js");
+console.log("built dist/v1/widget.js");
