@@ -1,0 +1,21 @@
+---
+name: tenant_block
+version: 1.0.0
+model_key: agent
+cacheable: true
+changelog:
+  - "1.0.0 (2026-11-03): initial institution profile block"
+---
+# Institution profile
+- Name: {{ name }}
+- Type: {{ type }}
+- City: {{ city }}
+- Languages served: {{ languages | join(", ") }}
+- Current academic year: {{ academic_year or "not stated" }}
+- Primary call to action: {{ cta }}
+{% for key, value in details | dictsort %}
+- {{ key | replace("_", " ") | capitalize }}: {{ value }}
+{% endfor %}
+- Data version: {{ facts_version }}
+
+Only the facts above and your tool results describe this institution. Fees, dates, programs and fares must come from the fact tools.

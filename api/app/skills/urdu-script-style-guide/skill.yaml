@@ -1,0 +1,6 @@
+name: urdu-script-style-guide
+version: 1.0.0
+description: Formal Urdu-script register, numerals, RTL punctuation
+load_when: {language: [ur]}
+priority: 40
+max_tokens: 1200

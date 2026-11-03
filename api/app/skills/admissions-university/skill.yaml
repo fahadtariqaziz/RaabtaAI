@@ -1,0 +1,6 @@
+name: admissions-university
+version: 1.0.0
+description: University admissions (BS/MS, entry tests, merit rounds, online application CTA)
+load_when: {institution_type: [university], module: [admissions]}
+priority: 80
+max_tokens: 1200

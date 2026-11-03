@@ -1,0 +1,866 @@
+{
+ "admissions": [
+  {
+   "name": "book_visit",
+   "description": "Book the slot the contact chose. Requires their name and phone. Returns a booking code to confirm back. Only call after the contact picked a specific slot.",
+   "input_schema": {
+    "type": "object",
+    "properties": {
+     "kind": {
+      "type": "string",
+      "enum": [
+       "visit",
+       "test",
+       "counselling"
+      ]
+     },
+     "slot_time": {
+      "type": "string",
+      "description": "Exactly as returned by get_visit_slots (YYYY-MM-DD HH:MM)"
+     },
+     "name": {
+      "type": "string",
+      "description": "Parent/guardian (or student) name\n\n{maxLength: 120, minLength: 1}"
+     },
+     "phone": {
+      "type": "string",
+      "description": "Phone as the contact typed it\n\n{maxLength: 32, minLength: 7}"
+     },
+     "student_name": {
+      "anyOf": [
+       {
+        "type": "string",
+        "description": "{maxLength: 120}"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "description": "Student's name if given"
+     }
+    },
+    "additionalProperties": false,
+    "required": [
+     "kind",
+     "slot_time",
+     "name",
+     "phone",
+     "student_name"
+    ]
+   },
+   "strict": true
+  },
+  {
+   "name": "get_fee_table",
+   "description": "Approved fee structure (public). Returns fee heads with amount_pkr and frequency for a class/program (school-wide heads like admission fee are included), or the whole table. Quote amounts exactly; never add them up.",
+   "input_schema": {
+    "type": "object",
+    "properties": {
+     "program_or_class": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "description": "Class or program as the institution names it, e.g. \"Class 3\", \"Playgroup\", \"BS Computer Science\"; null for the whole table"
+     },
+     "academic_year": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "description": "e.g. \"2026-27\"; null for current data"
+     }
+    },
+    "additionalProperties": false,
+    "required": [
+     "program_or_class",
+     "academic_year"
+    ]
+   },
+   "strict": true
+  },
+  {
+   "name": "get_key_dates",
+   "description": "Approved admission calendar: admissions open/close, last date to apply, test and interview dates, merit lists, session start, vacations. Optional filter word.",
+   "input_schema": {
+    "type": "object",
+    "properties": {
+     "kind": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "description": "Optional filter word, e.g. \"test\", \"last date\", \"merit\", \"session\"; null = all"
+     }
+    },
+    "additionalProperties": false,
+    "required": [
+     "kind"
+    ]
+   },
+   "strict": true
+  },
+  {
+   "name": "get_programs",
+   "description": "Approved list of classes/programs with level, duration, eligibility, seats and program deadline. Use for 'which programs', eligibility and seats questions.",
+   "input_schema": {
+    "type": "object",
+    "properties": {
+     "level": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "description": "Optional filter, e.g. \"BS\", \"MS\", \"Intermediate\", \"FSc\", or a program name"
+     }
+    },
+    "additionalProperties": false,
+    "required": [
+     "level"
+    ]
+   },
+   "strict": true
+  },
+  {
+   "name": "get_scholarships",
+   "description": "Approved scholarships/concessions with their criteria and amounts. Never promise eligibility; quote the criteria.",
+   "input_schema": {
+    "type": "object",
+    "properties": {},
+    "additionalProperties": false,
+    "required": []
+   },
+   "strict": true
+  },
+  {
+   "name": "get_transport_routes",
+   "description": "Approved transport (van/bus) routes with areas covered and monthly fare in PKR. Pass the contact's area to filter.",
+   "input_schema": {
+    "type": "object",
+    "properties": {
+     "area": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "description": "Area/locality the contact lives in; null for all routes"
+     }
+    },
+    "additionalProperties": false,
+    "required": [
+     "area"
+    ]
+   },
+   "strict": true
+  },
+  {
+   "name": "get_visit_slots",
+   "description": "Open slots for a campus visit, admission test or counselling session in a date range (default: next two weeks). Returns slot_time strings to use with book_visit.",
+   "input_schema": {
+    "type": "object",
+    "properties": {
+     "kind": {
+      "type": "string",
+      "enum": [
+       "visit",
+       "test",
+       "counselling"
+      ]
+     },
+     "from_date": {
+      "anyOf": [
+       {
+        "type": "string",
+        "format": "date"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "description": "First day to look at (YYYY-MM-DD); null=today"
+     },
+     "to_date": {
+      "anyOf": [
+       {
+        "type": "string",
+        "format": "date"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "description": "Last day (YYYY-MM-DD); null = two weeks ahead"
+     }
+    },
+    "additionalProperties": false,
+    "required": [
+     "kind",
+     "from_date",
+     "to_date"
+    ]
+   },
+   "strict": true
+  },
+  {
+   "name": "handoff_to_human",
+   "description": "Hand the conversation to office staff (they reply in this chat). Use when the contact asks for a person, complains, disputes a fee, mentions hardship, or you cannot help after two tries.",
+   "input_schema": {
+    "type": "object",
+    "properties": {
+     "reason": {
+      "type": "string",
+      "enum": [
+       "human_requested",
+       "complaint",
+       "fee_dispute",
+       "hardship",
+       "cannot_answer",
+       "booking_change",
+       "verification_failed",
+       "fee_module_unavailable",
+       "other"
+      ]
+     },
+     "summary": {
+      "type": "string",
+      "description": "2-3 sentences for the staff member\n\n{maxLength: 500}"
+     },
+     "urgency": {
+      "type": "string",
+      "enum": [
+       "low",
+       "normal",
+       "high"
+      ]
+     }
+    },
+    "additionalProperties": false,
+    "required": [
+     "reason",
+     "summary",
+     "urgency"
+    ]
+   },
+   "strict": true
+  },
+  {
+   "name": "save_lead",
+   "description": "Save or update the contact as an admission lead (deduplicated by phone). Use only details the contact gave. Returns which fields are still missing.",
+   "input_schema": {
+    "type": "object",
+    "properties": {
+     "student_name": {
+      "anyOf": [
+       {
+        "type": "string",
+        "description": "{maxLength: 120}"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "description": "Student's name if given"
+     },
+     "guardian_name": {
+      "anyOf": [
+       {
+        "type": "string",
+        "description": "{maxLength: 120}"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "description": "Parent/guardian name if given"
+     },
+     "phone": {
+      "anyOf": [
+       {
+        "type": "string",
+        "description": "{maxLength: 32}"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "description": "Phone exactly as the contact typed it"
+     },
+     "interest": {
+      "type": "string",
+      "description": "Class/program of interest, e.g. 'Class 3'\n\n{maxLength: 200, minLength: 1}"
+     },
+     "notes": {
+      "anyOf": [
+       {
+        "type": "string",
+        "description": "{maxLength: 500}"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "description": "Short context for the office"
+     }
+    },
+    "additionalProperties": false,
+    "required": [
+     "student_name",
+     "guardian_name",
+     "phone",
+     "interest",
+     "notes"
+    ]
+   },
+   "strict": true
+  },
+  {
+   "name": "schedule_followup",
+   "description": "Schedule the office to follow up on a date the contact agreed to (sent later as a template message). Use when they want time to decide.",
+   "input_schema": {
+    "type": "object",
+    "properties": {
+     "when": {
+      "type": "string",
+      "description": "Date the contact agreed to be contacted (YYYY-MM-DD)",
+      "format": "date"
+     },
+     "reason": {
+      "type": "string",
+      "description": "Why, in a few words\n\n{maxLength: 200, minLength: 1}"
+     }
+    },
+    "additionalProperties": false,
+    "required": [
+     "when",
+     "reason"
+    ]
+   },
+   "strict": true
+  },
+  {
+   "name": "search_knowledge",
+   "description": "Search the institution's own documents (prospectus, notices, policies). Use for descriptive questions: facilities, process, requirements, uniform, timings, hostel. Returns passages in <source> tags. Numbers in passages are NOT authoritative — use the get_* fact tools for fees, dates, eligibility and fares.",
+   "input_schema": {
+    "type": "object",
+    "properties": {
+     "queries": {
+      "type": "array",
+      "description": "1-3 short queries: the contact's wording, an English rewrite, and an Urdu-script rewrite if they wrote in Urdu\n\n{maxItems: 3}",
+      "items": {
+       "type": "string"
+      },
+      "minItems": 1
+     },
+     "top_k": {
+      "anyOf": [
+       {
+        "type": "integer",
+        "description": "{maximum: 5, minimum: 1}"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "description": "Max passages (default 5)\n\n{default: None}"
+     }
+    },
+    "additionalProperties": false,
+    "required": [
+     "queries",
+     "top_k"
+    ]
+   },
+   "strict": true
+  },
+  {
+   "name": "set_contact_language",
+   "description": "Remember the contact's preferred language when they ask you to switch (en, ur = Urdu script, roman_ur = Roman Urdu).",
+   "input_schema": {
+    "type": "object",
+    "properties": {
+     "language": {
+      "type": "string",
+      "enum": [
+       "en",
+       "ur",
+       "roman_ur"
+      ]
+     }
+    },
+    "additionalProperties": false,
+    "required": [
+     "language"
+    ]
+   },
+   "strict": true
+  }
+ ],
+ "fees": [
+  {
+   "name": "get_fee_status",
+   "description": "Dues, months and payment channels. Verified parents only.",
+   "input_schema": {
+    "type": "object",
+    "properties": {
+     "student_ref": {
+      "type": "string",
+      "description": "Reference returned by verify_parent"
+     }
+    },
+    "additionalProperties": false,
+    "required": [
+     "student_ref"
+    ]
+   },
+   "strict": true
+  },
+  {
+   "name": "get_fee_table",
+   "description": "Approved fee structure (public). Returns fee heads with amount_pkr and frequency for a class/program (school-wide heads like admission fee are included), or the whole table. Quote amounts exactly; never add them up.",
+   "input_schema": {
+    "type": "object",
+    "properties": {
+     "program_or_class": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "description": "Class or program as the institution names it, e.g. \"Class 3\", \"Playgroup\", \"BS Computer Science\"; null for the whole table"
+     },
+     "academic_year": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "description": "e.g. \"2026-27\"; null for current data"
+     }
+    },
+    "additionalProperties": false,
+    "required": [
+     "program_or_class",
+     "academic_year"
+    ]
+   },
+   "strict": true
+  },
+  {
+   "name": "handoff_to_human",
+   "description": "Hand the conversation to office staff (they reply in this chat). Use when the contact asks for a person, complains, disputes a fee, mentions hardship, or you cannot help after two tries.",
+   "input_schema": {
+    "type": "object",
+    "properties": {
+     "reason": {
+      "type": "string",
+      "enum": [
+       "human_requested",
+       "complaint",
+       "fee_dispute",
+       "hardship",
+       "cannot_answer",
+       "booking_change",
+       "verification_failed",
+       "fee_module_unavailable",
+       "other"
+      ]
+     },
+     "summary": {
+      "type": "string",
+      "description": "2-3 sentences for the staff member\n\n{maxLength: 500}"
+     },
+     "urgency": {
+      "type": "string",
+      "enum": [
+       "low",
+       "normal",
+       "high"
+      ]
+     }
+    },
+    "additionalProperties": false,
+    "required": [
+     "reason",
+     "summary",
+     "urgency"
+    ]
+   },
+   "strict": true
+  },
+  {
+   "name": "raise_dispute",
+   "description": "Record a fee dispute and hand off. Verified parents only.",
+   "input_schema": {
+    "type": "object",
+    "properties": {
+     "student_ref": {
+      "type": "string"
+     },
+     "summary": {
+      "type": "string",
+      "description": "{maxLength: 500}"
+     }
+    },
+    "additionalProperties": false,
+    "required": [
+     "student_ref",
+     "summary"
+    ]
+   },
+   "strict": true
+  },
+  {
+   "name": "record_payment_promise",
+   "description": "Record the date the parent promised to pay; schedules a follow-up. Verified parents only.",
+   "input_schema": {
+    "type": "object",
+    "properties": {
+     "student_ref": {
+      "type": "string"
+     },
+     "promised_date": {
+      "type": "string",
+      "format": "date"
+     },
+     "amount_pkr": {
+      "anyOf": [
+       {
+        "type": "integer",
+        "description": "{minimum: 0}"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "description": "Only if the contact stated an amount"
+     },
+     "note": {
+      "anyOf": [
+       {
+        "type": "string",
+        "description": "{maxLength: 300}"
+       },
+       {
+        "type": "null"
+       }
+      ]
+     }
+    },
+    "additionalProperties": false,
+    "required": [
+     "student_ref",
+     "promised_date",
+     "amount_pkr",
+     "note"
+    ]
+   },
+   "strict": true
+  },
+  {
+   "name": "request_receipt",
+   "description": "Ask the parent for a payment receipt photo. Verified parents only.",
+   "input_schema": {
+    "type": "object",
+    "properties": {
+     "student_ref": {
+      "type": "string",
+      "description": "Reference returned by verify_parent"
+     }
+    },
+    "additionalProperties": false,
+    "required": [
+     "student_ref"
+    ]
+   },
+   "strict": true
+  },
+  {
+   "name": "search_knowledge",
+   "description": "Search the institution's own documents (prospectus, notices, policies). Use for descriptive questions: facilities, process, requirements, uniform, timings, hostel. Returns passages in <source> tags. Numbers in passages are NOT authoritative — use the get_* fact tools for fees, dates, eligibility and fares.",
+   "input_schema": {
+    "type": "object",
+    "properties": {
+     "queries": {
+      "type": "array",
+      "description": "1-3 short queries: the contact's wording, an English rewrite, and an Urdu-script rewrite if they wrote in Urdu\n\n{maxItems: 3}",
+      "items": {
+       "type": "string"
+      },
+      "minItems": 1
+     },
+     "top_k": {
+      "anyOf": [
+       {
+        "type": "integer",
+        "description": "{maximum: 5, minimum: 1}"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "description": "Max passages (default 5)\n\n{default: None}"
+     }
+    },
+    "additionalProperties": false,
+    "required": [
+     "queries",
+     "top_k"
+    ]
+   },
+   "strict": true
+  },
+  {
+   "name": "set_contact_language",
+   "description": "Remember the contact's preferred language when they ask you to switch (en, ur = Urdu script, roman_ur = Roman Urdu).",
+   "input_schema": {
+    "type": "object",
+    "properties": {
+     "language": {
+      "type": "string",
+      "enum": [
+       "en",
+       "ur",
+       "roman_ur"
+      ]
+     }
+    },
+    "additionalProperties": false,
+    "required": [
+     "language"
+    ]
+   },
+   "strict": true
+  },
+  {
+   "name": "submit_payment_proof",
+   "description": "Attach a receipt image for staff confirmation. Verified parents only.",
+   "input_schema": {
+    "type": "object",
+    "properties": {
+     "student_ref": {
+      "type": "string"
+     },
+     "media_id": {
+      "type": "string",
+      "description": "Id of the image the contact sent"
+     }
+    },
+    "additionalProperties": false,
+    "required": [
+     "student_ref",
+     "media_id"
+    ]
+   },
+   "strict": true
+  },
+  {
+   "name": "verify_parent",
+   "description": "Verify a parent before any student-specific fee information: student name + class or roll number (+ last 4 digits of the registered phone if asked). Max 3 attempts.",
+   "input_schema": {
+    "type": "object",
+    "properties": {
+     "student_name": {
+      "type": "string",
+      "description": "{maxLength: 120, minLength: 1}"
+     },
+     "class_or_roll": {
+      "type": "string",
+      "description": "{maxLength: 40, minLength: 1}"
+     },
+     "phone_last4": {
+      "anyOf": [
+       {
+        "type": "string",
+        "description": "{maxLength: 4}"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "description": "Last 4 digits of registered phone"
+     }
+    },
+    "additionalProperties": false,
+    "required": [
+     "student_name",
+     "class_or_roll",
+     "phone_last4"
+    ]
+   },
+   "strict": true
+  }
+ ],
+ "permissions": {
+  "book_visit": {
+   "permission": "public",
+   "sideEffect": "write",
+   "modules": [
+    "admissions"
+   ],
+   "readOnlyHint": false
+  },
+  "get_fee_status": {
+   "permission": "verified_parent",
+   "sideEffect": "read",
+   "modules": [
+    "fees"
+   ],
+   "readOnlyHint": true
+  },
+  "get_fee_table": {
+   "permission": "public",
+   "sideEffect": "read",
+   "modules": [
+    "admissions",
+    "fees"
+   ],
+   "readOnlyHint": true
+  },
+  "get_key_dates": {
+   "permission": "public",
+   "sideEffect": "read",
+   "modules": [
+    "admissions"
+   ],
+   "readOnlyHint": true
+  },
+  "get_programs": {
+   "permission": "public",
+   "sideEffect": "read",
+   "modules": [
+    "admissions"
+   ],
+   "readOnlyHint": true
+  },
+  "get_scholarships": {
+   "permission": "public",
+   "sideEffect": "read",
+   "modules": [
+    "admissions"
+   ],
+   "readOnlyHint": true
+  },
+  "get_transport_routes": {
+   "permission": "public",
+   "sideEffect": "read",
+   "modules": [
+    "admissions"
+   ],
+   "readOnlyHint": true
+  },
+  "get_visit_slots": {
+   "permission": "public",
+   "sideEffect": "read",
+   "modules": [
+    "admissions"
+   ],
+   "readOnlyHint": true
+  },
+  "handoff_to_human": {
+   "permission": "public",
+   "sideEffect": "write",
+   "modules": [
+    "all"
+   ],
+   "readOnlyHint": false
+  },
+  "raise_dispute": {
+   "permission": "verified_parent",
+   "sideEffect": "write",
+   "modules": [
+    "fees"
+   ],
+   "readOnlyHint": false
+  },
+  "record_payment_promise": {
+   "permission": "verified_parent",
+   "sideEffect": "write",
+   "modules": [
+    "fees"
+   ],
+   "readOnlyHint": false
+  },
+  "request_receipt": {
+   "permission": "verified_parent",
+   "sideEffect": "state",
+   "modules": [
+    "fees"
+   ],
+   "readOnlyHint": false
+  },
+  "save_lead": {
+   "permission": "public",
+   "sideEffect": "write",
+   "modules": [
+    "admissions"
+   ],
+   "readOnlyHint": false
+  },
+  "schedule_followup": {
+   "permission": "public",
+   "sideEffect": "write",
+   "modules": [
+    "admissions"
+   ],
+   "readOnlyHint": false
+  },
+  "search_knowledge": {
+   "permission": "public",
+   "sideEffect": "read",
+   "modules": [
+    "all"
+   ],
+   "readOnlyHint": true
+  },
+  "set_contact_language": {
+   "permission": "public",
+   "sideEffect": "write",
+   "modules": [
+    "all"
+   ],
+   "readOnlyHint": false
+  },
+  "submit_payment_proof": {
+   "permission": "verified_parent",
+   "sideEffect": "write",
+   "modules": [
+    "fees"
+   ],
+   "readOnlyHint": false
+  },
+  "verify_parent": {
+   "permission": "public",
+   "sideEffect": "gate",
+   "modules": [
+    "fees"
+   ],
+   "readOnlyHint": false
+  }
+ }
+}

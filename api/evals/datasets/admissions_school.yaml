@@ -1,0 +1,1062 @@
+# Admissions eval — school (abc-grammar-school). 20 EN / 20 UR / 20 Roman Urdu. Facts match seeds/*/seed.yaml.
+# Fact types: pkr (exact amount), date (ISO; any EN/UR/RU rendering), text (any of).
+suite: admissions_school
+cases:
+- id: sch-en-fee-class3
+  institution: abc-grammar-school
+  channel: widget
+  language: en
+  message: What is the monthly fee for Class 3?
+  expect:
+    module: admissions
+    intents:
+    - fee_structure
+    must_call_tools:
+    - get_fee_table
+    must_include_facts:
+    - type: pkr
+      value: 12500
+    must_cite: true
+    must_not_contain: []
+    language: en
+- id: sch-en-fee-playgroup
+  institution: abc-grammar-school
+  channel: widget
+  language: en
+  message: How much is the tuition for Playgroup?
+  expect:
+    module: admissions
+    intents:
+    - fee_structure
+    must_call_tools:
+    - get_fee_table
+    must_include_facts:
+    - type: pkr
+      value: 9500
+    must_cite: true
+    must_not_contain: []
+    language: en
+- id: sch-en-fee-admission
+  institution: abc-grammar-school
+  channel: widget
+  language: en
+  message: What is the admission fee?
+  expect:
+    module: admissions
+    intents:
+    - fee_structure
+    must_call_tools:
+    - get_fee_table
+    must_include_facts:
+    - type: pkr
+      value: 25000
+    must_cite: true
+    must_not_contain: []
+    language: en
+- id: sch-en-fee-security
+  institution: abc-grammar-school
+  channel: widget
+  language: en
+  message: Is there a security deposit and how much is it?
+  expect:
+    module: admissions
+    intents:
+    - fee_structure
+    must_call_tools:
+    - get_fee_table
+    must_include_facts:
+    - type: pkr
+      value: 20000
+    must_cite: true
+    must_not_contain: []
+    language: en
+- id: sch-en-fee-annual
+  institution: abc-grammar-school
+  channel: widget
+  language: en
+  message: Are there any annual charges?
+  expect:
+    module: admissions
+    intents:
+    - fee_structure
+    must_call_tools:
+    - get_fee_table
+    must_include_facts:
+    - type: pkr
+      value: 12000
+    must_cite: true
+    must_not_contain: []
+    language: en
+- id: sch-en-fee-class9
+  institution: abc-grammar-school
+  channel: widget
+  language: en
+  message: My daughter will join Class 9. What is the monthly tuition?
+  expect:
+    module: admissions
+    intents:
+    - fee_structure
+    must_call_tools:
+    - get_fee_table
+    must_include_facts:
+    - type: pkr
+      value: 16500
+    must_cite: true
+    must_not_contain: []
+    language: en
+- id: sch-en-fee-class6
+  institution: abc-grammar-school
+  channel: widget
+  language: en
+  message: Tuition fee for Class 6 please
+  expect:
+    module: admissions
+    intents:
+    - fee_structure
+    must_call_tools:
+    - get_fee_table
+    must_include_facts:
+    - type: pkr
+      value: 14500
+    must_cite: true
+    must_not_contain: []
+    language: en
+- id: sch-en-transport-dha
+  institution: abc-grammar-school
+  channel: widget
+  language: en
+  message: Do you have a van from DHA and what does it cost?
+  expect:
+    module: admissions
+    intents:
+    - transport
+    must_call_tools:
+    - get_transport_routes
+    must_include_facts:
+    - type: pkr
+      value: 8500
+    must_cite: true
+    must_not_contain: []
+    language: en
+- id: sch-en-transport-johar
+  institution: abc-grammar-school
+  channel: widget
+  language: en
+  message: We live in Johar Town. Is transport available?
+  expect:
+    module: admissions
+    intents:
+    - transport
+    must_call_tools:
+    - get_transport_routes
+    must_include_facts:
+    - type: pkr
+      value: 6000
+    must_cite: true
+    must_not_contain: []
+    language: en
+- id: sch-en-timings
+  institution: abc-grammar-school
+  channel: widget
+  language: en
+  message: What are the school timings?
+  expect:
+    module: admissions
+    intents:
+    - facilities
+    must_call_tools:
+    - search_knowledge
+    must_include_facts:
+    - type: text
+      value:
+      - '7:45'
+      - 07:45
+    must_cite: true
+    must_not_contain:
+    - PKR
+    language: en
+- id: sch-en-test-date
+  institution: abc-grammar-school
+  channel: widget
+  language: en
+  message: When is the admission test for Class 4?
+  expect:
+    module: admissions
+    intents:
+    - admission_dates
+    - test
+    must_call_tools:
+    - get_key_dates
+    must_include_facts:
+    - type: date
+      value: '2027-03-13'
+    must_cite: true
+    must_not_contain: []
+    language: en
+- id: sch-en-last-date
+  institution: abc-grammar-school
+  channel: widget
+  language: en
+  message: What is the last date to apply?
+  expect:
+    module: admissions
+    intents:
+    - admission_dates
+    must_call_tools:
+    - get_key_dates
+    must_include_facts:
+    - type: date
+      value: '2027-04-30'
+    must_cite: true
+    must_not_contain: []
+    language: en
+- id: sch-en-sibling
+  institution: abc-grammar-school
+  channel: widget
+  language: en
+  message: Is there a discount for a second child?
+  expect:
+    module: admissions
+    intents:
+    - scholarship
+    must_call_tools:
+    - get_scholarships
+    must_include_facts:
+    - type: text
+      value:
+      - 10%
+      - 10 %
+      - ١٠
+    must_cite: true
+    must_not_contain: []
+    language: en
+- id: sch-en-documents
+  institution: abc-grammar-school
+  channel: widget
+  language: en
+  message: Which documents are needed for admission?
+  expect:
+    module: admissions
+    intents:
+    - admission_process
+    must_call_tools:
+    - search_knowledge
+    must_include_facts:
+    - type: text
+      value:
+      - B-Form
+      - B Form
+      - ب فارم
+      - بی فارم
+    must_cite: true
+    must_not_contain:
+    - PKR
+    language: en
+- id: sch-en-visit
+  institution: abc-grammar-school
+  channel: widget
+  language: en
+  message: Can I come to see the campus this week?
+  expect:
+    module: admissions
+    intents:
+    - visit
+    must_call_tools:
+    - get_visit_slots
+    must_include_facts: []
+    must_cite: false
+    must_not_contain: []
+    language: en
+- id: sch-en-greeting
+  institution: abc-grammar-school
+  channel: widget
+  language: en
+  message: Hello
+  expect:
+    module: general
+    intents:
+    - greeting
+    must_call_tools: []
+    must_include_facts: []
+    must_cite: false
+    must_not_contain:
+    - PKR
+    language: en
+- id: sch-en-unknown-pool
+  institution: abc-grammar-school
+  channel: widget
+  language: en
+  message: Do you have a swimming pool?
+  expect:
+    module: admissions
+    intents:
+    - facilities
+    must_call_tools: []
+    must_include_facts: []
+    must_cite: false
+    must_not_contain:
+    - yes, we have a swimming pool
+    language: en
+- id: sch-en-no-total
+  institution: abc-grammar-school
+  channel: widget
+  language: en
+  message: What will be the total I pay at admission for Class 1?
+  expect:
+    module: admissions
+    intents:
+    - fee_structure
+    must_call_tools:
+    - get_fee_table
+    must_include_facts:
+    - type: pkr
+      value: 11500
+    must_cite: true
+    must_not_contain:
+    - 56,500
+    - '56500'
+    - 56 500
+    language: en
+- id: sch-en-merit-scholarship
+  institution: abc-grammar-school
+  channel: widget
+  language: en
+  message: Do you give merit scholarships?
+  expect:
+    module: admissions
+    intents:
+    - scholarship
+    must_call_tools:
+    - get_scholarships
+    must_include_facts:
+    - type: text
+      value:
+      - 25%
+      - 90%
+      - 25 %
+      - 90 %
+    must_cite: true
+    must_not_contain: []
+    language: en
+- id: sch-en-lead
+  institution: abc-grammar-school
+  channel: widget
+  language: en
+  message: I'm Ayesha, my number is 0300-1234567. Please have the office call me about Class 3 admission for my
+    son Hamza.
+  expect:
+    module: admissions
+    intents:
+    - interest
+    - enquiry
+    must_call_tools:
+    - save_lead
+    must_include_facts: []
+    must_cite: false
+    must_not_contain: []
+    language: en
+- id: sch-ur-fee-class3
+  institution: abc-grammar-school
+  channel: widget
+  language: ur
+  message: کلاس 3 کی ماہانہ فیس کتنی ہے؟
+  expect:
+    module: admissions
+    intents:
+    - fee_structure
+    must_call_tools:
+    - get_fee_table
+    must_include_facts:
+    - type: pkr
+      value: 12500
+    must_cite: true
+    must_not_contain: []
+    language: ur
+- id: sch-ur-fee-playgroup
+  institution: abc-grammar-school
+  channel: whatsapp
+  language: ur
+  message: پلے گروپ کی ٹیوشن فیس کتنی ہے؟
+  expect:
+    module: admissions
+    intents:
+    - fee_structure
+    must_call_tools:
+    - get_fee_table
+    must_include_facts:
+    - type: pkr
+      value: 9500
+    must_cite: true
+    must_not_contain: []
+    language: ur
+- id: sch-ur-fee-admission
+  institution: abc-grammar-school
+  channel: widget
+  language: ur
+  message: داخلہ فیس کتنی ہے؟
+  expect:
+    module: admissions
+    intents:
+    - fee_structure
+    must_call_tools:
+    - get_fee_table
+    must_include_facts:
+    - type: pkr
+      value: 25000
+    must_cite: true
+    must_not_contain: []
+    language: ur
+- id: sch-ur-fee-security
+  institution: abc-grammar-school
+  channel: whatsapp
+  language: ur
+  message: سیکیورٹی ڈپازٹ کتنا ہے؟
+  expect:
+    module: admissions
+    intents:
+    - fee_structure
+    must_call_tools:
+    - get_fee_table
+    must_include_facts:
+    - type: pkr
+      value: 20000
+    must_cite: true
+    must_not_contain: []
+    language: ur
+- id: sch-ur-fee-annual
+  institution: abc-grammar-school
+  channel: widget
+  language: ur
+  message: سالانہ چارجز کتنے ہیں؟
+  expect:
+    module: admissions
+    intents:
+    - fee_structure
+    must_call_tools:
+    - get_fee_table
+    must_include_facts:
+    - type: pkr
+      value: 12000
+    must_cite: true
+    must_not_contain: []
+    language: ur
+- id: sch-ur-fee-class9
+  institution: abc-grammar-school
+  channel: whatsapp
+  language: ur
+  message: میری بیٹی نویں کلاس میں داخلہ لے گی، ماہانہ فیس کیا ہے؟
+  expect:
+    module: admissions
+    intents:
+    - fee_structure
+    must_call_tools:
+    - get_fee_table
+    must_include_facts:
+    - type: pkr
+      value: 16500
+    must_cite: true
+    must_not_contain: []
+    language: ur
+- id: sch-ur-fee-class6
+  institution: abc-grammar-school
+  channel: widget
+  language: ur
+  message: چھٹی کلاس کی فیس بتا دیں
+  expect:
+    module: admissions
+    intents:
+    - fee_structure
+    must_call_tools:
+    - get_fee_table
+    must_include_facts:
+    - type: pkr
+      value: 14500
+    must_cite: true
+    must_not_contain: []
+    language: ur
+- id: sch-ur-transport-dha
+  institution: abc-grammar-school
+  channel: whatsapp
+  language: ur
+  message: کیا ڈی ایچ اے سے وین کی سہولت ہے؟ کرایہ کتنا ہے؟
+  expect:
+    module: admissions
+    intents:
+    - transport
+    must_call_tools:
+    - get_transport_routes
+    must_include_facts:
+    - type: pkr
+      value: 8500
+    must_cite: true
+    must_not_contain: []
+    language: ur
+- id: sch-ur-transport-johar
+  institution: abc-grammar-school
+  channel: widget
+  language: ur
+  message: ہم جوہر ٹاؤن میں رہتے ہیں، ٹرانسپورٹ ملے گی؟
+  expect:
+    module: admissions
+    intents:
+    - transport
+    must_call_tools:
+    - get_transport_routes
+    must_include_facts:
+    - type: pkr
+      value: 6000
+    must_cite: true
+    must_not_contain: []
+    language: ur
+- id: sch-ur-timings
+  institution: abc-grammar-school
+  channel: whatsapp
+  language: ur
+  message: اسکول کے اوقات کیا ہیں؟
+  expect:
+    module: admissions
+    intents:
+    - facilities
+    must_call_tools:
+    - search_knowledge
+    must_include_facts:
+    - type: text
+      value:
+      - '7:45'
+      - 07:45
+    must_cite: true
+    must_not_contain:
+    - PKR
+    language: ur
+- id: sch-ur-test-date
+  institution: abc-grammar-school
+  channel: widget
+  language: ur
+  message: کلاس 4 کا داخلہ ٹیسٹ کب ہے؟
+  expect:
+    module: admissions
+    intents:
+    - admission_dates
+    - test
+    must_call_tools:
+    - get_key_dates
+    must_include_facts:
+    - type: date
+      value: '2027-03-13'
+    must_cite: true
+    must_not_contain: []
+    language: ur
+- id: sch-ur-last-date
+  institution: abc-grammar-school
+  channel: whatsapp
+  language: ur
+  message: داخلے کی آخری تاریخ کیا ہے؟
+  expect:
+    module: admissions
+    intents:
+    - admission_dates
+    must_call_tools:
+    - get_key_dates
+    must_include_facts:
+    - type: date
+      value: '2027-04-30'
+    must_cite: true
+    must_not_contain: []
+    language: ur
+- id: sch-ur-sibling
+  institution: abc-grammar-school
+  channel: widget
+  language: ur
+  message: کیا دوسرے بچے پر رعایت ملتی ہے؟
+  expect:
+    module: admissions
+    intents:
+    - scholarship
+    must_call_tools:
+    - get_scholarships
+    must_include_facts:
+    - type: text
+      value:
+      - 10%
+      - 10 %
+      - ١٠
+    must_cite: true
+    must_not_contain: []
+    language: ur
+- id: sch-ur-documents
+  institution: abc-grammar-school
+  channel: whatsapp
+  language: ur
+  message: داخلے کے لیے کون سے کاغذات چاہئیں؟
+  expect:
+    module: admissions
+    intents:
+    - admission_process
+    must_call_tools:
+    - search_knowledge
+    must_include_facts:
+    - type: text
+      value:
+      - B-Form
+      - B Form
+      - ب فارم
+      - بی فارم
+    must_cite: true
+    must_not_contain:
+    - PKR
+    language: ur
+- id: sch-ur-visit
+  institution: abc-grammar-school
+  channel: widget
+  language: ur
+  message: کیا میں اس ہفتے اسکول دیکھنے آ سکتی ہوں؟
+  expect:
+    module: admissions
+    intents:
+    - visit
+    must_call_tools:
+    - get_visit_slots
+    must_include_facts: []
+    must_cite: false
+    must_not_contain: []
+    language: ur
+- id: sch-ur-greeting
+  institution: abc-grammar-school
+  channel: whatsapp
+  language: ur
+  message: السلام علیکم
+  expect:
+    module: general
+    intents:
+    - greeting
+    must_call_tools: []
+    must_include_facts: []
+    must_cite: false
+    must_not_contain:
+    - PKR
+    language: ur
+- id: sch-ur-unknown-pool
+  institution: abc-grammar-school
+  channel: widget
+  language: ur
+  message: کیا اسکول میں سوئمنگ پول ہے؟
+  expect:
+    module: admissions
+    intents:
+    - facilities
+    must_call_tools: []
+    must_include_facts: []
+    must_cite: false
+    must_not_contain:
+    - yes, we have a swimming pool
+    language: ur
+- id: sch-ur-no-total
+  institution: abc-grammar-school
+  channel: whatsapp
+  language: ur
+  message: کلاس 1 کے داخلے پر کل کتنی رقم دینی ہوگی؟
+  expect:
+    module: admissions
+    intents:
+    - fee_structure
+    must_call_tools:
+    - get_fee_table
+    must_include_facts:
+    - type: pkr
+      value: 11500
+    must_cite: true
+    must_not_contain:
+    - 56,500
+    - '56500'
+    - 56 500
+    language: ur
+- id: sch-ur-merit-scholarship
+  institution: abc-grammar-school
+  channel: widget
+  language: ur
+  message: کیا میرٹ اسکالرشپ ملتی ہے؟
+  expect:
+    module: admissions
+    intents:
+    - scholarship
+    must_call_tools:
+    - get_scholarships
+    must_include_facts:
+    - type: text
+      value:
+      - 25%
+      - 90%
+      - 25 %
+      - 90 %
+    must_cite: true
+    must_not_contain: []
+    language: ur
+- id: sch-ur-lead
+  institution: abc-grammar-school
+  channel: whatsapp
+  language: ur
+  message: میں عائشہ ہوں، میرا نمبر 0300-1234567 ہے۔ بیٹے حمزہ کے کلاس 3 میں داخلے کے لیے دفتر سے کال کروا دیں۔
+  expect:
+    module: admissions
+    intents:
+    - interest
+    - enquiry
+    must_call_tools:
+    - save_lead
+    must_include_facts: []
+    must_cite: false
+    must_not_contain: []
+    language: ur
+- id: sch-roman_ur-fee-class3
+  institution: abc-grammar-school
+  channel: widget
+  language: roman_ur
+  message: Class 3 ki monthly fee kitni hai?
+  expect:
+    module: admissions
+    intents:
+    - fee_structure
+    must_call_tools:
+    - get_fee_table
+    must_include_facts:
+    - type: pkr
+      value: 12500
+    must_cite: true
+    must_not_contain: []
+    language: roman_ur
+- id: sch-roman_ur-fee-playgroup
+  institution: abc-grammar-school
+  channel: whatsapp
+  language: roman_ur
+  message: Playgroup ki tuition fee kya hai?
+  expect:
+    module: admissions
+    intents:
+    - fee_structure
+    must_call_tools:
+    - get_fee_table
+    must_include_facts:
+    - type: pkr
+      value: 9500
+    must_cite: true
+    must_not_contain: []
+    language: roman_ur
+- id: sch-roman_ur-fee-admission
+  institution: abc-grammar-school
+  channel: widget
+  language: roman_ur
+  message: Admission fee kitni hai aap ke school mein?
+  expect:
+    module: admissions
+    intents:
+    - fee_structure
+    must_call_tools:
+    - get_fee_table
+    must_include_facts:
+    - type: pkr
+      value: 25000
+    must_cite: true
+    must_not_contain: []
+    language: roman_ur
+- id: sch-roman_ur-fee-security
+  institution: abc-grammar-school
+  channel: whatsapp
+  language: roman_ur
+  message: Security deposit kitna lagta hai?
+  expect:
+    module: admissions
+    intents:
+    - fee_structure
+    must_call_tools:
+    - get_fee_table
+    must_include_facts:
+    - type: pkr
+      value: 20000
+    must_cite: true
+    must_not_contain: []
+    language: roman_ur
+- id: sch-roman_ur-fee-annual
+  institution: abc-grammar-school
+  channel: widget
+  language: roman_ur
+  message: Annual charges kitne hain?
+  expect:
+    module: admissions
+    intents:
+    - fee_structure
+    must_call_tools:
+    - get_fee_table
+    must_include_facts:
+    - type: pkr
+      value: 12000
+    must_cite: true
+    must_not_contain: []
+    language: roman_ur
+- id: sch-roman_ur-fee-class9
+  institution: abc-grammar-school
+  channel: whatsapp
+  language: roman_ur
+  message: Beti Class 9 mein jayegi, monthly fee kitni hogi?
+  expect:
+    module: admissions
+    intents:
+    - fee_structure
+    must_call_tools:
+    - get_fee_table
+    must_include_facts:
+    - type: pkr
+      value: 16500
+    must_cite: true
+    must_not_contain: []
+    language: roman_ur
+- id: sch-roman_ur-fee-class6
+  institution: abc-grammar-school
+  channel: widget
+  language: roman_ur
+  message: Class 6 ki fee bata dein
+  expect:
+    module: admissions
+    intents:
+    - fee_structure
+    must_call_tools:
+    - get_fee_table
+    must_include_facts:
+    - type: pkr
+      value: 14500
+    must_cite: true
+    must_not_contain: []
+    language: roman_ur
+- id: sch-roman_ur-transport-dha
+  institution: abc-grammar-school
+  channel: whatsapp
+  language: roman_ur
+  message: DHA se van hai? Kiraya kitna hai?
+  expect:
+    module: admissions
+    intents:
+    - transport
+    must_call_tools:
+    - get_transport_routes
+    must_include_facts:
+    - type: pkr
+      value: 8500
+    must_cite: true
+    must_not_contain: []
+    language: roman_ur
+- id: sch-roman_ur-transport-johar
+  institution: abc-grammar-school
+  channel: widget
+  language: roman_ur
+  message: Hum Johar Town mein rehte hain, transport milegi?
+  expect:
+    module: admissions
+    intents:
+    - transport
+    must_call_tools:
+    - get_transport_routes
+    must_include_facts:
+    - type: pkr
+      value: 6000
+    must_cite: true
+    must_not_contain: []
+    language: roman_ur
+- id: sch-roman_ur-timings
+  institution: abc-grammar-school
+  channel: whatsapp
+  language: roman_ur
+  message: School ki timings kya hain?
+  expect:
+    module: admissions
+    intents:
+    - facilities
+    must_call_tools:
+    - search_knowledge
+    must_include_facts:
+    - type: text
+      value:
+      - '7:45'
+      - 07:45
+    must_cite: true
+    must_not_contain:
+    - PKR
+    language: roman_ur
+- id: sch-roman_ur-test-date
+  institution: abc-grammar-school
+  channel: widget
+  language: roman_ur
+  message: Class 4 ka admission test kab hai?
+  expect:
+    module: admissions
+    intents:
+    - admission_dates
+    - test
+    must_call_tools:
+    - get_key_dates
+    must_include_facts:
+    - type: date
+      value: '2027-03-13'
+    must_cite: true
+    must_not_contain: []
+    language: roman_ur
+- id: sch-roman_ur-last-date
+  institution: abc-grammar-school
+  channel: whatsapp
+  language: roman_ur
+  message: Apply karne ki last date kya hai?
+  expect:
+    module: admissions
+    intents:
+    - admission_dates
+    must_call_tools:
+    - get_key_dates
+    must_include_facts:
+    - type: date
+      value: '2027-04-30'
+    must_cite: true
+    must_not_contain: []
+    language: roman_ur
+- id: sch-roman_ur-sibling
+  institution: abc-grammar-school
+  channel: widget
+  language: roman_ur
+  message: Doosre bachay ke liye discount hai?
+  expect:
+    module: admissions
+    intents:
+    - scholarship
+    must_call_tools:
+    - get_scholarships
+    must_include_facts:
+    - type: text
+      value:
+      - 10%
+      - 10 %
+      - ١٠
+    must_cite: true
+    must_not_contain: []
+    language: roman_ur
+- id: sch-roman_ur-documents
+  institution: abc-grammar-school
+  channel: whatsapp
+  language: roman_ur
+  message: Admission ke liye kaun se documents chahiye?
+  expect:
+    module: admissions
+    intents:
+    - admission_process
+    must_call_tools:
+    - search_knowledge
+    must_include_facts:
+    - type: text
+      value:
+      - B-Form
+      - B Form
+      - ب فارم
+      - بی فارم
+    must_cite: true
+    must_not_contain:
+    - PKR
+    language: roman_ur
+- id: sch-roman_ur-visit
+  institution: abc-grammar-school
+  channel: widget
+  language: roman_ur
+  message: Kya main is hafte campus dekhne aa sakti hoon?
+  expect:
+    module: admissions
+    intents:
+    - visit
+    must_call_tools:
+    - get_visit_slots
+    must_include_facts: []
+    must_cite: false
+    must_not_contain: []
+    language: roman_ur
+- id: sch-roman_ur-greeting
+  institution: abc-grammar-school
+  channel: whatsapp
+  language: roman_ur
+  message: Assalam o alaikum
+  expect:
+    module: general
+    intents:
+    - greeting
+    must_call_tools: []
+    must_include_facts: []
+    must_cite: false
+    must_not_contain:
+    - PKR
+    language: roman_ur
+- id: sch-roman_ur-unknown-pool
+  institution: abc-grammar-school
+  channel: widget
+  language: roman_ur
+  message: School mein swimming pool hai?
+  expect:
+    module: admissions
+    intents:
+    - facilities
+    must_call_tools: []
+    must_include_facts: []
+    must_cite: false
+    must_not_contain:
+    - yes, we have a swimming pool
+    language: roman_ur
+- id: sch-roman_ur-no-total
+  institution: abc-grammar-school
+  channel: whatsapp
+  language: roman_ur
+  message: Class 1 ke admission par total kitna dena hoga?
+  expect:
+    module: admissions
+    intents:
+    - fee_structure
+    must_call_tools:
+    - get_fee_table
+    must_include_facts:
+    - type: pkr
+      value: 11500
+    must_cite: true
+    must_not_contain:
+    - 56,500
+    - '56500'
+    - 56 500
+    language: roman_ur
+- id: sch-roman_ur-merit-scholarship
+  institution: abc-grammar-school
+  channel: widget
+  language: roman_ur
+  message: Merit scholarship milti hai?
+  expect:
+    module: admissions
+    intents:
+    - scholarship
+    must_call_tools:
+    - get_scholarships
+    must_include_facts:
+    - type: text
+      value:
+      - 25%
+      - 90%
+      - 25 %
+      - 90 %
+    must_cite: true
+    must_not_contain: []
+    language: roman_ur
+- id: sch-roman_ur-lead
+  institution: abc-grammar-school
+  channel: whatsapp
+  language: roman_ur
+  message: Main Ayesha hoon, number 0300-1234567 hai. Bete Hamza ke Class 3 admission ke liye office se call karwa
+    dein.
+  expect:
+    module: admissions
+    intents:
+    - interest
+    - enquiry
+    must_call_tools:
+    - save_lead
+    must_include_facts: []
+    must_cite: false
+    must_not_contain: []
+    language: roman_ur

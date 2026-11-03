@@ -1,0 +1,84 @@
+# Scripted demo conversations (step 3.10): 3 institution types × EN / Urdu / Roman Urdu.
+# Run: cd api && uv run python -m scripts.chat --script ../docs/demo/scripts.yaml --mode live --out ../docs/demo
+conversations:
+  - id: school-roman_ur
+    institution: abc-grammar-school
+    channel: whatsapp
+    language: roman_ur
+    turns:
+      - Assalam o alaikum
+      - Beta Class 3 mein admission lega, monthly fee kitni hai?
+      - DHA se van ki facility hai? Kiraya kitna hai?
+      - Theek hai, is hafte campus visit karna hai
+    expect_tools: [get_fee_table, get_transport_routes, get_visit_slots]
+  - id: school-en
+    institution: abc-grammar-school
+    channel: widget
+    language: en
+    turns:
+      - Hi, what is the admission fee and security deposit?
+      - Is there a discount for a second child?
+      - What documents do we need?
+    expect_tools: [get_fee_table, get_scholarships, search_knowledge]
+  - id: school-ur
+    institution: abc-grammar-school
+    channel: whatsapp
+    language: ur
+    turns:
+      - السلام علیکم، نرسری کی فیس کتنی ہے؟
+      - داخلہ ٹیسٹ کب ہوتا ہے؟
+      - اسکول کے اوقات کیا ہیں؟
+    expect_tools: [get_fee_table, get_key_dates]  # timings come from the institution profile
+  - id: college-roman_ur
+    institution: punjab-model-college
+    channel: whatsapp
+    language: roman_ur
+    turns:
+      - AoA, FSc Pre-Medical ke liye kitne marks chahiye?
+      - Mere 91% marks hain, scholarship milegi?
+      - Fee kitni hai monthly?
+      - Counselling session book karna hai
+    expect_tools: [get_programs, get_scholarships, get_fee_table, get_visit_slots]
+  - id: college-en
+    institution: punjab-model-college
+    channel: widget
+    language: en
+    turns:
+      - Which programs do you offer?
+      - When is the last date to apply?
+      - Do you have a hostel?
+    expect_tools: [get_programs, get_key_dates]  # "no hostel" is in the institution profile
+  - id: college-ur
+    institution: punjab-model-college
+    channel: whatsapp
+    language: ur
+    turns:
+      - آئی سی ایس کی ماہانہ فیس کتنی ہے؟
+      - پہلی میرٹ لسٹ کب آئے گی؟
+    expect_tools: [get_fee_table, get_key_dates]
+  - id: university-en
+    institution: lits-university
+    channel: widget
+    language: en
+    turns:
+      - What is the eligibility and semester fee for BS Computer Science?
+      - When is the entry test and the last date to apply?
+      - I have 86% in FSc. What scholarship could I get?
+      - How do I apply?
+    expect_tools: [get_programs, get_fee_table, get_key_dates, get_scholarships]
+  - id: university-roman_ur
+    institution: lits-university
+    channel: whatsapp
+    language: roman_ur
+    turns:
+      - Larkiyon ke liye hostel hai? Fee kitni hai?
+      - Bahria Town se bus aati hai?
+    expect_tools: [get_fee_table, get_transport_routes]
+  - id: university-ur
+    institution: lits-university
+    channel: whatsapp
+    language: ur
+    turns:
+      - بی بی اے کی فیس اور اہلیت کیا ہے؟
+      - کلاسیں کب شروع ہوں گی؟
+    expect_tools: [get_fee_table, get_key_dates]

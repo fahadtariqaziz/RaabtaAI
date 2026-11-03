@@ -1,0 +1,1060 @@
+# Admissions eval — university (lits-university). 20 EN / 20 UR / 20 Roman Urdu. Facts match seeds/*/seed.yaml.
+# Fact types: pkr (exact amount), date (ISO; any EN/UR/RU rendering), text (any of).
+suite: admissions_university
+cases:
+- id: uni-en-fee-bscs
+  institution: lits-university
+  channel: widget
+  language: en
+  message: What is the semester fee for BS Computer Science?
+  expect:
+    module: admissions
+    intents:
+    - fee_structure
+    must_call_tools:
+    - get_fee_table
+    must_include_facts:
+    - type: pkr
+      value: 145000
+    must_cite: true
+    must_not_contain: []
+    language: en
+- id: uni-en-fee-bsse
+  institution: lits-university
+  channel: widget
+  language: en
+  message: Fee for BS Software Engineering?
+  expect:
+    module: admissions
+    intents:
+    - fee_structure
+    must_call_tools:
+    - get_fee_table
+    must_include_facts:
+    - type: pkr
+      value: 140000
+    must_cite: true
+    must_not_contain: []
+    language: en
+- id: uni-en-fee-bba
+  institution: lits-university
+  channel: widget
+  language: en
+  message: How much does BBA cost per semester?
+  expect:
+    module: admissions
+    intents:
+    - fee_structure
+    must_call_tools:
+    - get_fee_table
+    must_include_facts:
+    - type: pkr
+      value: 120000
+    must_cite: true
+    must_not_contain: []
+    language: en
+- id: uni-en-fee-mscs
+  institution: lits-university
+  channel: widget
+  language: en
+  message: MS Computer Science tuition?
+  expect:
+    module: admissions
+    intents:
+    - fee_structure
+    must_call_tools:
+    - get_fee_table
+    must_include_facts:
+    - type: pkr
+      value: 110000
+    must_cite: true
+    must_not_contain: []
+    language: en
+- id: uni-en-fee-admission
+  institution: lits-university
+  channel: widget
+  language: en
+  message: Is there a one-time admission fee?
+  expect:
+    module: admissions
+    intents:
+    - fee_structure
+    must_call_tools:
+    - get_fee_table
+    must_include_facts:
+    - type: pkr
+      value: 25000
+    must_cite: true
+    must_not_contain: []
+    language: en
+- id: uni-en-fee-processing
+  institution: lits-university
+  channel: widget
+  language: en
+  message: Is there an application fee?
+  expect:
+    module: admissions
+    intents:
+    - fee_structure
+    - admission_process
+    must_call_tools:
+    - get_fee_table
+    must_include_facts:
+    - type: pkr
+      value: 3000
+    must_cite: true
+    must_not_contain: []
+    language: en
+- id: uni-en-hostel-fee
+  institution: lits-university
+  channel: widget
+  language: en
+  message: Is there a hostel for girls and what is the fee?
+  expect:
+    module: admissions
+    intents:
+    - facilities
+    - fee_structure
+    must_call_tools:
+    - get_fee_table
+    must_include_facts:
+    - type: pkr
+      value: 35000
+    must_cite: true
+    must_not_contain: []
+    language: en
+- id: uni-en-elig-bscs
+  institution: lits-university
+  channel: widget
+  language: en
+  message: What is the eligibility for BS CS?
+  expect:
+    module: admissions
+    intents:
+    - eligibility
+    must_call_tools:
+    - get_programs
+    must_include_facts:
+    - type: text
+      value:
+      - 50%
+      - 50 %
+      - '50'
+    must_cite: true
+    must_not_contain: []
+    language: en
+- id: uni-en-elig-ee
+  institution: lits-university
+  channel: widget
+  language: en
+  message: Can I apply for Electrical Engineering with 58% in FSc?
+  expect:
+    module: admissions
+    intents:
+    - eligibility
+    must_call_tools:
+    - get_programs
+    must_include_facts:
+    - type: text
+      value:
+      - 60%
+      - 60 %
+      - '60'
+    must_cite: true
+    must_not_contain: []
+    language: en
+- id: uni-en-elig-ms
+  institution: lits-university
+  channel: widget
+  language: en
+  message: What CGPA do I need for MS CS?
+  expect:
+    module: admissions
+    intents:
+    - eligibility
+    must_call_tools:
+    - get_programs
+    must_include_facts:
+    - type: text
+      value:
+      - '2.5'
+    must_cite: true
+    must_not_contain: []
+    language: en
+- id: uni-en-last-date
+  institution: lits-university
+  channel: widget
+  language: en
+  message: What is the last date to apply for Fall 2027?
+  expect:
+    module: admissions
+    intents:
+    - admission_dates
+    must_call_tools:
+    - get_key_dates
+    must_include_facts:
+    - type: date
+      value: '2027-07-15'
+    must_cite: true
+    must_not_contain: []
+    language: en
+- id: uni-en-test-date
+  institution: lits-university
+  channel: widget
+  language: en
+  message: When is the entry test?
+  expect:
+    module: admissions
+    intents:
+    - admission_dates
+    - test
+    must_call_tools:
+    - get_key_dates
+    must_include_facts:
+    - type: date
+      value: '2027-07-20'
+    must_cite: true
+    must_not_contain: []
+    language: en
+- id: uni-en-merit-lists
+  institution: lits-university
+  channel: widget
+  language: en
+  message: When does the first merit list come out?
+  expect:
+    module: admissions
+    intents:
+    - admission_dates
+    must_call_tools:
+    - get_key_dates
+    must_include_facts:
+    - type: date
+      value: '2027-07-25'
+    must_cite: true
+    must_not_contain: []
+    language: en
+- id: uni-en-classes-begin
+  institution: lits-university
+  channel: widget
+  language: en
+  message: When do Fall classes begin?
+  expect:
+    module: admissions
+    intents:
+    - admission_dates
+    must_call_tools:
+    - get_key_dates
+    must_include_facts:
+    - type: date
+      value: '2027-09-01'
+    must_cite: true
+    must_not_contain: []
+    language: en
+- id: uni-en-merit-scholar
+  institution: lits-university
+  channel: widget
+  language: en
+  message: If I get 86%, what merit scholarship can I get?
+  expect:
+    module: admissions
+    intents:
+    - scholarship
+    must_call_tools:
+    - get_scholarships
+    must_include_facts:
+    - type: text
+      value:
+      - 75%
+      - 75 %
+    must_cite: true
+    must_not_contain: []
+    language: en
+- id: uni-en-need-aid
+  institution: lits-university
+  channel: widget
+  language: en
+  message: Is there need-based financial aid?
+  expect:
+    module: admissions
+    intents:
+    - scholarship
+    must_call_tools:
+    - get_scholarships
+    must_include_facts:
+    - type: text
+      value:
+      - 100%
+      - 100 %
+    must_cite: true
+    must_not_contain: []
+    language: en
+- id: uni-en-how-apply
+  institution: lits-university
+  channel: widget
+  language: en
+  message: How do I apply?
+  expect:
+    module: admissions
+    intents:
+    - admission_process
+    must_call_tools:
+    - search_knowledge
+    must_include_facts:
+    - type: text
+      value:
+      - admissions.lits.edu.pk
+    must_cite: true
+    must_not_contain: []
+    language: en
+- id: uni-en-transport-bahria
+  institution: lits-university
+  channel: widget
+  language: en
+  message: Is there a bus from Bahria Town?
+  expect:
+    module: admissions
+    intents:
+    - transport
+    must_call_tools:
+    - get_transport_routes
+    must_include_facts:
+    - type: pkr
+      value: 6500
+    must_cite: true
+    must_not_contain: []
+    language: en
+- id: uni-en-no-promise
+  institution: lits-university
+  channel: widget
+  language: en
+  message: Can you guarantee me admission in BS CS if I pay now?
+  expect:
+    module: admissions
+    intents:
+    - eligibility
+    must_call_tools: []
+    must_include_facts: []
+    must_cite: false
+    must_not_contain:
+    - you will get admission
+    - guaranteed
+    language: en
+- id: uni-en-test-slot
+  institution: lits-university
+  channel: widget
+  language: en
+  message: I want to book an entry test slot.
+  expect:
+    module: admissions
+    intents:
+    - test
+    must_call_tools:
+    - get_visit_slots
+    must_include_facts: []
+    must_cite: false
+    must_not_contain: []
+    language: en
+- id: uni-ur-fee-bscs
+  institution: lits-university
+  channel: widget
+  language: ur
+  message: بی ایس کمپیوٹر سائنس کی سمسٹر فیس کتنی ہے؟
+  expect:
+    module: admissions
+    intents:
+    - fee_structure
+    must_call_tools:
+    - get_fee_table
+    must_include_facts:
+    - type: pkr
+      value: 145000
+    must_cite: true
+    must_not_contain: []
+    language: ur
+- id: uni-ur-fee-bsse
+  institution: lits-university
+  channel: whatsapp
+  language: ur
+  message: بی ایس سافٹ ویئر انجینئرنگ کی فیس؟
+  expect:
+    module: admissions
+    intents:
+    - fee_structure
+    must_call_tools:
+    - get_fee_table
+    must_include_facts:
+    - type: pkr
+      value: 140000
+    must_cite: true
+    must_not_contain: []
+    language: ur
+- id: uni-ur-fee-bba
+  institution: lits-university
+  channel: widget
+  language: ur
+  message: بی بی اے کی فی سمسٹر فیس کتنی ہے؟
+  expect:
+    module: admissions
+    intents:
+    - fee_structure
+    must_call_tools:
+    - get_fee_table
+    must_include_facts:
+    - type: pkr
+      value: 120000
+    must_cite: true
+    must_not_contain: []
+    language: ur
+- id: uni-ur-fee-mscs
+  institution: lits-university
+  channel: whatsapp
+  language: ur
+  message: ایم ایس کمپیوٹر سائنس کی ٹیوشن؟
+  expect:
+    module: admissions
+    intents:
+    - fee_structure
+    must_call_tools:
+    - get_fee_table
+    must_include_facts:
+    - type: pkr
+      value: 110000
+    must_cite: true
+    must_not_contain: []
+    language: ur
+- id: uni-ur-fee-admission
+  institution: lits-university
+  channel: widget
+  language: ur
+  message: کیا ایک دفعہ کی داخلہ فیس ہے؟
+  expect:
+    module: admissions
+    intents:
+    - fee_structure
+    must_call_tools:
+    - get_fee_table
+    must_include_facts:
+    - type: pkr
+      value: 25000
+    must_cite: true
+    must_not_contain: []
+    language: ur
+- id: uni-ur-fee-processing
+  institution: lits-university
+  channel: whatsapp
+  language: ur
+  message: درخواست فیس کتنی ہے؟
+  expect:
+    module: admissions
+    intents:
+    - fee_structure
+    - admission_process
+    must_call_tools:
+    - get_fee_table
+    must_include_facts:
+    - type: pkr
+      value: 3000
+    must_cite: true
+    must_not_contain: []
+    language: ur
+- id: uni-ur-hostel-fee
+  institution: lits-university
+  channel: widget
+  language: ur
+  message: کیا لڑکیوں کے لیے ہاسٹل ہے اور فیس کتنی ہے؟
+  expect:
+    module: admissions
+    intents:
+    - facilities
+    - fee_structure
+    must_call_tools:
+    - get_fee_table
+    must_include_facts:
+    - type: pkr
+      value: 35000
+    must_cite: true
+    must_not_contain: []
+    language: ur
+- id: uni-ur-elig-bscs
+  institution: lits-university
+  channel: whatsapp
+  language: ur
+  message: بی ایس سی ایس کے لیے اہلیت کیا ہے؟
+  expect:
+    module: admissions
+    intents:
+    - eligibility
+    must_call_tools:
+    - get_programs
+    must_include_facts:
+    - type: text
+      value:
+      - 50%
+      - 50 %
+      - '50'
+    must_cite: true
+    must_not_contain: []
+    language: ur
+- id: uni-ur-elig-ee
+  institution: lits-university
+  channel: widget
+  language: ur
+  message: ایف ایس سی میں 58 فیصد کے ساتھ الیکٹریکل انجینئرنگ میں اپلائی کر سکتا ہوں؟
+  expect:
+    module: admissions
+    intents:
+    - eligibility
+    must_call_tools:
+    - get_programs
+    must_include_facts:
+    - type: text
+      value:
+      - 60%
+      - 60 %
+      - '60'
+    must_cite: true
+    must_not_contain: []
+    language: ur
+- id: uni-ur-elig-ms
+  institution: lits-university
+  channel: whatsapp
+  language: ur
+  message: ایم ایس سی ایس کے لیے کتنا سی جی پی اے چاہیے؟
+  expect:
+    module: admissions
+    intents:
+    - eligibility
+    must_call_tools:
+    - get_programs
+    must_include_facts:
+    - type: text
+      value:
+      - '2.5'
+    must_cite: true
+    must_not_contain: []
+    language: ur
+- id: uni-ur-last-date
+  institution: lits-university
+  channel: widget
+  language: ur
+  message: فال 2027 کے لیے اپلائی کرنے کی آخری تاریخ کیا ہے؟
+  expect:
+    module: admissions
+    intents:
+    - admission_dates
+    must_call_tools:
+    - get_key_dates
+    must_include_facts:
+    - type: date
+      value: '2027-07-15'
+    must_cite: true
+    must_not_contain: []
+    language: ur
+- id: uni-ur-test-date
+  institution: lits-university
+  channel: whatsapp
+  language: ur
+  message: انٹری ٹیسٹ کب ہے؟
+  expect:
+    module: admissions
+    intents:
+    - admission_dates
+    - test
+    must_call_tools:
+    - get_key_dates
+    must_include_facts:
+    - type: date
+      value: '2027-07-20'
+    must_cite: true
+    must_not_contain: []
+    language: ur
+- id: uni-ur-merit-lists
+  institution: lits-university
+  channel: widget
+  language: ur
+  message: پہلی میرٹ لسٹ کب آئے گی؟
+  expect:
+    module: admissions
+    intents:
+    - admission_dates
+    must_call_tools:
+    - get_key_dates
+    must_include_facts:
+    - type: date
+      value: '2027-07-25'
+    must_cite: true
+    must_not_contain: []
+    language: ur
+- id: uni-ur-classes-begin
+  institution: lits-university
+  channel: whatsapp
+  language: ur
+  message: فال کی کلاسیں کب شروع ہوں گی؟
+  expect:
+    module: admissions
+    intents:
+    - admission_dates
+    must_call_tools:
+    - get_key_dates
+    must_include_facts:
+    - type: date
+      value: '2027-09-01'
+    must_cite: true
+    must_not_contain: []
+    language: ur
+- id: uni-ur-merit-scholar
+  institution: lits-university
+  channel: widget
+  language: ur
+  message: اگر میرے 86 فیصد نمبر ہوں تو کتنی میرٹ اسکالرشپ ملے گی؟
+  expect:
+    module: admissions
+    intents:
+    - scholarship
+    must_call_tools:
+    - get_scholarships
+    must_include_facts:
+    - type: text
+      value:
+      - 75%
+      - 75 %
+    must_cite: true
+    must_not_contain: []
+    language: ur
+- id: uni-ur-need-aid
+  institution: lits-university
+  channel: whatsapp
+  language: ur
+  message: کیا ضرورت کی بنیاد پر مالی امداد ملتی ہے؟
+  expect:
+    module: admissions
+    intents:
+    - scholarship
+    must_call_tools:
+    - get_scholarships
+    must_include_facts:
+    - type: text
+      value:
+      - 100%
+      - 100 %
+    must_cite: true
+    must_not_contain: []
+    language: ur
+- id: uni-ur-how-apply
+  institution: lits-university
+  channel: widget
+  language: ur
+  message: میں کیسے اپلائی کروں؟
+  expect:
+    module: admissions
+    intents:
+    - admission_process
+    must_call_tools:
+    - search_knowledge
+    must_include_facts:
+    - type: text
+      value:
+      - admissions.lits.edu.pk
+    must_cite: true
+    must_not_contain: []
+    language: ur
+- id: uni-ur-transport-bahria
+  institution: lits-university
+  channel: whatsapp
+  language: ur
+  message: بحریہ ٹاؤن سے بس ہے؟
+  expect:
+    module: admissions
+    intents:
+    - transport
+    must_call_tools:
+    - get_transport_routes
+    must_include_facts:
+    - type: pkr
+      value: 6500
+    must_cite: true
+    must_not_contain: []
+    language: ur
+- id: uni-ur-no-promise
+  institution: lits-university
+  channel: widget
+  language: ur
+  message: اگر میں ابھی فیس دے دوں تو کیا بی ایس سی ایس میں داخلہ پکا ہے؟
+  expect:
+    module: admissions
+    intents:
+    - eligibility
+    must_call_tools: []
+    must_include_facts: []
+    must_cite: false
+    must_not_contain:
+    - you will get admission
+    - guaranteed
+    language: ur
+- id: uni-ur-test-slot
+  institution: lits-university
+  channel: whatsapp
+  language: ur
+  message: مجھے انٹری ٹیسٹ کا سلاٹ بک کروانا ہے۔
+  expect:
+    module: admissions
+    intents:
+    - test
+    must_call_tools:
+    - get_visit_slots
+    must_include_facts: []
+    must_cite: false
+    must_not_contain: []
+    language: ur
+- id: uni-roman_ur-fee-bscs
+  institution: lits-university
+  channel: widget
+  language: roman_ur
+  message: BS Computer Science ki semester fee kitni hai?
+  expect:
+    module: admissions
+    intents:
+    - fee_structure
+    must_call_tools:
+    - get_fee_table
+    must_include_facts:
+    - type: pkr
+      value: 145000
+    must_cite: true
+    must_not_contain: []
+    language: roman_ur
+- id: uni-roman_ur-fee-bsse
+  institution: lits-university
+  channel: whatsapp
+  language: roman_ur
+  message: BS Software Engineering ki fee?
+  expect:
+    module: admissions
+    intents:
+    - fee_structure
+    must_call_tools:
+    - get_fee_table
+    must_include_facts:
+    - type: pkr
+      value: 140000
+    must_cite: true
+    must_not_contain: []
+    language: roman_ur
+- id: uni-roman_ur-fee-bba
+  institution: lits-university
+  channel: widget
+  language: roman_ur
+  message: BBA ki per semester fee kitni hai?
+  expect:
+    module: admissions
+    intents:
+    - fee_structure
+    must_call_tools:
+    - get_fee_table
+    must_include_facts:
+    - type: pkr
+      value: 120000
+    must_cite: true
+    must_not_contain: []
+    language: roman_ur
+- id: uni-roman_ur-fee-mscs
+  institution: lits-university
+  channel: whatsapp
+  language: roman_ur
+  message: MS CS ki tuition kitni hai?
+  expect:
+    module: admissions
+    intents:
+    - fee_structure
+    must_call_tools:
+    - get_fee_table
+    must_include_facts:
+    - type: pkr
+      value: 110000
+    must_cite: true
+    must_not_contain: []
+    language: roman_ur
+- id: uni-roman_ur-fee-admission
+  institution: lits-university
+  channel: widget
+  language: roman_ur
+  message: One time admission fee kitni hai?
+  expect:
+    module: admissions
+    intents:
+    - fee_structure
+    must_call_tools:
+    - get_fee_table
+    must_include_facts:
+    - type: pkr
+      value: 25000
+    must_cite: true
+    must_not_contain: []
+    language: roman_ur
+- id: uni-roman_ur-fee-processing
+  institution: lits-university
+  channel: whatsapp
+  language: roman_ur
+  message: Application fee kitni hai?
+  expect:
+    module: admissions
+    intents:
+    - fee_structure
+    - admission_process
+    must_call_tools:
+    - get_fee_table
+    must_include_facts:
+    - type: pkr
+      value: 3000
+    must_cite: true
+    must_not_contain: []
+    language: roman_ur
+- id: uni-roman_ur-hostel-fee
+  institution: lits-university
+  channel: widget
+  language: roman_ur
+  message: Larkiyon ke liye hostel hai? Fee kitni hai?
+  expect:
+    module: admissions
+    intents:
+    - facilities
+    - fee_structure
+    must_call_tools:
+    - get_fee_table
+    must_include_facts:
+    - type: pkr
+      value: 35000
+    must_cite: true
+    must_not_contain: []
+    language: roman_ur
+- id: uni-roman_ur-elig-bscs
+  institution: lits-university
+  channel: whatsapp
+  language: roman_ur
+  message: BS CS ke liye eligibility kya hai?
+  expect:
+    module: admissions
+    intents:
+    - eligibility
+    must_call_tools:
+    - get_programs
+    must_include_facts:
+    - type: text
+      value:
+      - 50%
+      - 50 %
+      - '50'
+    must_cite: true
+    must_not_contain: []
+    language: roman_ur
+- id: uni-roman_ur-elig-ee
+  institution: lits-university
+  channel: widget
+  language: roman_ur
+  message: FSc mein 58% hain, Electrical Engineering mein apply kar sakta hoon?
+  expect:
+    module: admissions
+    intents:
+    - eligibility
+    must_call_tools:
+    - get_programs
+    must_include_facts:
+    - type: text
+      value:
+      - 60%
+      - 60 %
+      - '60'
+    must_cite: true
+    must_not_contain: []
+    language: roman_ur
+- id: uni-roman_ur-elig-ms
+  institution: lits-university
+  channel: whatsapp
+  language: roman_ur
+  message: MS CS ke liye kitna CGPA chahiye?
+  expect:
+    module: admissions
+    intents:
+    - eligibility
+    must_call_tools:
+    - get_programs
+    must_include_facts:
+    - type: text
+      value:
+      - '2.5'
+    must_cite: true
+    must_not_contain: []
+    language: roman_ur
+- id: uni-roman_ur-last-date
+  institution: lits-university
+  channel: widget
+  language: roman_ur
+  message: Fall 2027 ke liye last date kya hai?
+  expect:
+    module: admissions
+    intents:
+    - admission_dates
+    must_call_tools:
+    - get_key_dates
+    must_include_facts:
+    - type: date
+      value: '2027-07-15'
+    must_cite: true
+    must_not_contain: []
+    language: roman_ur
+- id: uni-roman_ur-test-date
+  institution: lits-university
+  channel: whatsapp
+  language: roman_ur
+  message: Entry test kab hai?
+  expect:
+    module: admissions
+    intents:
+    - admission_dates
+    - test
+    must_call_tools:
+    - get_key_dates
+    must_include_facts:
+    - type: date
+      value: '2027-07-20'
+    must_cite: true
+    must_not_contain: []
+    language: roman_ur
+- id: uni-roman_ur-merit-lists
+  institution: lits-university
+  channel: widget
+  language: roman_ur
+  message: First merit list kab aayegi?
+  expect:
+    module: admissions
+    intents:
+    - admission_dates
+    must_call_tools:
+    - get_key_dates
+    must_include_facts:
+    - type: date
+      value: '2027-07-25'
+    must_cite: true
+    must_not_contain: []
+    language: roman_ur
+- id: uni-roman_ur-classes-begin
+  institution: lits-university
+  channel: whatsapp
+  language: roman_ur
+  message: Fall classes kab shuru hongi?
+  expect:
+    module: admissions
+    intents:
+    - admission_dates
+    must_call_tools:
+    - get_key_dates
+    must_include_facts:
+    - type: date
+      value: '2027-09-01'
+    must_cite: true
+    must_not_contain: []
+    language: roman_ur
+- id: uni-roman_ur-merit-scholar
+  institution: lits-university
+  channel: widget
+  language: roman_ur
+  message: Agar 86% marks hon to kitni merit scholarship milegi?
+  expect:
+    module: admissions
+    intents:
+    - scholarship
+    must_call_tools:
+    - get_scholarships
+    must_include_facts:
+    - type: text
+      value:
+      - 75%
+      - 75 %
+    must_cite: true
+    must_not_contain: []
+    language: roman_ur
+- id: uni-roman_ur-need-aid
+  institution: lits-university
+  channel: whatsapp
+  language: roman_ur
+  message: Need based financial aid milti hai?
+  expect:
+    module: admissions
+    intents:
+    - scholarship
+    must_call_tools:
+    - get_scholarships
+    must_include_facts:
+    - type: text
+      value:
+      - 100%
+      - 100 %
+    must_cite: true
+    must_not_contain: []
+    language: roman_ur
+- id: uni-roman_ur-how-apply
+  institution: lits-university
+  channel: widget
+  language: roman_ur
+  message: Apply kaise karna hai?
+  expect:
+    module: admissions
+    intents:
+    - admission_process
+    must_call_tools:
+    - search_knowledge
+    must_include_facts:
+    - type: text
+      value:
+      - admissions.lits.edu.pk
+    must_cite: true
+    must_not_contain: []
+    language: roman_ur
+- id: uni-roman_ur-transport-bahria
+  institution: lits-university
+  channel: whatsapp
+  language: roman_ur
+  message: Bahria Town se bus hai?
+  expect:
+    module: admissions
+    intents:
+    - transport
+    must_call_tools:
+    - get_transport_routes
+    must_include_facts:
+    - type: pkr
+      value: 6500
+    must_cite: true
+    must_not_contain: []
+    language: roman_ur
+- id: uni-roman_ur-no-promise
+  institution: lits-university
+  channel: widget
+  language: roman_ur
+  message: Abhi fee de doon to BS CS mein admission pakka hai?
+  expect:
+    module: admissions
+    intents:
+    - eligibility
+    must_call_tools: []
+    must_include_facts: []
+    must_cite: false
+    must_not_contain:
+    - you will get admission
+    - guaranteed
+    language: roman_ur
+- id: uni-roman_ur-test-slot
+  institution: lits-university
+  channel: whatsapp
+  language: roman_ur
+  message: Mujhe entry test ka slot book karwana hai.
+  expect:
+    module: admissions
+    intents:
+    - test
+    must_call_tools:
+    - get_visit_slots
+    must_include_facts: []
+    must_cite: false
+    must_not_contain: []
+    language: roman_ur

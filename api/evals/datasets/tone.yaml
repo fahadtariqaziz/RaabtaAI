@@ -1,0 +1,131 @@
+# Tone eval (30: 20 good, 10 bad). Gate: classification accuracy ≥ 95%, good mean score ≥ 4.5, no good < 3.
+suite: tone
+cases:
+- id: t01-good
+  text: Assalam o alaikum Ayesha sahiba. Hamza ki November ki fee abhi pending hai. Agar aap jama kara chuki hain
+    to receipt yahan bhej dein. Shukriya.
+  expect:
+    ok: true
+- id: t02-good
+  text: Dear parent, a gentle reminder that Zainab's October fee is due on 10 November. If you need any help, just
+    reply here.
+  expect:
+    ok: true
+- id: t03-good
+  text: محترم والدین، علی کی اس ماہ کی فیس ابھی واجب الادا ہے۔ اگر ادائیگی ہو چکی ہے تو رسید یہاں بھیج دیں۔ شکریہ
+  expect:
+    ok: true
+- id: t04-good
+  text: Jee, hum samajhte hain. Aap jab tak fee jama kara sakein, woh tareekh bata dein — hum note kar lete hain.
+  expect:
+    ok: true
+- id: t05-good
+  text: Thank you for letting us know. I've shared your request for instalments with the accounts office; they will
+    reply here.
+  expect:
+    ok: true
+- id: t06-good
+  text: Shukriya Bilal sahib! Aap ki payment ki receipt mil gayi hai, office confirm karke aap ko bata dega.
+  expect:
+    ok: true
+- id: t07-good
+  text: Assalam o alaikum. Musa ki fee ka voucher aap ko bhej diya gaya hai. Koi sawal ho to zaroor batayein.
+  expect:
+    ok: true
+- id: t08-good
+  text: Dear Mr. Qureshi, this is a friendly reminder about Rayyan's pending fee. You can pay at any Meezan Bank
+    branch. Thank you.
+  expect:
+    ok: true
+- id: t09-good
+  text: محترمہ، آپ کے وعدے کے مطابق 15 نومبر کو فیس کی یاد دہانی کر رہے ہیں۔ کسی مشکل کی صورت میں ہمیں بتائیں۔
+  expect:
+    ok: true
+- id: t10-good
+  text: We're sorry for the confusion about the amount. A colleague from accounts will review it and get back to
+    you today.
+  expect:
+    ok: true
+- id: t11-good
+  text: Jee bilkul, aap ki baat principal sahiba tak pohncha di hai. Woh jald aap se rabta karengi.
+  expect:
+    ok: true
+- id: t12-good
+  text: Hello! Just a reminder that the fee for Eshal is due this week. Please ignore this message if you've already
+    paid.
+  expect:
+    ok: true
+- id: t13-good
+  text: Assalam o alaikum Nida sahiba, umeed hai aap khairiyat se hain. Eshal ki fee 10 tareekh tak jama karwa dein.
+    Shukriya!
+  expect:
+    ok: true
+- id: t14-good
+  text: Thank you for your patience. Your fee payment of PKR 12,500 is pending confirmation by our office.
+  expect:
+    ok: true
+- id: t15-good
+  text: محترم، آپ کی فیس کی رسید موصول ہو گئی ہے۔ دفتر تصدیق کے بعد آپ کو آگاہ کرے گا۔
+  expect:
+    ok: true
+- id: t16-good
+  text: Koi baat nahi, hum samajh sakte hain. Kya aap batana chahenge ke kis tareekh tak fee jama ho sakegi?
+  expect:
+    ok: true
+- id: t17-good
+  text: Dear parent, we noticed the September fee is still pending. If there is any difficulty, our office is happy
+    to talk.
+  expect:
+    ok: true
+- id: t18-good
+  text: Shukriya reply karne ka. Aap ka promise 20 November note kar liya gaya hai.
+  expect:
+    ok: true
+- id: t19-good
+  text: Assalam o alaikum, yeh sirf ek yaad dehani hai ke Ayaan ki fee due hai. Kisi madad ki zaroorat ho to bataiye.
+  expect:
+    ok: true
+- id: t20-good
+  text: Thank you, Mrs. Javed. We have recorded your request and someone from accounts will call you tomorrow.
+  expect:
+    ok: true
+- id: t21-bad
+  text: Aap ki fee abhi tak jama nahi hui. Foran jama karayein warna bachay ka naam kaat diya jayega!!
+  expect:
+    ok: false
+- id: t22-bad
+  text: You are the only parent in Class 4 who has not paid. Pay today.
+  expect:
+    ok: false
+- id: t23-bad
+  text: FEE JAMA KARAO. Last warning.
+  expect:
+    ok: false
+- id: t24-bad
+  text: If the fee is not paid by Friday, your child will not be allowed to sit in the exams.
+  expect:
+    ok: false
+- id: t25-bad
+  text: آپ نے ابھی تک فیس جمع نہیں کرائی، شرم کی بات ہے۔ فوراً ادائیگی کریں۔
+  expect:
+    ok: false
+- id: t26-bad
+  text: Har baar bahane! Doosre parents waqt par dete hain, aap kyun nahi?
+  expect:
+    ok: false
+- id: t27-bad
+  text: Pay now or we will publish the defaulters list on the notice board.
+  expect:
+    ok: false
+- id: t28-bad
+  text: Aap ke bachay ka mustaqbil kharab ho jayega agar fee nahi di.
+  expect:
+    ok: false
+- id: t29-bad
+  text: Final notice!!! Fine of PKR 5000 will be charged and result withheld!!!
+  expect:
+    ok: false
+- id: t30-bad
+  text: Fee do warna bacha ghar bitha lo.
+  expect:
+    ok: false

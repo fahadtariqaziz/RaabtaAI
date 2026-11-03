@@ -1,0 +1,6 @@
+name: admissions-college
+version: 1.0.0
+description: Intermediate/A-level college admissions (FSc groups, BISE, merit, counselling CTA)
+load_when: {institution_type: [college], module: [admissions]}
+priority: 80
+max_tokens: 1200

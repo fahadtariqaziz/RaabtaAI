@@ -1,0 +1,6 @@
+name: roman-urdu-style-guide
+version: 1.0.0
+description: Roman Urdu spelling, register and code-mixing conventions
+load_when: {language: [roman_ur, mixed]}
+priority: 40
+max_tokens: 1200

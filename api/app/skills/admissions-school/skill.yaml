@@ -1,0 +1,6 @@
+name: admissions-school
+version: 1.0.0
+description: Pakistani school admissions know-how (classes, ages, fee heads, campus visit CTA)
+load_when: {institution_type: [school], module: [admissions]}
+priority: 80
+max_tokens: 1200

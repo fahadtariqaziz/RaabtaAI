@@ -1,0 +1,670 @@
+# Router eval (80). Pass = module correct AND first intent in intents_any (AND complexity if given).
+suite: router
+cases:
+- id: r01
+  institution_type: school
+  message: Class 5 ki fee kitni hai?
+  expect:
+    module: admissions
+    intents_any:
+    - fee_structure
+    complexity: simple
+- id: r02
+  institution_type: school
+  message: What is the monthly tuition for Nursery?
+  expect:
+    module: admissions
+    intents_any:
+    - fee_structure
+    complexity: simple
+- id: r03
+  institution_type: school
+  message: نرسری کی فیس کتنی ہے؟
+  expect:
+    module: admissions
+    intents_any:
+    - fee_structure
+    complexity: simple
+- id: r04
+  institution_type: school
+  message: Admission fee refundable hai?
+  expect:
+    module: admissions
+    intents_any:
+    - fee_structure
+    complexity: simple
+- id: r05
+  institution_type: school
+  message: DHA se van milegi?
+  expect:
+    module: admissions
+    intents_any:
+    - transport
+    complexity: simple
+- id: r06
+  institution_type: school
+  message: Do you have transport from Model Town?
+  expect:
+    module: admissions
+    intents_any:
+    - transport
+    complexity: simple
+- id: r07
+  institution_type: school
+  message: School kitne baje chutti hoti hai?
+  expect:
+    module: admissions
+    intents_any:
+    - facilities
+    - other
+    complexity: simple
+- id: r08
+  institution_type: school
+  message: What documents do I need for admission?
+  expect:
+    module: admissions
+    intents_any:
+    - admission_process
+- id: r09
+  institution_type: school
+  message: داخلے کے لیے کون سے کاغذات چاہئیں؟
+  expect:
+    module: admissions
+    intents_any:
+    - admission_process
+- id: r10
+  institution_type: school
+  message: Admission test kab hoga Class 2 ka?
+  expect:
+    module: admissions
+    intents_any:
+    - admission_dates
+    - test
+    complexity: simple
+- id: r11
+  institution_type: school
+  message: Last date kya hai form jama karwane ki?
+  expect:
+    module: admissions
+    intents_any:
+    - admission_dates
+    complexity: simple
+- id: r12
+  institution_type: school
+  message: Kya sibling discount milta hai?
+  expect:
+    module: admissions
+    intents_any:
+    - scholarship
+    complexity: simple
+- id: r13
+  institution_type: school
+  message: Can I visit the school on Saturday?
+  expect:
+    module: admissions
+    intents_any:
+    - visit
+    complexity: complex
+- id: r14
+  institution_type: school
+  message: Campus visit book kar dein kal 11 baje
+  expect:
+    module: admissions
+    intents_any:
+    - visit
+    complexity: complex
+- id: r15
+  institution_type: school
+  message: میں اسکول دیکھنے آنا چاہتا ہوں
+  expect:
+    module: admissions
+    intents_any:
+    - visit
+    complexity: complex
+- id: r16
+  institution_type: school
+  message: Mera number 0321-7654321 hai, office se call karwa dein
+  expect:
+    module: admissions
+    intents_any:
+    - interest
+    - enquiry
+    complexity: complex
+- id: r17
+  institution_type: school
+  message: My son is 4 years old, which class will he go to?
+  expect:
+    module: admissions
+    intents_any:
+    - eligibility
+    - admission_process
+    - programs
+- id: r18
+  institution_type: school
+  message: Uniform kahan se milega?
+  expect:
+    module: admissions
+    intents_any:
+    - facilities
+    - other
+    complexity: simple
+- id: r19
+  institution_type: school
+  message: Is the school co-education?
+  expect:
+    module: admissions
+    intents_any:
+    - facilities
+    - programs
+    - other
+    complexity: simple
+- id: r20
+  institution_type: school
+  message: Matric mein kaun sa board hai?
+  expect:
+    module: admissions
+    intents_any:
+    - programs
+    - other
+    complexity: simple
+- id: r21
+  institution_type: school
+  message: Assalam o alaikum
+  expect:
+    module: general
+    intents_any:
+    - greeting
+    complexity: simple
+- id: r22
+  institution_type: school
+  message: Shukriya!
+  expect:
+    module: general
+    intents_any:
+    - greeting
+    - other
+    complexity: simple
+- id: r23
+  institution_type: school
+  message: Thank you so much
+  expect:
+    module: general
+    intents_any:
+    - greeting
+    - other
+    complexity: simple
+- id: r24
+  institution_type: school
+  message: School ka address kya hai?
+  expect:
+    module: general
+    intents_any:
+    - contact_info
+    complexity: simple
+- id: r25
+  institution_type: school
+  message: آپ کا فون نمبر کیا ہے؟
+  expect:
+    module: general
+    intents_any:
+    - contact_info
+    complexity: simple
+- id: r26
+  institution_type: school
+  message: Mere bete Ali Class 5 ki is mahine ki fee baqi hai kya?
+  expect:
+    module: fees
+    intents_any:
+    - fee_status
+    complexity: complex
+- id: r27
+  institution_type: school
+  message: Fee jama kara di hai, receipt bhej doon?
+  expect:
+    module: fees
+    intents_any:
+    - receipt
+    complexity: complex
+- id: r28
+  institution_type: school
+  message: I will pay the fee on the 15th, salary is late
+  expect:
+    module: fees
+    intents_any:
+    - payment_promise
+    - hardship
+    complexity: complex
+- id: r29
+  institution_type: school
+  message: Voucher par ghalat amount likha hai, humne itni fee nahi deni
+  expect:
+    module: fees
+    intents_any:
+    - fee_dispute
+    complexity: complex
+- id: r30
+  institution_type: school
+  message: Is mahine fee nahi de sakte, halaat bohat kharab hain
+  expect:
+    module: fees
+    intents_any:
+    - hardship
+    - payment_promise
+    complexity: complex
+- id: r31
+  institution_type: school
+  message: میرے بچے کی فیس کتنی باقی ہے؟
+  expect:
+    module: fees
+    intents_any:
+    - fee_status
+    complexity: complex
+- id: r32
+  institution_type: school
+  message: Principal se baat karwayein abhi
+  expect:
+    module: general
+    intents_any:
+    - human_request
+    - complaint
+    complexity: complex
+- id: r33
+  institution_type: school
+  message: Teacher ne mere bachay ko maara, complaint karni hai
+  expect:
+    module: general
+    intents_any:
+    - complaint
+    - human_request
+    complexity: complex
+- id: r34
+  institution_type: college
+  message: FSc Pre-Medical ki fee kya hai?
+  expect:
+    module: admissions
+    intents_any:
+    - fee_structure
+    complexity: simple
+- id: r35
+  institution_type: college
+  message: Pre-Engineering mein admission ke liye kitne marks chahiye?
+  expect:
+    module: admissions
+    intents_any:
+    - eligibility
+    complexity: simple
+- id: r36
+  institution_type: college
+  message: What's the merit for ICS?
+  expect:
+    module: admissions
+    intents_any:
+    - eligibility
+- id: r37
+  institution_type: college
+  message: پری میڈیکل کی میرٹ لسٹ کب لگے گی؟
+  expect:
+    module: admissions
+    intents_any:
+    - admission_dates
+    complexity: simple
+- id: r38
+  institution_type: college
+  message: Classes kab start hongi?
+  expect:
+    module: admissions
+    intents_any:
+    - admission_dates
+    complexity: simple
+- id: r39
+  institution_type: college
+  message: Do you have a hostel?
+  expect:
+    module: admissions
+    intents_any:
+    - facilities
+    complexity: simple
+- id: r40
+  institution_type: college
+  message: Girls ka campus alag hai?
+  expect:
+    module: admissions
+    intents_any:
+    - facilities
+    complexity: simple
+- id: r41
+  institution_type: college
+  message: 92% marks par scholarship milegi?
+  expect:
+    module: admissions
+    intents_any:
+    - scholarship
+    - eligibility
+    complexity: simple
+- id: r42
+  institution_type: college
+  message: Hafiz-e-Quran ko extra marks milte hain?
+  expect:
+    module: admissions
+    intents_any:
+    - scholarship
+    - eligibility
+    complexity: simple
+- id: r43
+  institution_type: college
+  message: ICS aur Pre-Eng mein se kya choose karoon? Counselling chahiye
+  expect:
+    module: admissions
+    intents_any:
+    - counselling
+    complexity: complex
+- id: r44
+  institution_type: college
+  message: Counselling session book karna hai Monday ko
+  expect:
+    module: admissions
+    intents_any:
+    - counselling
+    complexity: complex
+- id: r45
+  institution_type: college
+  message: Can I apply before my Matric result?
+  expect:
+    module: admissions
+    intents_any:
+    - admission_process
+    - eligibility
+- id: r46
+  institution_type: college
+  message: ICom ki fee aur eligibility dono bata dein
+  expect:
+    module: admissions
+    intents_any:
+    - fee_structure
+    - eligibility
+    complexity: simple
+- id: r47
+  institution_type: college
+  message: Canal Road se transport hai?
+  expect:
+    module: admissions
+    intents_any:
+    - transport
+    complexity: simple
+- id: r48
+  institution_type: college
+  message: Board registration fee kitni hai?
+  expect:
+    module: admissions
+    intents_any:
+    - fee_structure
+    complexity: simple
+- id: r49
+  institution_type: college
+  message: AoA, kaise hain?
+  expect:
+    module: general
+    intents_any:
+    - greeting
+    complexity: simple
+- id: r50
+  institution_type: college
+  message: College ki location kya hai?
+  expect:
+    module: general
+    intents_any:
+    - contact_info
+    complexity: simple
+- id: r51
+  institution_type: college
+  message: Mere bete ki fee ka challan nahi mila
+  expect:
+    module: fees
+    intents_any:
+    - fee_status
+    - complaint
+    complexity: complex
+- id: r52
+  institution_type: college
+  message: Fee next week jama karwa doonga
+  expect:
+    module: fees
+    intents_any:
+    - payment_promise
+    complexity: complex
+- id: r53
+  institution_type: college
+  message: I already paid through JazzCash, here is the screenshot
+  expect:
+    module: fees
+    intents_any:
+    - receipt
+    complexity: complex
+- id: r54
+  institution_type: college
+  message: 3 din se koi jawab nahi de raha, bohat bura service hai
+  expect:
+    module: general
+    intents_any:
+    - complaint
+    - human_request
+    complexity: complex
+- id: r55
+  institution_type: college
+  message: Kya aap ki college MDCAT ki tayyari karwati hai?
+  expect:
+    module: admissions
+    intents_any:
+    - programs
+    - facilities
+    - other
+- id: r56
+  institution_type: college
+  message: FSc ke baad kya scope hai?
+  expect:
+    module: admissions
+    intents_any:
+    - counselling
+    - programs
+    - other
+- id: r57
+  institution_type: university
+  message: BS CS ki semester fee kitni hai?
+  expect:
+    module: admissions
+    intents_any:
+    - fee_structure
+    complexity: simple
+- id: r58
+  institution_type: university
+  message: What is the eligibility for BBA?
+  expect:
+    module: admissions
+    intents_any:
+    - eligibility
+    complexity: simple
+- id: r59
+  institution_type: university
+  message: بی ایس کمپیوٹر سائنس کی اہلیت کیا ہے؟
+  expect:
+    module: admissions
+    intents_any:
+    - eligibility
+    complexity: simple
+- id: r60
+  institution_type: university
+  message: Entry test kab hai aur kis cheez ka hota hai?
+  expect:
+    module: admissions
+    intents_any:
+    - test
+    - admission_dates
+    complexity: simple
+- id: r61
+  institution_type: university
+  message: Last date to apply for Fall?
+  expect:
+    module: admissions
+    intents_any:
+    - admission_dates
+    complexity: simple
+- id: r62
+  institution_type: university
+  message: How do I apply online?
+  expect:
+    module: admissions
+    intents_any:
+    - admission_process
+- id: r63
+  institution_type: university
+  message: Is there a hostel for girls?
+  expect:
+    module: admissions
+    intents_any:
+    - facilities
+    complexity: simple
+- id: r64
+  institution_type: university
+  message: Need based scholarship milti hai?
+  expect:
+    module: admissions
+    intents_any:
+    - scholarship
+    complexity: simple
+- id: r65
+  institution_type: university
+  message: 85% marks hain, kitni scholarship milegi?
+  expect:
+    module: admissions
+    intents_any:
+    - scholarship
+    - eligibility
+    complexity: simple
+- id: r66
+  institution_type: university
+  message: MS CS ke liye GAT zaroori hai?
+  expect:
+    module: admissions
+    intents_any:
+    - eligibility
+    complexity: simple
+- id: r67
+  institution_type: university
+  message: Do you accept NTS NAT scores?
+  expect:
+    module: admissions
+    intents_any:
+    - test
+    - eligibility
+    complexity: simple
+- id: r68
+  institution_type: university
+  message: Entry test ka slot book karna hai
+  expect:
+    module: admissions
+    intents_any:
+    - test
+    complexity: complex
+- id: r69
+  institution_type: university
+  message: Mujhe admission ke liye call karwa dein, 0333-1112223
+  expect:
+    module: admissions
+    intents_any:
+    - interest
+    - enquiry
+    complexity: complex
+- id: r70
+  institution_type: university
+  message: BS EE PEC accredited hai?
+  expect:
+    module: admissions
+    intents_any:
+    - programs
+    - other
+    complexity: simple
+- id: r71
+  institution_type: university
+  message: Bahria Town se bus aati hai?
+  expect:
+    module: admissions
+    intents_any:
+    - transport
+    complexity: simple
+- id: r72
+  institution_type: university
+  message: Installments mein fee de sakte hain?
+  expect:
+    module: admissions
+    intents_any:
+    - fee_structure
+    - admission_process
+    - other
+- id: r73
+  institution_type: university
+  message: ہیلو
+  expect:
+    module: general
+    intents_any:
+    - greeting
+    complexity: simple
+- id: r74
+  institution_type: university
+  message: University kahan hai?
+  expect:
+    module: general
+    intents_any:
+    - contact_info
+    complexity: simple
+- id: r75
+  institution_type: university
+  message: My semester fee is overdue, can I get an extension?
+  expect:
+    module: fees
+    intents_any:
+    - payment_promise
+    - hardship
+    - fee_status
+    complexity: complex
+- id: r76
+  institution_type: university
+  message: Mera challan ghalat bana hai
+  expect:
+    module: fees
+    intents_any:
+    - fee_dispute
+    complexity: complex
+- id: r77
+  institution_type: university
+  message: I want to speak to the admissions director
+  expect:
+    module: general
+    intents_any:
+    - human_request
+    complexity: complex
+- id: r78
+  institution_type: university
+  message: Can you guarantee admission if I pay now?
+  expect:
+    module: admissions
+    intents_any:
+    - eligibility
+    - admission_process
+    - other
+- id: r79
+  institution_type: university
+  message: Merit kaise banta hai?
+  expect:
+    module: admissions
+    intents_any:
+    - eligibility
+    - admission_process
+    complexity: simple
+- id: r80
+  institution_type: university
+  message: 2nd merit list kab aayegi?
+  expect:
+    module: admissions
+    intents_any:
+    - admission_dates
+    complexity: simple

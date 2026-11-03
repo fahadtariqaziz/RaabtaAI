@@ -10,10 +10,10 @@
 
 | Field | Value |
 |---|---|
-| Phase / step in progress | **Phase 3 · Step 3.1** (Claude wrapper — extend `app/llm/claude.py`) — not started |
-| Last completed step | Phase 2 fully ☑ (2026-11-02): 2.4 Voyage bake-off + 2.6 live extractor run done; PDF parser moved off AGPL PyMuPDF |
-| Last verification run | `bash scripts/verify/all.sh` → p0_s1–s6, p1_s1–s7, p2_s1–s8 all OK (2026-11-02) |
-| Next action | 3.1: `app/llm/claude.py` already has `parse()` (fallbacks, effort, stop_reason, backoff, cassettes) — add `complete`/`stream`/tool loop + `llm_runs` logging for agent nodes. Dev `.env` now `EMBEDDING_PROVIDER=voyage` (tests/verify force `fake`). New tenant tables: `TenantMixin` + `enable_rls()`; new routes → `tests/isolation/test_endpoints.py` (ID_RESOLVERS / SAMPLE_BODIES / SAMPLE_FILES / NON_ID_PARAMS) |
+| Phase / step in progress | **Phase 3 done except the first live eval** (3.9.4/3.9.6 ◐, ~$15–25, user deferred). 3.1 live smoke ✔, 3.10 live transcripts ✔ (2026-11-03) |
+| Last completed step | Phase 3 offline (2026-11-03): wrapper complete/stream, prompts, skills, strict tools, LangGraph graph + handoff, context, guards, summarizer, eval harness + datasets, chat CLI |
+| Last verification run | `bash scripts/verify/all.sh` → p0_s1–s6, p1_s1–s7, p2_s1–s8, p3_s1–s10 all OK (2026-11-03) |
+| Next action | When approved: `bash scripts/verify/p3_s9.sh --live` (records cassettes + reports on the test DB), fix failing cases, save `evals/reports/baseline.md`, decide D-05 (Haiku simple route vs Opus; demo cost ≈ $0.001/simple turn, ≈ $0.03–0.07/complex turn). Otherwise start Phase 4.1 (public chat API, SSE status events via `AgentDeps.status_hooks`, `run_inbound`) |
 | Blocked on user | Nothing for Phase 3–5. Before pilots: Voyage billing (U-14), sample prospectus (U-12). Live WhatsApp sends blocked until Meta business verification (U-01, I-07) |
 | Open decisions needing user confirmation | D-05 pricing (after 3.9 evals), D-02 STT, D-03 WhatsApp number model; D-01 decided (Voyage), D-04 decided |
 
@@ -43,7 +43,7 @@ Verify-script conventions: `scripts/verify/pN_sM.sh` sources `scripts/verify/_li
 | 0 Foundations | scaffold, tooling, compose, config, CI, Meta kickoff | 0.0–0.6 (7) | ☑ |
 | 1 Data & multi-tenancy | models, migrations, RLS, auth/RBAC, seeds, isolation tests | 1.1–1.7 (7) | ☑ (2026-11-02) |
 | 2 Knowledge base | ingestion, chunking, embeddings, hybrid search, facts, citations | 2.1–2.8 (8) | ☑ (2026-11-02) |
-| 3 Agent core + evals | Claude wrapper, prompts, skills, tools, graph, guards, context, eval harness, CLI | 3.1–3.10 (10) | ☐ |
+| 3 Agent core + evals | Claude wrapper, prompts, skills, tools, graph, guards, context, eval harness, CLI | 3.1–3.10 (10) | ◐ all ☑ except first live eval (2026-11-03) |
 | 4 Widget + chat API | public chat API (SSE), widget bundle, booking/lead UI, embed tests | 4.1–4.4 (4) | ☐ |
 | 5 Admin panel | Next.js foundation, onboarding, dashboard, inbox, leads, slots, KB, settings, super-admin, audit/usage, quality pass | 5.1–5.11 (11) | ☐ |
 | 6 WhatsApp | Meta app, webhook, sender + 24h window, voice notes, templates, handoff, follow-ups, channel guards | 6.1–6.8 (8) | ☐ |
@@ -266,70 +266,62 @@ Ordering rationale: KB (2) precedes agent (3) because grounding depends on retri
 
 ### Phase 3 — Agent core + eval harness
 
-#### 3.1 Claude client wrapper — ☐
+#### 3.1 Claude client wrapper — ☑ (2026-11-03; live smoke OK)
 - PLAN §8; CLAUDE.md API rules
-- Sub-steps: 3.1.1 ☐ `app/llm/claude.py`: `complete/parse/stream`, node-keyed model+effort, Opus via `client.beta.messages` with `betas=["server-side-fallback-2026-07-01"], fallbacks="default"`, Haiku via `client.messages`; explicit `output_config.effort`; no sampling params; no prefill; `tool_choice auto` only; 3.1.2 ☐ typed exception handling + jittered retries (RateLimitError, 5xx/529 APIStatusError, APIConnectionError), per-node timeouts; 3.1.3 ☐ `stop_reason` handling (refusal/max_tokens/tool_use/end_turn) + `stop_details` logging; 3.1.4 ☐ cost table `cost.py` + `llm_runs` write incl. cache tokens + `fallback_used`; 3.1.5 ☐ record/replay cassettes (`RAABTA_LLM_RECORD/REPLAY`) keyed by request hash; 3.1.6 ☐ dev assert: prefix hash unchanged within a turn; cache-hit assertion test
-- Acceptance: unit tests with mocked SDK for every branch; one live smoke (`scripts/llm_smoke.py`) shows `cache_read_input_tokens > 0` on second call
-- Verify: `scripts/verify/p3_s1.sh` — `pytest tests/unit/test_claude_wrapper.py`; live smoke only if `ANTHROPIC_API_KEY` set and `--live`
-- Needs user: 👤 approve live smoke (cents)
+- Sub-steps: 3.1.1 ☑ `app/llm/claude.py`: `parse` (unchanged cassette key) + `complete` + `stream` (streaming endpoint, `on_tool_start` hook for widget status events); Opus via `client.beta.messages` + `server-side-fallback-2026-07-01` + `fallbacks="default"`, Haiku via `client.messages`; explicit effort; `tool_choice auto` only when tools; no sampling/thinking/prefill; 3.1.2 ☑ jittered backoff (429, ≥500 incl. 529, connection/timeouts), 4xx raised, per-node timeouts (`TIMEOUTS`); 3.1.3 ☑ `refusal` → `RefusalError(category)` + structlog `llm.refusal`, `max_tokens` → one retry ×1.5 then `LLMError`; 3.1.4 ☑ `LLMResult.usage_record()` + `app/llm/runs.py` (`run_record` JSON for graph state → `to_row` LlmRun incl. cache tokens, fallback flag, prompt hash, skill tags, error); 3.1.5 ☑ cassettes for `complete` (hash of model/effort/system/messages/tools without cache markers); 3.1.6 ☑ `TurnPrefixGuard` (tools/system identical + messages append-only within a turn; cache markers ignored) used by the agent loop; `with_message_breakpoint` adds the 4th cache breakpoint on the last user block
+- Also: `app/llm/base.py` `LLMProvider` protocol; `app/llm/fake.py` `FakeLLM` (scripted per node; `tool_call`/`text_reply` helpers) for tests
+- Verify: `scripts/verify/p3_s1.sh` (mocked SDK, 12 tests); `p3_s1.sh --live` runs `uv run python -m scripts.llm_smoke` (2 identical-prefix Haiku calls + 1 router parse; expects `OK: cache hit on second call`)
+- Live smoke (user-approved): call 1 cache_write 2707 → call 2 cache_read 2707 (cost $0.00003); router parse OK → `OK: cache hit on second call`
 - Commit: `feat(llm): anthropic client wrapper with retries, fallback and cost logging`
 
-#### 3.2 Prompt files & loader — ☐
-- PLAN §9.1
-- Sub-steps: 3.2.1 ☐ loader with front-matter validation + content hash; 3.2.2 ☐ write `system_global.md`, `agent_admissions.md`, `agent_fees.md`, `router.md` (12 few-shot), `guard_in.md`, `answer_check.md`, `tone_check.md`, `summarizer.md`, `tenant_block.md.j2`; 3.2.3 ☐ fallback phrases per language constants; 3.2.4 ☐ test: no dates/timestamps in cacheable prompts; tenant block deterministic (sorted keys)
-- Verify: `scripts/verify/p3_s2.sh` — `pytest tests/unit/test_prompts.py`
+#### 3.2 Prompt files & loader — ☑ (2026-11-03)
+- Sub-steps: 3.2.1 ☑ loader validates front-matter (`name, version semver, model_key, cacheable, changelog`; effort/max_tokens must equal the registry), body hash, `tag`; 3.2.2 ☑ `system_global.md`, `agent_admissions.md`, `agent_fees.md`, `router.md` (12 code-mixed few-shot), `guard_in.md`, `answer_check.md`, `tone_check.md`, `summarizer.md`, `tenant_block.md.j2` (jinja2, StrictUndefined, `dictsort`), + `judge_admissions.md` (3.9); `facts_extractor.md` front-matter migrated (body untouched → recorded cassettes still replay); 3.2.3 ☑ `app/agent/phrases.py` (fallback/blocked/off_topic/handoff/rate_limited/daily_cap/opted_out/error × en/ur/roman_ur; `mixed`→roman_ur); 3.2.4 ☑ tests
+- Verify: `scripts/verify/p3_s2.sh`
 - Commit: `feat(agent): versioned prompt files and loader`
 
-#### 3.3 Skills loader & skill packs — ☐
-- PLAN §9.2
-- Sub-steps: 3.3.1 ☐ `skills_loader.py` (parse `skill.yaml`, `select(institution_type, module, intents, channel, language)`, deterministic order, token cap); 3.3.2 ☐ write the 9 SKILL.md packs (≤ 1.2k tokens each) with Pakistani context; 3.3.3 ☐ tests: selection matrix, cap enforcement
-- Verify: `scripts/verify/p3_s3.sh` — `pytest tests/unit/test_skills.py`; token count per skill ≤ cap (via `count_tokens` cassette or tiktoken-free heuristic)
+#### 3.3 Skills loader & skill packs — ☑ (2026-11-03)
+- Sub-steps: 3.3.1 ☑ `app/agent/skills_loader.py` (`skill.yaml` strict schema, `select(TurnFacts)` = rule match ∪ router hints that fit institution/module/node, order priority desc + name, 1.5k-token budget; `available_for_router`); 3.3.2 ☑ 9 packs (240–440 tokens each); 3.3.3 ☑ selection matrix + cap tests
+- Verify: `scripts/verify/p3_s3.sh`
 - Commit: `feat(agent): skills loader and skill packs`
 
-#### 3.4 Tool registry & tools — ☐
-- PLAN §9.3, §5 DO
-- Sub-steps: 3.4.1 ☐ `registry.py` (Pydantic in/out → strict JSON schema with `additionalProperties:false`, permission, side_effect, modules, `list_tools(module)` name-sorted, `execute` with `ToolContext`, error → `is_error`); 3.4.2 ☐ admissions tools (`search_knowledge`, `get_fee_table`, `get_programs`, `get_key_dates`, `get_scholarships`, `get_transport_routes`, `save_lead`, `get_visit_slots`, `book_visit`, `schedule_followup`); 3.4.3 ☐ common tools (`handoff_to_human`, `set_contact_language`); fee tools stubbed with permission gate (implemented 7.x); 3.4.4 ☐ `GET /internal/tools` manifest
-- Acceptance: schema snapshot test; every tool has tests incl. tenant scoping and permission denial
-- Verify: `scripts/verify/p3_s4.sh` — `pytest tests/unit/test_registry.py tests/integration/test_tools_admissions.py`
+#### 3.4 Tool registry & tools — ☑ (2026-11-03)
+- Sub-steps: 3.4.1 ☑ `app/agent/registry.py` (strict schema = SDK `transform_schema` + all properties required/nullable + `additionalProperties:false`; permission gate; module subsets name-sorted; each call in its own `tenant_session`; `ToolError` → model-facing `is_error`, other exceptions → generic `is_error`; `execute_all` = `asyncio.gather` in order; `Source` registry on `ToolContext`); 3.4.2 ☑ admissions tools (`app/agent/tools/{knowledge,facts,leads,booking}.py`); 3.4.3 ☑ `handoff_to_human`, `set_contact_language`; fee tools registered with gates, implementation raises "not enabled → hand off" (Phase 7); 3.4.4 ☑ `GET /api/v1/internal/tools` (staff+, MCP-style manifest; auto-covered by the isolation suite)
+- Verify: `scripts/verify/p3_s4.sh` — schema snapshot `tests/unit/snapshots/tool_schemas.json` (`UPDATE_SNAPSHOTS=1` to accept = release) + DB tests (approved-only facts, tenant scoping, lead dedupe, capacity, follow-ups)
 - Commit: `feat(agent): strict tool registry and admissions tools`
+- Done notes: the model never sees DB ids: sources are `S-xxxxxx`/`F-xxxxxx` (sha1 of content → stable across re-ingest), slots are local `slot_time` strings ("2026-11-04 10:00") passed back to `book_visit`. Facts filtering is deterministic whole-word matching; school-wide "All classes" heads are added to a class query; no match → full table + note. Phones normalized to E.164 (`normalize_pk_phone`); invalid → `is_error`, nothing saved.
 
-#### 3.5 LangGraph inbound graph — ☐
-- PLAN §6.1
-- Sub-steps: 3.5.1 ☐ `state.py`, `graph.py` with `AsyncPostgresSaver`, thread id `institution:contact`; 3.5.2 ☐ nodes: `ingest`, `guard_in`, `router`, `load_context`, `agent` (tool loop, append-only, ≤ 6 iters, parallel tool results in one message), `answer_check`, `repair`, `safe_fallback`, `compose`, `persist`, `summarize`, `handoff` (interrupt); 3.5.3 ☐ human-mode gate + resume via `Command(resume=...)`; 3.5.4 ☐ `run_inbound(event)` entrypoint used by widget + WhatsApp
-- Acceptance: graph tests with fake LLM provider covering every edge (blocked, simple, complex, handoff, repair, fallback)
-- Verify: `scripts/verify/p3_s5.sh` — `pytest tests/unit/test_graph.py`
+#### 3.5 LangGraph inbound graph — ☑ (2026-11-03)
+- Sub-steps: 3.5.1 ☑ `app/agent/state.py` (JSON-only; `turn_input` resets per-turn keys), `app/agent/graph.py` (`build_graph(deps, checkpointer)`; nodes are closures over `AgentDeps`), `app/agent/inbound.py` `postgres_checkpointer` (psycopg pool, tables from migration 0003); 3.5.2 ☑ nodes guard_in · safe_reply · router · load_context · agent (≤ 6 model calls, append-only, parallel tool_results in one message, repair via appended `role:system` note) · answer_check · safe_fallback · handoff · compose · persist · summarize · await_staff (`interrupt()`); 3.5.3 ☑ human-mode gate in `run_inbound`; `resume_after_handoff` (mode=ai + `Command(resume={"staff_note"})`, falls back to the last staff messages); 3.5.4 ☑ `run_inbound(deps, graph, InboundEvent)` → `TurnResult` (dedupe, opt-out/in, rate limit, daily cap, per-thread Redis lock)
+- Verify: `scripts/verify/p3_s5.sh` — `tests/integration/test_graph.py` (11 tests, FakeLLM + real RLS DB + Postgres checkpointer; was planned as unit — needs DB for persist/tools)
 - Commit: `feat(agent): langgraph inbound graph with human takeover`
+- Done notes: LLM failures degrade (guard → block, router → general/simple, checker → fail, agent refusal → fallback phrase, API error → error phrase); `CassetteMissingError`/`PrefixViolationError` always raise. Router confidence < 0.6 or module fees → `agent_complex` (Opus). All llm_runs of a turn are written in `persist` (summarizer row in `summarize`); outbound message gets `llm_run_id` of the last agent call. Fallback after a failed check sets `conversations.flagged`. Handoff sets `mode=human`, `status=pending` (+flag when urgency high). Widget gets a CTA quick reply by institution type.
 
-#### 3.6 Context assembly & compaction — ☐
-- PLAN §7
-- Sub-steps: 3.6.1 ☐ `context.py` builder: cache-ordered blocks (tools → global → tenant → skills), first user block (date/profile/verified), summary, history text (6 turns, tool calls collapsed), new message; budgets + priority truncation; 3.6.2 ☐ simple compaction across turns (no thinking replay); mid-turn operator notes as appended `role:system`; 3.6.3 ☐ tests: budgets, determinism (same inputs → same bytes), no timestamp in cached blocks, prefix stable across loop iterations
-- Verify: `scripts/verify/p3_s6.sh` — `pytest tests/unit/test_context.py`
+#### 3.6 Context assembly & compaction — ☑ (2026-11-03)
+- Sub-steps: 3.6.1 ☑ `app/agent/context.py` (system[0] global+persona, [1] tenant block, [2] skills — all cached; first user message = `<turn_context>` (date/time, academic year, channel, profile, verified, reply language) + `<conversation_summary>` + `<recent_history>` + `<new_message>`; budgets message 2k > summary 400 > history 1.2k > skills 1.5k; tool results ≤ 2.5k in registry); 3.6.2 ☑ history = last 6 turns text with collapsed tool lines, idle > 7 days → history reset, operator notes appended; 3.6.3 ☑ tests
+- Verify: `scripts/verify/p3_s6.sh`
 - Commit: `feat(agent): deterministic context assembly with cache-stable prefix`
 
-#### 3.7 Guardrails — ☐
-- PLAN §10
-- Sub-steps: 3.7.1 ☐ `guards/`: opt-out keywords, injection pre-filter, identity gate helper, language/script detector, loop/cost caps, per-contact rate limit (Redis); 3.7.2 ☐ `answer_check` claim extraction + numeric exact-match verifier + repair feedback format; 3.7.3 ☐ safe replies per language; 3.7.4 ☐ guardrails eval dataset (40 cases)
-- Verify: `scripts/verify/p3_s7.sh` — `pytest tests/unit/test_guards.py`; `evals --suite guardrails` (replay)
+#### 3.7 Guardrails — ☑ offline · ◐ guardrails eval live run (with 3.9)
+- Sub-steps: 3.7.1 ☑ `app/agent/guards/__init__.py` (opt-out/opt-in keywords on short messages only, injection pre-filter (no LLM call when it fires), script check, Redis per-contact 20/10 min, per-conversation 40 AI turns/day, inbound dedupe); 3.7.2 ☑ `guards/grounding.py` (numbers in the draft must appear in sources/tool outputs/contact text/turn context — exact integer match, Urdu digits, booking codes ignored, 0–3 allowed; checker input ≤ 5k tokens; repair note format); 3.7.3 ☑ safe replies (phrases); 3.7.4 ☑ `evals/datasets/guardrails.yaml` (40: injection 10, abuse 4, PII 5, off-topic 5, identity 6, safe 10)
+- Verify: `scripts/verify/p3_s7.sh`
 - Commit: `feat(agent): input guard, grounding check and safety fallbacks`
 
-#### 3.8 Summarizer & LTM updates — ☐
-- PLAN §5 KNOW (STM/LTM), §7 (summarize)
-- Sub-steps: 3.8.1 ☐ `Summary` schema + summarizer node; 3.8.2 ☐ contact profile deltas (name, language, student, stage) written to `contacts.profile`; lead upsert from summary when phone known; 3.8.3 ☐ idle > 7 days history reset rule; 3.8.4 ☐ `goal_status` tracking
-- Verify: `scripts/verify/p3_s8.sh` — `pytest tests/unit/test_summarizer.py`
+#### 3.8 Summarizer & LTM updates — ☑ (2026-11-03)
+- Sub-steps: 3.8.1 ☑ `Summary` schema + summarize node (Haiku); 3.8.2 ☑ `app/agent/memory.py` `apply_summary` → `conversations.summary`, `contacts.profile` (guardian/student/class/stage), `preferred_language`, `name`; lead upsert only if the phone's digits occur in what the contact typed; 3.8.3 ☑ idle reset (context.py); 3.8.4 ☑ `goal_status` from deterministic events (lead w/ phone, booking, follow-up, handoff), monotonic
+- Verify: `scripts/verify/p3_s8.sh`
 - Commit: `feat(agent): structured rolling summary and contact memory`
 
-#### 3.9 Eval harness — ☐ 👤
-- PLAN §12
-- Sub-steps: 3.9.1 ☐ `evals/run_evals.py` (suites, graders, thresholds, JSON+MD report, PR comment format); 3.9.2 ☐ datasets: `router` (80), `admissions_school/college/university` (60 each), `guardrails` (40), `tone` (30); 3.9.3 ☐ graders: deterministic + judge (Opus, `parse`); 3.9.4 ☐ cassettes recorded for smoke; 3.9.5 ☐ `evals-live.yml` completed: triggers (label, nightly, prompt/skill/registry paths), threshold gate, report artifact; 3.9.6 ☐ baseline report committed to `evals/reports/baseline.md`
-- Acceptance: smoke runs offline in CI < 3 min; live run meets thresholds or failing cases listed with fixes
-- Verify: `scripts/verify/p3_s9.sh` — `python -m evals.run_evals --replay --all`; live with `--live` on approval
-- Needs user: 👤 approve first live eval run (~400 cases ≈ $15–25)
+#### 3.9 Eval harness — ☑ offline · ◐ 👤 first live run awaiting approval (~$15–25)
+- Sub-steps: 3.9.1 ☑ `evals/run_evals.py` (suites router/tone/guardrails/admissions_* + `agent`; modes live/record/replay; `--validate`, `--limit`, `--no-judge`, `--report` → JSON + MD (PR comment body); exit 1 on gate failure); 3.9.2 ☑ datasets router 80 · admissions_school/college/university 60 each (20 EN/20 UR/20 RU; PKR expectations validated against seed.yaml) · guardrails 40 · tone 30; 3.9.3 ☑ graders `evals/graders/agent.py` (deterministic + Opus judge `JudgeVerdict`, prompt `judge_admissions.md`); 3.9.4 ◐ cassettes get recorded by the first live run (`--mode record`; writes `evals/cassettes/suites/<suite>.json` markers — CI/verify replay only marked suites); 3.9.5 ☑ `.github/workflows/evals-live.yml` (dispatch / nightly / PR label `run-evals` on prompts·skills·registry·agent·search paths; needs `ANTHROPIC_API_KEY` secret; postgres+redis services, seed+ingest, report artifact + PR comment) and `evals-smoke` step in ci.yml (validate + router/tone replay once cassettes exist); 3.9.6 ☐ `evals/reports/baseline.md` after the live run
+- Verify: `scripts/verify/p3_s9.sh` (offline); `p3_s9.sh --live` = record all suites on the seeded test DB
+- Needs user: 👤 approve first live eval run
 - Commit: `feat(evals): eval harness, datasets and ci gates`
 
-#### 3.10 Local chat CLI & end-to-end smoke — ☐ 👤
-- Sub-steps: 3.10.1 ☐ `scripts/chat.py --institution abc-grammar --lang ru` interactive REPL over `run_inbound` (shows tools, citations, check verdict, cost); 3.10.2 ☐ scripted 3 conversations per institution type (EN/UR/RU) saved as transcripts in `docs/demo/`
-- Verify: `scripts/verify/p3_s10.sh` — replay-mode scripted conversations assert tool calls + citations; live on approval
-- Needs user: 👤 try the CLI with real key; confirm answers feel right in Roman Urdu
+#### 3.10 Local chat CLI & end-to-end smoke — ☑ (2026-11-03; live transcripts recorded) · 👤 user to try the CLI
+- Sub-steps: 3.10.1 ☑ `api/scripts/chat.py` REPL over `run_inbound` (route, tools, check verdict, sources, cost per turn); 3.10.2 ☑ `docs/demo/scripts.yaml` (9 conversations: 3 types × EN/UR/RU, expected tools) → transcripts `docs/demo/<id>.md` (live, 27 turns, $0.13 total: 25 answered + check pass, 2 safe fallbacks from checker false negatives — both pass on rerun)
+- Live findings fixed: (1) API rejects `role: system` right after an assistant text turn → `context.append_operator_note` (system message after user/tool results, else a marked `<operator_note>` user turn) (I-15); (2) checker flagged the institution's own name/apply URL and the agent's offers/CTAs → tenant block passed as source `profile` + `answer_check.md` 1.1.0 (offers/CTAs are not claims); numeric corpus includes the tenant block. Demo-run cassettes not committed (I-14)
+- Verify: `scripts/verify/p3_s10.sh` (FakeLLM transcript test); `--live` writes the 9 transcripts
+- Needs user: 👤 try `cd api && uv run python -m scripts.chat --institution abc-grammar-school` with the real key; confirm Roman Urdu feels right
 - Commit: `feat(agent): local chat cli and demo transcripts`
 
 ---
@@ -610,6 +602,7 @@ Ordering rationale: KB (2) precedes agent (3) because grounding depends on retri
 
 | Date | Session | Step(s) | What was done | Verification | Commit suggested |
 |---|---|---|---|---|---|
+| 2026-11-03 | S4 | 3.1–3.10 | Phase 3 (agent core) offline: wrapper `complete`/`stream` + prefix guard + cost rows, FakeLLM; 10 prompts + loader; 9 skills + loader; strict registry + 12 admissions/common tools + 6 gated fee stubs + `/internal/tools`; LangGraph inbound graph (guard → router → context → agent tool loop → check → repair/fallback → compose → persist → summarize → handoff interrupt/resume) + `run_inbound` gates; context builder; guards + numeric grounding; summarizer/LTM; eval harness (6 suites, 330 cases, judge, reports, evals-live workflow, CI smoke); chat CLI + 9 demo scripts | `all.sh` OK (31 scripts); live smoke ✔ (cache hit), 9 live demo transcripts ($0.13; 2 live bugs fixed: system-role placement, checker profile/CTA); live eval deferred by user | per step blocks; one-shot: `feat: phase 3 — agent core, tools, langgraph graph, guards, eval harness` |
 | 2026-11-02 | S3b | 2.4, 2.6, 2.2 | User decisions applied: D-01 Voyage (live bake-off; `.env` switched; `app.cli reembed`; 429-aware Voyage provider + batched eval queries), live Opus extractor run ($0.16) recorded as cassettes + replay test, PDF parser rewritten on pdfplumber + pypdfium2 (PyMuPDF removed) with Urdu fragmentation check and Chrome-printed Naskh/Nastaliq fixtures | `all.sh` OK (28 scripts) | `feat(kb): voyage embeddings, recorded extractor cassettes, permissive pdf parser` |
 | 2026-11-02 | S3 | 2.1–2.8 | Phase 2 (knowledge base): migration 0004 (documents, chunks w/ vector(1024)+HNSW+tsv+trgm, 5 fact tables, RLS); blob store + sniffed uploads with dedupe/versioning; PDF/DOCX/XLSX/CSV parsers + Urdu quality flags + vision-OCR fallback (opt-in); heading-aware chunker + normalization + lang + injection filter; embedding providers (fake/Voyage/bge-m3) + bake-off script + ADR 0002 (proposed); hybrid search (vector+FTS+trigram+synonyms, RRF, packing); facts (XLSX deterministic, Opus extractor via `ClaudeClient.parse` w/ cassettes, approval API, facts_version, supersede); citations + playground; arq ingestion pipeline + `ingest-seeds`; 60-Q retrieval eval. Bugs fixed on the way: re-index while newer version processing, fact ordering (ordinal), seed-facts duplication on re-run | `all.sh` OK (p0–p2, 28 scripts); retrieval recall@5 1.00 / recall@1 0.85 (fake) | per step blocks; one-shot: `feat: phase 2 — knowledge base ingestion, hybrid search, facts, citations` |
 | 2026-11-02 | S2 | 1.2–1.7 | Phase 1 completed: auth (argon2, JWT, Redis rotating refresh + reuse detection, lockout, invites), RBAC deps, roles + RLS (0002) + ORM tenant layer, conversation domain tables + LangGraph tables (0003), demo seeds (3 YAML + generated XLSX/DOCX, `seed` CLI), audit dependency + usage rollup cron + `/audit-log` `/usage`, OpenAPI-driven isolation suite. Fixed along the way: commit-after-response (scope=function), tenant scope cleared before final flush, LangGraph CONCURRENTLY deadlock, message ordering (`seq`) | `all.sh` OK (p0_s1–s6, p1_s1–s7) | see step blocks; one-shot: `feat: phase 1 — auth, rbac, rls, conversation tables, seeds, audit, isolation` |
@@ -641,6 +634,9 @@ Ordering rationale: KB (2) precedes agent (3) because grounding depends on retri
 | D-15 | 2026-11-02 | KB: retrieval eval gold = verbatim substrings (not chunk UUIDs); numbers only from approved fact rows (D-08) — chunks may *show* fees but the agent must cite facts; suspicious chunks excluded from search; dense leg optional at query time (lexical fallback) | decided (impl.) | HANDOFF 2.3–2.6 notes |
 | D-16 | 2026-11-02 | Seed demo facts: without `KB_FACTS_LLM`, prospectus facts come from `seed.yaml` (origin `seed`) and `ingest-seeds` auto-approves (demo only); real tenants always go pending → admin approval | decided (impl.) | HANDOFF 2.6 notes |
 | D-17 | 2026-11-02 | PDF parsing on permissive libs: pdfplumber (layout/tables) + pypdfium2 (Urdu text, rendering); PyMuPDF (AGPL) removed. Nastaliq PDFs → flagged → vision OCR | **decided by user 2026-11-02** ("switch to a free library if it meets Urdu/table/PDF needs" — verified on fixtures) | HANDOFF 2.2 notes |
+| D-18 | 2026-11-03 | Model never sees DB ids: deterministic content-hash source ids (`S-`/`F-`), slots addressed by local `slot_time`; ToolContext from graph state only | decided (impl.) | HANDOFF 3.4 notes |
+| D-19 | 2026-11-03 | Numeric grounding is deterministic and runs alongside the Haiku checker (either failing → one repair → fallback + flag) | decided (impl.) | PLAN §10 G2; `guards/grounding.py` |
+| D-20 | 2026-11-03 | Eval CI smoke replays only router/tone (request hashes independent of DB state); agent suites are live-only (tool results depend on seeded slots/ids); evals run against the disposable test DB (they write contacts/leads/bookings) | decided (impl.) | §6 I-14 |
 | D-12 | 2026-11-01 | **Hybrid agent routing**: router `complexity=simple` (FAQ: fees, timings, transport, greetings) → `claude-haiku-5-5` agent with the same tools + answer_check; `complex` (booking, fee module, multi-step, unhappy/escalation, low router confidence) → `claude-opus-5-5`. Eval gate in 3.9 compares simple-route quality Haiku vs Opus; if Haiku fails thresholds, try `claude-sonnet-5-5` for simple route. Implemented via `models_registry` keys `agent_simple` / `agent_complex` | **decided by user 2026-11-01** | PLAN §7, §19; unblocks D-05 |
 
 ---
@@ -661,6 +657,10 @@ Ordering rationale: KB (2) precedes agent (3) because grounding depends on retri
 | I-11 | 2026-11-02 | ~~PyMuPDF is AGPL-3.0~~ → **resolved 2026-11-02**: replaced by pdfplumber + pypdfium2 (D-17). Original note: Using it in a hosted SaaS may oblige releasing source of the service unless a commercial Artifex licence is bought. Options before pilots: buy licence, or swap to `pypdf`/`pdfplumber` (MIT/BSD; loses page rendering for vision-OCR → render via `pdf2image`/poppler). Isolated to `app/kb/parsers/pdf.py` + `render_page_png` | resolved |
 | I-12 | 2026-11-02 | Demo corpus is tiny (~2 chunks per document, ~4 per institution) → recall@5 saturates at 1.00; recall@1/MRR are the useful signals. Need one real (anonymized) prospectus PDF, ideally with Urdu pages, to make the bake-off and the 90% gate meaningful (also tests the PDF parser + Urdu flags on real data, I-01) | open (user: provide a sample prospectus) |
 | I-13 | 2026-11-02 | Voyage account has no payment method → 3 requests/min, 10K tokens/min. Dev/evals cope (waits + batching); live widget/WhatsApp traffic would stall. Add billing before pilots (U-14) | open (user, before pilots) |
+| I-14 | 2026-11-03 | Agent-node cassettes are only replayable on the same DB state (seeded slots are relative to seed time; booking codes random) → CI smoke replays router/tone only; agent suites need `--mode live` | noted (D-20) |
+| I-15 | 2026-11-03 | API: `role: system` must follow a user message (or tool results) — not the assistant's final text. Fixed via `append_operator_note` (marked user turn in that case). **CLAUDE.md "Operator notes = appended role:system" needs this nuance (user to update)** | resolved 2026-11-03 |
+| I-17 | 2026-11-03 | Haiku answer_check false negatives: 2/27 demo turns fell back although drafts were correct (pass on rerun). Measure in the live eval (`fallback_rate`); options: checker effort/prompt tweak, or let deterministic numeric check + Haiku disagreement retry once | open (3.9 live run) |
+| I-16 | 2026-11-03 | Fee tools are stubs ("not enabled → hand off") until Phase 7; fee-module turns always end in handoff | noted (Phase 7) |
 | I-05 | 2026-11-01 | Preserved-thinking prefix check is enforced for accounts created on/after 2026-08-31 — confirm account age; design is append-only regardless | open |
 
 ---
@@ -680,6 +680,7 @@ Ordering rationale: KB (2) precedes agent (3) because grounding depends on retri
 | U-12 | Provide one real (anonymized) prospectus PDF, ideally with Urdu pages (I-12, I-01) | before pilots | ⏭ later (user) |
 | U-13 | Decide PyMuPDF licensing (I-11) | — | ☑ switched to free libs (D-17) |
 | U-14 | Add a payment method to the Voyage account (lifts 3 RPM limit; free 200M tokens still apply) (I-13) | before pilots | ☐ |
+| U-15 | Approve Phase 3 live spends: 3.1 smoke ✔, 3.10 transcripts ✔ (2026-11-03); 3.9 first live eval (~$15–25) still pending | Phase 3 close | ◐ |
 | U-08 | Hosting: Netlify (admin/widget) + free backend host — at the end; personal email for now; domain optional | 9.1 | ⏭ later |
 | U-09 | Sentry projects | 8.2 | ☐ |
 | U-10 | Sample redacted fee receipts (HBL/JazzCash/Easypaisa) | 7.5 | ☐ |

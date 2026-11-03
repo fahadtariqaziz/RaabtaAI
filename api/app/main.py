@@ -6,6 +6,7 @@ from fastapi import APIRouter, FastAPI
 from app.api.audit_usage import router as audit_usage_router
 from app.api.auth import router as auth_router
 from app.api.health import router as health_router
+from app.api.internal import router as internal_router
 from app.api.kb import router as kb_router
 from app.api.members import router as members_router
 from app.core.config import Settings, get_settings
@@ -30,7 +31,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.add_middleware(RequestIdMiddleware)
     app.include_router(health_router)
     v1 = APIRouter(prefix="/api/v1")
-    for router in (auth_router, members_router, audit_usage_router, kb_router):
+    for router in (auth_router, members_router, audit_usage_router, kb_router, internal_router):
         v1.include_router(router)
     app.include_router(v1)
     return app

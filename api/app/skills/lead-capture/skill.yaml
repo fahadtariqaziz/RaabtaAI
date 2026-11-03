@@ -1,0 +1,6 @@
+name: lead-capture
+version: 1.0.0
+description: When and how to collect name/phone/class without nagging
+load_when: {module: [admissions], intents: [enquiry, interest, visit, test, counselling, admission_process]}
+priority: 60
+max_tokens: 1200

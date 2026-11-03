@@ -1,0 +1,6 @@
+name: receipt-verification
+version: 1.0.0
+description: Pakistani bank/JazzCash/Easypaisa/1Link slip fields and red flags (receipt_reader only)
+load_when: {node: [receipt_reader]}
+priority: 90
+max_tokens: 1200

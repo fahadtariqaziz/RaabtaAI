@@ -1,0 +1,6 @@
+name: visit-booking
+version: 1.0.0
+description: Slot offering, confirmation, rescheduling, what to bring
+load_when: {intents: [visit, test, counselling]}
+priority: 70
+max_tokens: 1200

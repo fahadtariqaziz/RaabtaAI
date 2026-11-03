@@ -1,0 +1,1048 @@
+# Admissions eval — college (punjab-model-college). 20 EN / 20 UR / 20 Roman Urdu. Facts match seeds/*/seed.yaml.
+# Fact types: pkr (exact amount), date (ISO; any EN/UR/RU rendering), text (any of).
+suite: admissions_college
+cases:
+- id: col-en-fee-premed
+  institution: punjab-model-college
+  channel: widget
+  language: en
+  message: What is the monthly fee for FSc Pre-Medical?
+  expect:
+    module: admissions
+    intents:
+    - fee_structure
+    must_call_tools:
+    - get_fee_table
+    must_include_facts:
+    - type: pkr
+      value: 11000
+    must_cite: true
+    must_not_contain: []
+    language: en
+- id: col-en-fee-preeng
+  institution: punjab-model-college
+  channel: widget
+  language: en
+  message: Tuition for Pre-Engineering?
+  expect:
+    module: admissions
+    intents:
+    - fee_structure
+    must_call_tools:
+    - get_fee_table
+    must_include_facts:
+    - type: pkr
+      value: 10500
+    must_cite: true
+    must_not_contain: []
+    language: en
+- id: col-en-fee-ics
+  institution: punjab-model-college
+  channel: widget
+  language: en
+  message: How much is the ICS fee per month?
+  expect:
+    module: admissions
+    intents:
+    - fee_structure
+    must_call_tools:
+    - get_fee_table
+    must_include_facts:
+    - type: pkr
+      value: 9500
+    must_cite: true
+    must_not_contain: []
+    language: en
+- id: col-en-fee-icom
+  institution: punjab-model-college
+  channel: widget
+  language: en
+  message: What is the fee for ICom?
+  expect:
+    module: admissions
+    intents:
+    - fee_structure
+    must_call_tools:
+    - get_fee_table
+    must_include_facts:
+    - type: pkr
+      value: 8000
+    must_cite: true
+    must_not_contain: []
+    language: en
+- id: col-en-fee-admission
+  institution: punjab-model-college
+  channel: widget
+  language: en
+  message: Is there an admission fee?
+  expect:
+    module: admissions
+    intents:
+    - fee_structure
+    must_call_tools:
+    - get_fee_table
+    must_include_facts:
+    - type: pkr
+      value: 15000
+    must_cite: true
+    must_not_contain: []
+    language: en
+- id: col-en-fee-board
+  institution: punjab-model-college
+  channel: widget
+  language: en
+  message: Do we pay board registration fee separately?
+  expect:
+    module: admissions
+    intents:
+    - fee_structure
+    must_call_tools:
+    - get_fee_table
+    must_include_facts:
+    - type: pkr
+      value: 6500
+    must_cite: true
+    must_not_contain: []
+    language: en
+- id: col-en-elig-premed
+  institution: punjab-model-college
+  channel: widget
+  language: en
+  message: How many marks are needed in Matric for Pre-Medical?
+  expect:
+    module: admissions
+    intents:
+    - eligibility
+    must_call_tools:
+    - get_programs
+    must_include_facts:
+    - type: text
+      value:
+      - 70%
+      - 70 %
+      - '70'
+    must_cite: true
+    must_not_contain: []
+    language: en
+- id: col-en-elig-icom
+  institution: punjab-model-college
+  channel: widget
+  language: en
+  message: Can an Arts student apply for ICom?
+  expect:
+    module: admissions
+    intents:
+    - eligibility
+    must_call_tools:
+    - get_programs
+    must_include_facts:
+    - type: text
+      value:
+      - 60%
+      - 60 %
+      - '60'
+    must_cite: true
+    must_not_contain: []
+    language: en
+- id: col-en-programs
+  institution: punjab-model-college
+  channel: widget
+  language: en
+  message: Which programs do you offer?
+  expect:
+    module: admissions
+    intents:
+    - programs
+    must_call_tools:
+    - get_programs
+    must_include_facts:
+    - type: text
+      value:
+      - ICS
+    - type: text
+      value:
+      - ICom
+      - آئی کام
+      - I.Com
+    must_cite: true
+    must_not_contain: []
+    language: en
+- id: col-en-merit-list
+  institution: punjab-model-college
+  channel: widget
+  language: en
+  message: When will the first merit list come?
+  expect:
+    module: admissions
+    intents:
+    - admission_dates
+    must_call_tools:
+    - get_key_dates
+    must_include_facts:
+    - type: date
+      value: '2027-09-05'
+    must_cite: true
+    must_not_contain: []
+    language: en
+- id: col-en-last-date
+  institution: punjab-model-college
+  channel: widget
+  language: en
+  message: What's the last date to apply?
+  expect:
+    module: admissions
+    intents:
+    - admission_dates
+    must_call_tools:
+    - get_key_dates
+    must_include_facts:
+    - type: date
+      value: '2027-09-20'
+    must_cite: true
+    must_not_contain: []
+    language: en
+- id: col-en-classes-begin
+  institution: punjab-model-college
+  channel: widget
+  language: en
+  message: When do classes start?
+  expect:
+    module: admissions
+    intents:
+    - admission_dates
+    must_call_tools:
+    - get_key_dates
+    must_include_facts:
+    - type: date
+      value: '2027-10-01'
+    must_cite: true
+    must_not_contain: []
+    language: en
+- id: col-en-scholar-90
+  institution: punjab-model-college
+  channel: widget
+  language: en
+  message: My son got 92% in Matric. Is there a scholarship?
+  expect:
+    module: admissions
+    intents:
+    - scholarship
+    - eligibility
+    must_call_tools:
+    - get_scholarships
+    must_include_facts:
+    - type: text
+      value:
+      - 50%
+      - 50 %
+    must_cite: true
+    must_not_contain: []
+    language: en
+- id: col-en-hafiz
+  institution: punjab-model-college
+  channel: widget
+  language: en
+  message: Is there any benefit for Hafiz-e-Quran students?
+  expect:
+    module: admissions
+    intents:
+    - scholarship
+    must_call_tools:
+    - get_scholarships
+    must_include_facts:
+    - type: text
+      value:
+      - '20'
+    must_cite: true
+    must_not_contain: []
+    language: en
+- id: col-en-hostel
+  institution: punjab-model-college
+  channel: widget
+  language: en
+  message: Do you have a hostel?
+  expect:
+    module: admissions
+    intents:
+    - facilities
+    must_call_tools:
+    - search_knowledge
+    must_include_facts: []
+    must_cite: true
+    must_not_contain:
+    - PKR
+    language: en
+- id: col-en-transport-canal
+  institution: punjab-model-college
+  channel: widget
+  language: en
+  message: Is there college transport from Canal Road?
+  expect:
+    module: admissions
+    intents:
+    - transport
+    must_call_tools:
+    - get_transport_routes
+    must_include_facts:
+    - type: pkr
+      value: 4000
+    must_cite: true
+    must_not_contain: []
+    language: en
+- id: col-en-counselling
+  institution: punjab-model-college
+  channel: widget
+  language: en
+  message: I'm confused between ICS and Pre-Engineering. Can we talk to someone?
+  expect:
+    module: admissions
+    intents:
+    - counselling
+    must_call_tools:
+    - get_visit_slots
+    must_include_facts: []
+    must_cite: false
+    must_not_contain: []
+    language: en
+- id: col-en-greeting
+  institution: punjab-model-college
+  channel: widget
+  language: en
+  message: Good morning
+  expect:
+    module: general
+    intents:
+    - greeting
+    must_call_tools: []
+    must_include_facts: []
+    must_cite: false
+    must_not_contain:
+    - PKR
+    language: en
+- id: col-en-no-chances
+  institution: punjab-model-college
+  channel: widget
+  language: en
+  message: I got 65% marks, will I definitely get admission in Pre-Medical?
+  expect:
+    module: admissions
+    intents:
+    - eligibility
+    must_call_tools: []
+    must_include_facts: []
+    must_cite: false
+    must_not_contain:
+    - you will definitely get admission
+    - guaranteed
+    language: en
+- id: col-en-unknown-mdcat
+  institution: punjab-model-college
+  channel: widget
+  language: en
+  message: Do you run MDCAT preparation classes?
+  expect:
+    module: admissions
+    intents:
+    - programs
+    must_call_tools: []
+    must_include_facts: []
+    must_cite: false
+    must_not_contain:
+    - MDCAT classes start on
+    language: en
+- id: col-ur-fee-premed
+  institution: punjab-model-college
+  channel: widget
+  language: ur
+  message: ایف ایس سی پری میڈیکل کی ماہانہ فیس کتنی ہے؟
+  expect:
+    module: admissions
+    intents:
+    - fee_structure
+    must_call_tools:
+    - get_fee_table
+    must_include_facts:
+    - type: pkr
+      value: 11000
+    must_cite: true
+    must_not_contain: []
+    language: ur
+- id: col-ur-fee-preeng
+  institution: punjab-model-college
+  channel: whatsapp
+  language: ur
+  message: پری انجینئرنگ کی فیس کیا ہے؟
+  expect:
+    module: admissions
+    intents:
+    - fee_structure
+    must_call_tools:
+    - get_fee_table
+    must_include_facts:
+    - type: pkr
+      value: 10500
+    must_cite: true
+    must_not_contain: []
+    language: ur
+- id: col-ur-fee-ics
+  institution: punjab-model-college
+  channel: widget
+  language: ur
+  message: آئی سی ایس کی ماہانہ فیس کتنی ہے؟
+  expect:
+    module: admissions
+    intents:
+    - fee_structure
+    must_call_tools:
+    - get_fee_table
+    must_include_facts:
+    - type: pkr
+      value: 9500
+    must_cite: true
+    must_not_contain: []
+    language: ur
+- id: col-ur-fee-icom
+  institution: punjab-model-college
+  channel: whatsapp
+  language: ur
+  message: آئی کام کی فیس بتائیں
+  expect:
+    module: admissions
+    intents:
+    - fee_structure
+    must_call_tools:
+    - get_fee_table
+    must_include_facts:
+    - type: pkr
+      value: 8000
+    must_cite: true
+    must_not_contain: []
+    language: ur
+- id: col-ur-fee-admission
+  institution: punjab-model-college
+  channel: widget
+  language: ur
+  message: داخلہ فیس کتنی ہے؟
+  expect:
+    module: admissions
+    intents:
+    - fee_structure
+    must_call_tools:
+    - get_fee_table
+    must_include_facts:
+    - type: pkr
+      value: 15000
+    must_cite: true
+    must_not_contain: []
+    language: ur
+- id: col-ur-fee-board
+  institution: punjab-model-college
+  channel: whatsapp
+  language: ur
+  message: بورڈ رجسٹریشن فیس الگ سے دینی ہوگی؟
+  expect:
+    module: admissions
+    intents:
+    - fee_structure
+    must_call_tools:
+    - get_fee_table
+    must_include_facts:
+    - type: pkr
+      value: 6500
+    must_cite: true
+    must_not_contain: []
+    language: ur
+- id: col-ur-elig-premed
+  institution: punjab-model-college
+  channel: widget
+  language: ur
+  message: پری میڈیکل کے لیے میٹرک میں کتنے نمبر چاہئیں؟
+  expect:
+    module: admissions
+    intents:
+    - eligibility
+    must_call_tools:
+    - get_programs
+    must_include_facts:
+    - type: text
+      value:
+      - 70%
+      - 70 %
+      - '70'
+    must_cite: true
+    must_not_contain: []
+    language: ur
+- id: col-ur-elig-icom
+  institution: punjab-model-college
+  channel: whatsapp
+  language: ur
+  message: کیا آرٹس کا طالب علم آئی کام میں داخلہ لے سکتا ہے؟
+  expect:
+    module: admissions
+    intents:
+    - eligibility
+    must_call_tools:
+    - get_programs
+    must_include_facts:
+    - type: text
+      value:
+      - 60%
+      - 60 %
+      - '60'
+    must_cite: true
+    must_not_contain: []
+    language: ur
+- id: col-ur-programs
+  institution: punjab-model-college
+  channel: widget
+  language: ur
+  message: آپ کون کون سے پروگرام کرواتے ہیں؟
+  expect:
+    module: admissions
+    intents:
+    - programs
+    must_call_tools:
+    - get_programs
+    must_include_facts:
+    - type: text
+      value:
+      - ICS
+    - type: text
+      value:
+      - ICom
+      - آئی کام
+      - I.Com
+    must_cite: true
+    must_not_contain: []
+    language: ur
+- id: col-ur-merit-list
+  institution: punjab-model-college
+  channel: whatsapp
+  language: ur
+  message: پہلی میرٹ لسٹ کب آئے گی؟
+  expect:
+    module: admissions
+    intents:
+    - admission_dates
+    must_call_tools:
+    - get_key_dates
+    must_include_facts:
+    - type: date
+      value: '2027-09-05'
+    must_cite: true
+    must_not_contain: []
+    language: ur
+- id: col-ur-last-date
+  institution: punjab-model-college
+  channel: widget
+  language: ur
+  message: داخلے کی آخری تاریخ؟
+  expect:
+    module: admissions
+    intents:
+    - admission_dates
+    must_call_tools:
+    - get_key_dates
+    must_include_facts:
+    - type: date
+      value: '2027-09-20'
+    must_cite: true
+    must_not_contain: []
+    language: ur
+- id: col-ur-classes-begin
+  institution: punjab-model-college
+  channel: whatsapp
+  language: ur
+  message: کلاسیں کب شروع ہوں گی؟
+  expect:
+    module: admissions
+    intents:
+    - admission_dates
+    must_call_tools:
+    - get_key_dates
+    must_include_facts:
+    - type: date
+      value: '2027-10-01'
+    must_cite: true
+    must_not_contain: []
+    language: ur
+- id: col-ur-scholar-90
+  institution: punjab-model-college
+  channel: widget
+  language: ur
+  message: میرے بیٹے کے میٹرک میں 92 فیصد نمبر ہیں، کیا اسکالرشپ ملے گی؟
+  expect:
+    module: admissions
+    intents:
+    - scholarship
+    - eligibility
+    must_call_tools:
+    - get_scholarships
+    must_include_facts:
+    - type: text
+      value:
+      - 50%
+      - 50 %
+    must_cite: true
+    must_not_contain: []
+    language: ur
+- id: col-ur-hafiz
+  institution: punjab-model-college
+  channel: whatsapp
+  language: ur
+  message: حافظ قرآن طلبہ کے لیے کوئی رعایت ہے؟
+  expect:
+    module: admissions
+    intents:
+    - scholarship
+    must_call_tools:
+    - get_scholarships
+    must_include_facts:
+    - type: text
+      value:
+      - '20'
+    must_cite: true
+    must_not_contain: []
+    language: ur
+- id: col-ur-hostel
+  institution: punjab-model-college
+  channel: widget
+  language: ur
+  message: کیا ہاسٹل کی سہولت ہے؟
+  expect:
+    module: admissions
+    intents:
+    - facilities
+    must_call_tools:
+    - search_knowledge
+    must_include_facts: []
+    must_cite: true
+    must_not_contain:
+    - PKR
+    language: ur
+- id: col-ur-transport-canal
+  institution: punjab-model-college
+  channel: whatsapp
+  language: ur
+  message: کینال روڈ سے ٹرانسپورٹ ہے؟
+  expect:
+    module: admissions
+    intents:
+    - transport
+    must_call_tools:
+    - get_transport_routes
+    must_include_facts:
+    - type: pkr
+      value: 4000
+    must_cite: true
+    must_not_contain: []
+    language: ur
+- id: col-ur-counselling
+  institution: punjab-model-college
+  channel: widget
+  language: ur
+  message: میں آئی سی ایس اور پری انجینئرنگ میں کنفیوز ہوں، کسی سے بات ہو سکتی ہے؟
+  expect:
+    module: admissions
+    intents:
+    - counselling
+    must_call_tools:
+    - get_visit_slots
+    must_include_facts: []
+    must_cite: false
+    must_not_contain: []
+    language: ur
+- id: col-ur-greeting
+  institution: punjab-model-college
+  channel: whatsapp
+  language: ur
+  message: صبح بخیر
+  expect:
+    module: general
+    intents:
+    - greeting
+    must_call_tools: []
+    must_include_facts: []
+    must_cite: false
+    must_not_contain:
+    - PKR
+    language: ur
+- id: col-ur-no-chances
+  institution: punjab-model-college
+  channel: widget
+  language: ur
+  message: میرے 65 فیصد نمبر ہیں، کیا پری میڈیکل میں داخلہ پکا ہو جائے گا؟
+  expect:
+    module: admissions
+    intents:
+    - eligibility
+    must_call_tools: []
+    must_include_facts: []
+    must_cite: false
+    must_not_contain:
+    - you will definitely get admission
+    - guaranteed
+    language: ur
+- id: col-ur-unknown-mdcat
+  institution: punjab-model-college
+  channel: whatsapp
+  language: ur
+  message: کیا آپ ایم ڈی کیٹ کی تیاری کرواتے ہیں؟
+  expect:
+    module: admissions
+    intents:
+    - programs
+    must_call_tools: []
+    must_include_facts: []
+    must_cite: false
+    must_not_contain:
+    - MDCAT classes start on
+    language: ur
+- id: col-roman_ur-fee-premed
+  institution: punjab-model-college
+  channel: widget
+  language: roman_ur
+  message: FSc Pre-Medical ki monthly fee kitni hai?
+  expect:
+    module: admissions
+    intents:
+    - fee_structure
+    must_call_tools:
+    - get_fee_table
+    must_include_facts:
+    - type: pkr
+      value: 11000
+    must_cite: true
+    must_not_contain: []
+    language: roman_ur
+- id: col-roman_ur-fee-preeng
+  institution: punjab-model-college
+  channel: whatsapp
+  language: roman_ur
+  message: Pre-Engineering ki fee kya hai?
+  expect:
+    module: admissions
+    intents:
+    - fee_structure
+    must_call_tools:
+    - get_fee_table
+    must_include_facts:
+    - type: pkr
+      value: 10500
+    must_cite: true
+    must_not_contain: []
+    language: roman_ur
+- id: col-roman_ur-fee-ics
+  institution: punjab-model-college
+  channel: widget
+  language: roman_ur
+  message: ICS ki fee per month kitni hai?
+  expect:
+    module: admissions
+    intents:
+    - fee_structure
+    must_call_tools:
+    - get_fee_table
+    must_include_facts:
+    - type: pkr
+      value: 9500
+    must_cite: true
+    must_not_contain: []
+    language: roman_ur
+- id: col-roman_ur-fee-icom
+  institution: punjab-model-college
+  channel: whatsapp
+  language: roman_ur
+  message: ICom ki fee bata dein
+  expect:
+    module: admissions
+    intents:
+    - fee_structure
+    must_call_tools:
+    - get_fee_table
+    must_include_facts:
+    - type: pkr
+      value: 8000
+    must_cite: true
+    must_not_contain: []
+    language: roman_ur
+- id: col-roman_ur-fee-admission
+  institution: punjab-model-college
+  channel: widget
+  language: roman_ur
+  message: Admission fee kitni hai?
+  expect:
+    module: admissions
+    intents:
+    - fee_structure
+    must_call_tools:
+    - get_fee_table
+    must_include_facts:
+    - type: pkr
+      value: 15000
+    must_cite: true
+    must_not_contain: []
+    language: roman_ur
+- id: col-roman_ur-fee-board
+  institution: punjab-model-college
+  channel: whatsapp
+  language: roman_ur
+  message: Board registration fee alag se deni hogi?
+  expect:
+    module: admissions
+    intents:
+    - fee_structure
+    must_call_tools:
+    - get_fee_table
+    must_include_facts:
+    - type: pkr
+      value: 6500
+    must_cite: true
+    must_not_contain: []
+    language: roman_ur
+- id: col-roman_ur-elig-premed
+  institution: punjab-model-college
+  channel: widget
+  language: roman_ur
+  message: Pre-Medical ke liye Matric mein kitne marks chahiye?
+  expect:
+    module: admissions
+    intents:
+    - eligibility
+    must_call_tools:
+    - get_programs
+    must_include_facts:
+    - type: text
+      value:
+      - 70%
+      - 70 %
+      - '70'
+    must_cite: true
+    must_not_contain: []
+    language: roman_ur
+- id: col-roman_ur-elig-icom
+  institution: punjab-model-college
+  channel: whatsapp
+  language: roman_ur
+  message: Kya arts wala student ICom mein admission le sakta hai?
+  expect:
+    module: admissions
+    intents:
+    - eligibility
+    must_call_tools:
+    - get_programs
+    must_include_facts:
+    - type: text
+      value:
+      - 60%
+      - 60 %
+      - '60'
+    must_cite: true
+    must_not_contain: []
+    language: roman_ur
+- id: col-roman_ur-programs
+  institution: punjab-model-college
+  channel: widget
+  language: roman_ur
+  message: Aap kaun se programs offer karte hain?
+  expect:
+    module: admissions
+    intents:
+    - programs
+    must_call_tools:
+    - get_programs
+    must_include_facts:
+    - type: text
+      value:
+      - ICS
+    - type: text
+      value:
+      - ICom
+      - آئی کام
+      - I.Com
+    must_cite: true
+    must_not_contain: []
+    language: roman_ur
+- id: col-roman_ur-merit-list
+  institution: punjab-model-college
+  channel: whatsapp
+  language: roman_ur
+  message: Pehli merit list kab lagegi?
+  expect:
+    module: admissions
+    intents:
+    - admission_dates
+    must_call_tools:
+    - get_key_dates
+    must_include_facts:
+    - type: date
+      value: '2027-09-05'
+    must_cite: true
+    must_not_contain: []
+    language: roman_ur
+- id: col-roman_ur-last-date
+  institution: punjab-model-college
+  channel: widget
+  language: roman_ur
+  message: Last date kya hai apply karne ki?
+  expect:
+    module: admissions
+    intents:
+    - admission_dates
+    must_call_tools:
+    - get_key_dates
+    must_include_facts:
+    - type: date
+      value: '2027-09-20'
+    must_cite: true
+    must_not_contain: []
+    language: roman_ur
+- id: col-roman_ur-classes-begin
+  institution: punjab-model-college
+  channel: whatsapp
+  language: roman_ur
+  message: Classes kab start hongi?
+  expect:
+    module: admissions
+    intents:
+    - admission_dates
+    must_call_tools:
+    - get_key_dates
+    must_include_facts:
+    - type: date
+      value: '2027-10-01'
+    must_cite: true
+    must_not_contain: []
+    language: roman_ur
+- id: col-roman_ur-scholar-90
+  institution: punjab-model-college
+  channel: widget
+  language: roman_ur
+  message: Bete ke Matric mein 92% marks hain, scholarship milegi?
+  expect:
+    module: admissions
+    intents:
+    - scholarship
+    - eligibility
+    must_call_tools:
+    - get_scholarships
+    must_include_facts:
+    - type: text
+      value:
+      - 50%
+      - 50 %
+    must_cite: true
+    must_not_contain: []
+    language: roman_ur
+- id: col-roman_ur-hafiz
+  institution: punjab-model-college
+  channel: whatsapp
+  language: roman_ur
+  message: Hafiz-e-Quran ke liye koi benefit hai?
+  expect:
+    module: admissions
+    intents:
+    - scholarship
+    must_call_tools:
+    - get_scholarships
+    must_include_facts:
+    - type: text
+      value:
+      - '20'
+    must_cite: true
+    must_not_contain: []
+    language: roman_ur
+- id: col-roman_ur-hostel
+  institution: punjab-model-college
+  channel: widget
+  language: roman_ur
+  message: Hostel ki facility hai?
+  expect:
+    module: admissions
+    intents:
+    - facilities
+    must_call_tools:
+    - search_knowledge
+    must_include_facts: []
+    must_cite: true
+    must_not_contain:
+    - PKR
+    language: roman_ur
+- id: col-roman_ur-transport-canal
+  institution: punjab-model-college
+  channel: whatsapp
+  language: roman_ur
+  message: Canal Road se transport hai?
+  expect:
+    module: admissions
+    intents:
+    - transport
+    must_call_tools:
+    - get_transport_routes
+    must_include_facts:
+    - type: pkr
+      value: 4000
+    must_cite: true
+    must_not_contain: []
+    language: roman_ur
+- id: col-roman_ur-counselling
+  institution: punjab-model-college
+  channel: widget
+  language: roman_ur
+  message: ICS aur Pre-Engineering mein confuse hoon, kisi se baat ho sakti hai?
+  expect:
+    module: admissions
+    intents:
+    - counselling
+    must_call_tools:
+    - get_visit_slots
+    must_include_facts: []
+    must_cite: false
+    must_not_contain: []
+    language: roman_ur
+- id: col-roman_ur-greeting
+  institution: punjab-model-college
+  channel: whatsapp
+  language: roman_ur
+  message: AoA
+  expect:
+    module: general
+    intents:
+    - greeting
+    must_call_tools: []
+    must_include_facts: []
+    must_cite: false
+    must_not_contain:
+    - PKR
+    language: roman_ur
+- id: col-roman_ur-no-chances
+  institution: punjab-model-college
+  channel: widget
+  language: roman_ur
+  message: Mere 65% marks hain, Pre-Medical mein admission pakka ho jayega?
+  expect:
+    module: admissions
+    intents:
+    - eligibility
+    must_call_tools: []
+    must_include_facts: []
+    must_cite: false
+    must_not_contain:
+    - you will definitely get admission
+    - guaranteed
+    language: roman_ur
+- id: col-roman_ur-unknown-mdcat
+  institution: punjab-model-college
+  channel: whatsapp
+  language: roman_ur
+  message: MDCAT ki preparation karwate hain?
+  expect:
+    module: admissions
+    intents:
+    - programs
+    must_call_tools: []
+    must_include_facts: []
+    must_cite: false
+    must_not_contain:
+    - MDCAT classes start on
+    language: roman_ur

@@ -1,0 +1,6 @@
+name: fee-recovery-etiquette
+version: 1.0.0
+description: Respectful fee communication, promises, hardship, escalation
+load_when: {module: [fees]}
+priority: 90
+max_tokens: 1200

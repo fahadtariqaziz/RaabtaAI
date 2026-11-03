@@ -31,6 +31,19 @@ jobs:
       - run: uv run ruff format --check .
       - run: uv run mypy
       - run: uv run pytest
+      - name: evals-smoke (datasets + cassette replay, no spend)
+        env:
+          DATABASE_URL: postgresql+asyncpg://nobody:nobody@127.0.0.1:1/none
+          REDIS_URL: redis://127.0.0.1:1/0
+          JWT_SECRET: ci-smoke-0123456789abcdef0123456789
+        run: |
+          uv run python -m evals.run_evals --suite agent --validate
+          # replay suites a live `--mode record` run fully recorded (marker files)
+          for s in router tone; do
+            if [ -f "evals/cassettes/suites/$s.json" ]; then
+              uv run python -m evals.run_evals --suite "$s" --mode replay
+            fi
+          done
 
   web:
     name: Admin + widget (lint, types, build)

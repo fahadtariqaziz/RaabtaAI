@@ -31,6 +31,7 @@ from app.kb.facts_extractor import extract_facts
 from app.kb.facts_tables import facts_from_spreadsheet
 from app.kb.parsers import ParsedDoc, parse
 from app.llm.claude import ClaudeClient, ParseResult
+from app.llm.runs import run_record, to_row
 from app.models.conversations import LlmRun
 from app.models.kb import Chunk, Document
 from app.prompts import load_prompt
@@ -264,21 +265,7 @@ _RUNNERS = {
 def _llm_run(
     institution_id: uuid.UUID, node: str, run: ParseResult[Any], prompt_hash: str | None
 ) -> LlmRun:
-    return LlmRun(
-        institution_id=institution_id,
-        node=node,
-        model=run.model,
-        prompt_hash=prompt_hash,
-        effort=run.effort,
-        input_tokens=run.input_tokens,
-        cache_read_tokens=run.cache_read_tokens,
-        cache_write_tokens=run.cache_write_tokens,
-        output_tokens=run.output_tokens,
-        cost_usd=run.cost_usd if not run.replayed else 0,
-        latency_ms=run.latency_ms,
-        stop_reason=run.stop_reason,
-        fallback_used=run.fallback_used,
-    )
+    return to_row(institution_id, run_record(node, run, prompt_hash=prompt_hash))
 
 
 async def reembed_all(deps: IngestDeps, institution_id: uuid.UUID) -> int:

@@ -1,0 +1,97 @@
+# Live agent evals (PLAN §12): spends Anthropic tokens. Runs only when the user opts in:
+# - manual dispatch, nightly on main, or a PR labelled `run-evals` that touches prompts/skills/
+#   registry/agent/search; and only if the ANTHROPIC_API_KEY secret exists (spend approval).
+name: evals-live
+
+on:
+  workflow_dispatch:
+    inputs:
+      suite:
+        description: "Suite (agent = all LLM suites)"
+        default: agent
+  schedule:
+    - cron: "30 21 * * *" # 02:30 PKT
+  pull_request:
+    types: [labeled, synchronize]
+    paths:
+      - "api/app/prompts/**"
+      - "api/app/skills/**"
+      - "api/app/core/models_registry.py"
+      - "api/app/agent/**"
+      - "api/app/kb/search.py"
+      - "api/evals/**"
+
+permissions:
+  contents: read
+  pull-requests: write
+
+concurrency:
+  group: evals-live-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  evals:
+    if: >-
+      github.event_name != 'pull_request' ||
+      contains(github.event.pull_request.labels.*.name, 'run-evals')
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    services:
+      postgres:
+        image: pgvector/pgvector:pg16
+        env:
+          POSTGRES_USER: raabta
+          POSTGRES_PASSWORD: raabta
+          POSTGRES_DB: raabta
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U raabta" --health-interval 5s --health-retries 20
+      redis:
+        image: redis:7-alpine
+        ports: ["6379:6379"]
+    env:
+      ENV: test
+      JWT_SECRET: ci-evals-0123456789abcdef0123456789
+      DATABASE_URL: postgresql+asyncpg://raabta_app:raabta_app@localhost:5432/raabta
+      REDIS_URL: redis://localhost:6379/0
+      EMBEDDING_PROVIDER: fake
+      KB_FACTS_LLM: "0"
+      SEED_DEMO_PASSWORD: ci-demo-password
+      BLOB_DIR: /tmp/raabta-blobs
+      ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+    defaults:
+      run:
+        working-directory: api
+    steps:
+      - uses: actions/checkout@v5
+      - name: Spend approval present?
+        run: |
+          if [ -z "$ANTHROPIC_API_KEY" ]; then
+            echo "ANTHROPIC_API_KEY secret not set — skipping live evals"; exit 1
+          fi
+      - uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+      - run: uv sync --frozen
+      - name: Database roles + migrations + demo data
+        run: |
+          PGPASSWORD=raabta psql -h localhost -U raabta -d raabta -f ../infra/db/init.sql
+          uv run alembic -x "url=postgresql+asyncpg://raabta:raabta@localhost:5432/raabta" upgrade head
+          uv run python -m app.cli seed
+          uv run python -m app.cli ingest-seeds
+      - name: Live evals
+        run: |
+          uv run python -m evals.run_evals --suite "${{ github.event.inputs.suite || 'agent' }}" \
+            --mode live --report | tee ../evals-output.md
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: eval-reports
+          path: api/evals/reports/
+      - name: Comment report on PR
+        if: always() && github.event_name == 'pull_request'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          cat evals/reports/*.md > ../eval-comment.md 2>/dev/null || cp ../evals-output.md ../eval-comment.md
+          gh pr comment "${{ github.event.pull_request.number }}" --body-file ../eval-comment.md
