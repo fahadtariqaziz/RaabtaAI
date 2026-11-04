@@ -15,10 +15,13 @@ from typing import Any
 from urllib.parse import quote, urlsplit
 
 import jwt
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.agent.inbound import TurnResult
 from app.core.config import Settings
 from app.core.security import JWT_ALGORITHM
+from app.models.conversations import Conversation, Message
 from app.models.core import Institution
 
 VISITOR_RE = re.compile(r"^v_[A-Za-z0-9_-]{8,48}$")
@@ -318,3 +321,30 @@ def turn_events(result: TurnResult) -> list[tuple[str, dict[str, Any]]]:
 
 def sse(event: str, data: dict[str, Any]) -> bytes:
     return f"event: {event}\ndata: {json.dumps(data, ensure_ascii=False)}\n\n".encode()
+
+
+async def staff_updates(session: AsyncSession, contact_id: uuid.UUID, after: int) -> dict[str, Any]:
+    conv = await session.scalar(
+        select(Conversation)
+        .where(Conversation.contact_id == contact_id, Conversation.channel == "widget")
+        .order_by(Conversation.updated_at.desc())
+        .limit(1)
+    )
+    if conv is None:
+        return {"mode": "ai", "messages": []}
+    rows = await session.scalars(
+        select(Message)
+        .where(
+            Message.conversation_id == conv.id,
+            Message.seq > after,
+            Message.direction == "out",
+            Message.type == "text",
+            Message.sender == "staff",
+        )
+        .order_by(Message.seq)
+        .limit(50)
+    )
+    return {
+        "mode": conv.mode,
+        "messages": [{"seq": m.seq, "sender": m.sender, "text": m.text} for m in rows],
+    }

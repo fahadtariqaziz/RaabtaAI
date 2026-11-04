@@ -10,10 +10,10 @@
 
 | Field | Value |
 |---|---|
-| Phase / step in progress | **Phase 4 done** (2026-11-03) · 👤 visual check of the widget pending. Phase 3 first live eval (3.9.4/3.9.6 ◐, ~$15–25) still deferred by user |
-| Last completed step | Phase 4 (2026-11-03): public widget API (sessions, SSE check-then-send, lead, wa-link, limits), Shadow-DOM widget 7.3 KB gz, served bundle + embed test pages + Chrome e2e, install/theming docs |
-| Last verification run | `bash scripts/verify/all.sh` → p0–p4 (35 scripts) — see §4 S5 row (2026-11-03) |
-| Next action | Start Phase 5.1 (Next.js admin foundation — read `admin/AGENTS.md` + the Next 16 docs first). 5.4 inbox must also deliver staff replies to the widget (I-18). When approved: `bash scripts/verify/p3_s9.sh --live` (first live eval) |
+| Phase / step in progress | **Phase 5 code complete** (2026-11-04) · ◐ DB-backed verification pending (`p5_s4`, `p5_s11` — Docker engine was down all session) · 👤 visual/Urdu review |
+| Last completed step | Phase 5 (2026-11-04): admin API (institution/settings/onboarding, metrics, inbox + takeover + SSE events, leads + CSV, slots/bookings, superadmin + impersonation, usage limits, audit filters, playground agent run), widget staff-reply polling (I-18), Next.js admin (shell, auth, EN/UR RTL, dark mode, 11 pages) |
+| Last verification run | `p5_s1` OK (lint, types, prettier, OpenAPI client in sync, i18n keys, build) + API ruff/mypy/unit tests OK (2026-11-04). **Not yet run:** `p5_s4`, `p5_s11` (need Docker) |
+| Next action | 👤 Restart Docker Desktop, then `bash scripts/verify/p5_s4.sh` and `bash scripts/verify/p5_s11.sh` (add `--headed` to watch); fix anything red (new code, first DB run). Then Phase 6 (WhatsApp). Still pending: `bash scripts/verify/p3_s9.sh --live` (first live eval) |
 | Blocked on user | Nothing for Phase 3–5. Before pilots: Voyage billing (U-14), sample prospectus (U-12). Live WhatsApp sends blocked until Meta business verification (U-01, I-07) |
 | Open decisions needing user confirmation | D-05 pricing (after 3.9 evals), D-02 STT, D-03 WhatsApp number model; D-01 decided (Voyage), D-04 decided |
 
@@ -45,7 +45,7 @@ Verify-script conventions: `scripts/verify/pN_sM.sh` sources `scripts/verify/_li
 | 2 Knowledge base | ingestion, chunking, embeddings, hybrid search, facts, citations | 2.1–2.8 (8) | ☑ (2026-11-02) |
 | 3 Agent core + evals | Claude wrapper, prompts, skills, tools, graph, guards, context, eval harness, CLI | 3.1–3.10 (10) | ◐ all ☑ except first live eval (2026-11-03) |
 | 4 Widget + chat API | public chat API (SSE), widget bundle, booking/lead UI, embed tests | 4.1–4.4 (4) | ☑ (2026-11-03) · 👤 visual check |
-| 5 Admin panel | Next.js foundation, onboarding, dashboard, inbox, leads, slots, KB, settings, super-admin, audit/usage, quality pass | 5.1–5.11 (11) | ☐ |
+| 5 Admin panel | Next.js foundation, onboarding, dashboard, inbox, leads, slots, KB, settings, super-admin, audit/usage, quality pass | 5.1–5.11 (11) | ◐ code complete (2026-11-04); DB-backed verify + 👤 visual/Urdu review pending |
 | 6 WhatsApp | Meta app, webhook, sender + 24h window, voice notes, templates, handoff, follow-ups, channel guards | 6.1–6.8 (8) | ☐ |
 | 7 Fee recovery | data/import, identity, sequences, fee agent, receipts, fee UI, fee evals | 7.1–7.7 (7) | ☐ |
 | 8 Hardening | security, observability, cost/limits, load, backups, privacy/compliance, docs | 8.1–8.7 (7) | ☐ |
@@ -357,66 +357,56 @@ Ordering rationale: KB (2) precedes agent (3) because grounding depends on retri
 
 ### Phase 5 — Admin panel foundation
 
-#### 5.1 Next.js foundation — ☐
+> Verification is consolidated (user: minimal tests, verify with scripts): **`p5_s1`** = admin lint/types/prettier/build + OpenAPI client in sync + EN/UR keys; **`p5_s4`** = isolation suite over every route + `test_inbox.py` (takeover invariant, FakeLLM) + `test_superadmin.py` + `scripts.admin_smoke` (every admin endpoint on the demo API); **`p5_s11`** = built admin + demo API in system Chrome (`admin/scripts/e2e.mjs`: login/guard, every page, inbox flow, leads, settings, RTL, dark, mobile, superadmin, axe on every page). Steps below point at these.
+
+#### 5.1 Next.js foundation — ☑ (2026-11-04; `p5_s1` OK) · 👤 visual check
 - PLAN §17, §4
-- Sub-steps: 5.1.1 ☐ app shell (sidebar/topbar, responsive), shadcn/ui install, design tokens (light/dark, CSS vars), fonts (Inter + Noto Nastaliq Urdu); 5.1.2 ☐ auth: login page, cookie session, middleware guard, `useMe`; 5.1.3 ☐ TanStack Query client + OpenAPI-generated TS client (`openapi-typescript`); 5.1.4 ☐ next-intl EN/UR with RTL `dir` switch; 5.1.5 ☐ error boundaries, toasts, skeleton primitives, empty-state component
-- Verify: `scripts/verify/p5_s1.sh` — lint, typecheck, Vitest, build; Playwright login smoke (fake api or seeded api)
-- Needs user: 👤 visual check light/dark + UR RTL
+- Sub-steps: 5.1.1 ☑ shell (sidebar groups daily/manage, mobile sheet, topbar: institution switcher, اردو/English, theme, logout), shadcn (base-nova) components, teal brand primary, chart tokens = validated dataviz reference palette (light + dark steps), Inter + Noto Nastaliq (lazy); 5.1.2 ☑ login + invite-accept (`/invite/accept#token=`), access token in memory + httpOnly refresh cookie (single-flight refresh, 401 → refresh → retry → login), `raabta_auth` hint cookie for the Next 16 `proxy.ts` optimistic guard, client auth gate in `(app)/layout`, `useAuth`/`useMe` (role `can()`); 5.1.3 ☑ TanStack Query + `openapi-fetch` client typed from `openapi-typescript` (`pnpm -C admin gen:api` ← `api/scripts/dump_openapi.py`, no server needed); 5.1.4 ☑ next-intl client-side EN/UR (`src/messages/*.json`), `<html lang dir>` switch; 5.1.5 ☑ error boundary, sonner toasts, skeletons, `EmptyState`/`ErrorState`/`QueryView`
+- Same-origin: Next rewrites `/api/v1/*` and `/widget/v1/*` to `API_URL` (baked at build) → refresh cookie works, no CORS
+- Needs user: 👤 visual check light/dark + UR RTL (screenshots from `p5_s11` in `/tmp/raabta-admin-shots`)
 - Commit: `feat(admin): next.js shell, auth, i18n and design system`
 
-#### 5.2 Onboarding wizard — ☐
-- Sub-steps: 5.2.1 ☐ steps: profile → documents upload (progress, statuses) → facts review/approve → WhatsApp status card (placeholder until 6.x) → widget snippet + theme picker + live preview → checklist; 5.2.2 ☐ API `POST /institution/onboarding/{step}`; resume where left; 5.2.3 ☐ e2e
-- Verify: `scripts/verify/p5_s2.sh` — Playwright onboarding flow on seeded api
-- Needs user: 👤 visual check
+#### 5.2 Onboarding wizard — ◐ (code done; verify `p5_s4` smoke + `p5_s11`)
+- Sub-steps: 5.2.1 ☑ steps profile → documents (dropzone, live pipeline statuses) → facts review/approve → WhatsApp status card → widget (theme, origins, wa number, snippet copy, live preview iframe `public/widget-preview.html`) → done checklist; 5.2.2 ☑ `GET /institution/onboarding` (completed + computed checklist) and `POST /institution/onboarding/{step}` (profile/widget steps carry their form; resume = first incomplete step; stored in `settings.onboarding`, a dict → never in the prompt); 5.2.3 ◐ e2e (page render + axe in `p5_s11`)
 - Commit: `feat(admin): onboarding wizard`
 
-#### 5.3 Overview dashboard & metrics API — ☐
-- Sub-steps: 5.3.1 ☐ `GET /metrics/*` (from `usage_daily` + live counts); 5.3.2 ☐ KPI tiles, funnel, trends, channel split, "needs attention"; 5.3.3 ☐ chart palette/theme consistent (light/dark)
-- Verify: `scripts/verify/p5_s3.sh` — `pytest tests/integration/test_metrics.py`; admin build + component tests
+#### 5.3 Overview dashboard & metrics API — ◐ (verify `p5_s4`, `p5_s11`)
+- Sub-steps: 5.3.1 ☑ `GET /metrics/overview?range=7d|30d|90d` (KPIs + previous period, daily trend in the institution tz, channel split, cumulative funnel, needs-attention), `/metrics/funnel`, `/metrics/response-times` — live from source tables (today included), sandbox contacts excluded, fee KPIs null until Phase 7; 5.3.2 ☑ KPI tiles with deltas, trend line chart (2 series, one axis, legend, crosshair tooltip, table view), funnel (ordinal blue ramp), channels, attention list with deep links; 5.3.3 ☑ palette from the dataviz reference instance (validated; not re-stepped)
 - Commit: `feat(admin): overview dashboard and metrics api`
 
-#### 5.4 Live inbox with human takeover — ☐
+#### 5.4 Live inbox with human takeover — ◐ (verify `p5_s4` incl. `test_inbox.py`, `p5_s11`) · 👤 UX check
 - PLAN §6.1 (takeover), §17
-- Sub-steps: 5.4.1 ☐ conversations API filters + SSE events stream; 5.4.2 ☐ 3-pane inbox UI, viewer (bubbles, media, transcript, citations, tool calls, summary card, contact card); 5.4.3 ☐ Take over / Return to AI / assign / resolve / flag; staff composer + internal notes; 5.4.4 ☐ keyboard shortcuts; 5.4.5 ☐ e2e: AI replies → takeover → staff reply → return to AI → AI resumes with context
-- Verify: `scripts/verify/p5_s4.sh` — `pytest tests/integration/test_inbox.py`; Playwright inbox e2e (fake LLM)
-- Needs user: 👤 visual/UX check
+- Sub-steps: 5.4.1 ☑ `/conversations` (filters channel/mode/status/assigned/flagged/awaiting/q), detail (contact, lead, bookings, summary, assignee), messages (author names), `GET /conversations/events` fetch-SSE (DB-polled every 2 s, 5-min lifetime, client reconnects; 20 s query polling fallback); 5.4.2 ☑ 3-pane UI (list / bubbles with citations + collapsible tool calls + system notes / context pane); 5.4.3 ☑ take over, return to AI (dialog with note → `resume_after_handoff`; manual takeovers now also carry the note into thread state via `aupdate_state(as_node="await_staff")`), assign to me, flag, resolve/reopen (`PATCH /conversations/{id}`), staff reply (auto-takeover; optimistic), internal notes (`type=note`, never delivered); 5.4.4 ☑ j/k, r, n, t; 5.4.5 ◐ `test_inbox.py`: AI reply → takeover → no AI reply while human → staff reply reaches `GET /widget/sessions/{id}/updates` → note not delivered → return with note → next agent call contains the note
+- Also (I-18): widget `done` event carries `human: true`; the widget polls `/updates` every 4 s while staff own the chat (state in sessionStorage; 7.5 KB gz)
 - Commit: `feat(admin): live inbox with takeover and return-to-ai`
 
-#### 5.5 Leads pipeline — ☐
-- Sub-steps: 5.5.1 ☐ leads API (filters, status, owner, export CSV); 5.5.2 ☐ kanban (dnd) + table views, lead drawer (timeline, bookings, notes); 5.5.3 ☐ e2e
-- Verify: `scripts/verify/p5_s5.sh` — api tests + Playwright
+#### 5.5 Leads pipeline — ◐ (verify `p5_s4`, `p5_s11`)
+- Sub-steps: 5.5.1 ☑ `/leads` (status/owner/source/q, sort), `POST` (PK phone normalisation → 422), `PATCH` (owner must be an active member; audited before/after), `GET /leads/{id}` (bookings, conversations, timeline incl. audited changes), `export.csv` (BOM for Excel/Urdu, formula-injection neutralised); 5.5.2 ☑ kanban (native drag-and-drop + per-card status select as keyboard alternative), sortable table with bulk status, drawer (owner, follow-up, notes, timeline), new-lead dialog; 5.5.3 ◐ e2e (create + move in `p5_s11`)
 - Commit: `feat(admin): leads kanban and table with export`
 
-#### 5.6 Slot calendar — ☐
-- Sub-steps: 5.6.1 ☐ slots/bookings API incl. bulk recurring creation; 5.6.2 ☐ week calendar UI, create/edit, bookings list, reschedule/cancel/no-show; 5.6.3 ☐ booking confirmation message hook (widget now, WhatsApp template in 6.x)
-- Verify: `scripts/verify/p5_s6.sh` — api tests + Playwright
+#### 5.6 Slot calendar — ◐ (verify `p5_s4`, `p5_s11`)
+- Sub-steps: 5.6.1 ☑ `/slots` (range, kind), `POST`/`PATCH`/`DELETE` (admin+; delete refused while active bookings), `POST /slots/bulk` (weekly pattern in institution tz, idempotent on kind+start, ≤ 500), `/bookings`, `PATCH /bookings/{id}` (confirm/attended/no-show/cancel; reschedule = atomic capacity take on target + release); 5.6.2 ☑ week view (Karachi), slot sheet (edit/delete/bookings), bookings list with actions; 5.6.3 ☑ booking changes post a staff message into the contact's latest conversation (widget delivers via poll; WhatsApp template in 6.x)
 - Commit: `feat(admin): visit, test and counselling slot calendar`
 
-#### 5.7 Knowledge base manager & playground — ☐
-- Sub-steps: 5.7.1 ☐ documents table (status chips, re-index, delete, version), upload dropzone; 5.7.2 ☐ chunk viewer; 5.7.3 ☐ facts tabs with approve/edit/add; 5.7.4 ☐ playground: question → full agent run (answer, citations, retrieved chunks, check verdict, cost) using `POST /kb/playground` extended to run graph in "sandbox contact" mode
-- Verify: `scripts/verify/p5_s7.sh` — api tests + Playwright (fake LLM)
-- Needs user: 👤 try playground with real key on seed institutions
+#### 5.7 Knowledge base manager & playground — ◐ (verify `p5_s4`, `p5_s11`) · 👤 try playground with the real key
+- Sub-steps: 5.7.1 ☑ documents table (status chips, polling while in pipeline, re-index, delete), multi-file dropzone; 5.7.2 ☑ chunk viewer sheet (page, lang, tokens, suspicious, RTL for Urdu); 5.7.3 ☑ facts tabs per kind with approve/reject/edit (+ approve all pending); 5.7.4 ☑ playground: retrieval-only (free) or `POST /kb/playground/agent` full graph run as a sandbox widget contact `sandbox-{user}-{key}` (hidden from inbox + metrics) → answer, citations, check, route, per-node runs + cost
 - Commit: `feat(admin): knowledge base manager and playground`
 
-#### 5.8 Settings — ☐
-- Sub-steps: 5.8.1 ☐ institution profile, languages, quiet hours, escalation rules (keywords → human; max AI turns), CTAs; 5.8.2 ☐ team & roles (invite, change role, remove) with audit; 5.8.3 ☐ widget theme/origins; 5.8.4 ☐ WhatsApp connection panel (read-only status until 6.x)
-- Verify: `scripts/verify/p5_s8.sh` — api tests + Playwright
+#### 5.8 Settings — ◐ (verify `p5_s4`, `p5_s11`)
+- Sub-steps: 5.8.1 ☑ `GET/PATCH /institution` (name, type, city, tz, languages, quiet hours) + `GET/PATCH /institution/settings`: "details" = top-level string settings the assistant sees (key/value editor), escalation keywords (**now enforced** in `run_inbound` → static handoff, `mode=human`, flagged, status `escalated`), CTA; 5.8.2 ☑ team & roles on the existing members API (invite → shareable link, role change, remove); 5.8.3 ☑ widget theme/position/origins/wa number + snippet + live preview (resolves I-20); 5.8.4 ☑ WhatsApp status card (read-only until 6.x)
 - Commit: `feat(admin): settings, team and roles`
 
-#### 5.9 Super-admin — ☐
-- Sub-steps: 5.9.1 ☐ `/superadmin/*` API (tenants, plans, status, impersonate with audit + banner, global usage); 5.9.2 ☐ UI pages; 5.9.3 ☐ isolation tests extended for superadmin paths
-- Verify: `scripts/verify/p5_s9.sh` — `pytest tests/integration/test_superadmin.py -m isolation`; Playwright
+#### 5.9 Super-admin — ◐ (verify `p5_s4` incl. `test_superadmin.py`, `p5_s11`)
+- Sub-steps: 5.9.1 ☑ `/superadmin/plans`, `/institutions` (plan, status, members, 30-day conversations/cost, last activity), `POST /institutions` (trial tenant + owner invite link), `PATCH` (plan/status), `POST|DELETE /impersonate/{id}` (Redis grant `imp:{user}:{inst}` 1 h → `get_tenant` admits the superadmin as owner with `membership_id=None`; start/stop audited in the tenant's own log), `/usage`; 5.9.2 ☑ platform page + amber impersonation banner with Stop; 5.9.3 ◐ isolation: superadmin routes excluded from the tenant matrix and covered by `test_superadmin.py` (owners get 403 everywhere; no tenant access without a grant; grant is per institution; revoked on stop) — resolves I-10
 - Commit: `feat(admin): super-admin tenant management`
 
-#### 5.10 Usage & billing + audit log pages — ☐
-- Sub-steps: 5.10.1 ☐ usage page (messages, template sends, AI cost, plan limit bars); 5.10.2 ☐ audit log table with filters + diff view
-- Verify: `scripts/verify/p5_s10.sh` — Playwright + api tests
+#### 5.10 Usage & billing + audit log pages — ◐ (verify `p5_s4`, `p5_s11`)
+- Sub-steps: 5.10.1 ☑ `GET /usage/limits?month=` (live month-to-date conversations + AI cost, template sends from `usage_daily`, seats) → limit bars + daily table; 5.10.2 ☑ `/audit-log` gains `actor`, `since`, action-prefix filter, `actor_email`; table with infinite paging + field-level before/after diff
 - Commit: `feat(admin): usage, billing and audit log pages`
 
-#### 5.11 UI quality pass — ☐ 👤
-- Sub-steps: 5.11.1 ☐ axe accessibility on all pages (no serious violations), focus management, aria; 5.11.2 ☐ mobile layouts (inbox, leads); 5.11.3 ☐ loading/empty/error states everywhere; 5.11.4 ☐ Lighthouse ≥ 90 perf/a11y on dashboard + inbox; 5.11.5 ☐ Urdu UI translation review
-- Verify: `scripts/verify/p5_s11.sh` — Playwright axe suite; Lighthouse CI budget
-- Needs user: 👤 Urdu copy review; visual QA
+#### 5.11 UI quality pass — ◐ 👤
+- Sub-steps: 5.11.1 ◐ axe on every page incl. login, dark mode, superadmin (`p5_s11` fails on serious/critical), labelled controls, focus rings, `aria-current`/`aria-pressed`/`aria-selected`; 5.11.2 ☑ mobile inbox (list ↔ conversation with back), responsive grids, horizontal kanban scroll; 5.11.3 ☑ loading/empty/error states via `QueryView` everywhere; 5.11.4 ☐ Lighthouse not automated (I-23); 5.11.5 ☐ 👤 Urdu copy review (`admin/src/messages/ur.json`)
+- Verify: `bash scripts/verify/p5_s11.sh [--headed]`
 - Commit: `feat(admin): accessibility, responsive and polish pass`
 
 ---
@@ -603,6 +593,7 @@ Ordering rationale: KB (2) precedes agent (3) because grounding depends on retri
 
 | Date | Session | Step(s) | What was done | Verification | Commit suggested |
 |---|---|---|---|---|---|
+| 2026-11-04 | S6 | 5.1–5.11 | Phase 5: admin API (institution/settings/onboarding, metrics, conversations + takeover/return/notes/flag/assign + fetch-SSE events, leads + CSV, slots/bulk/bookings + change notices, superadmin + Redis impersonation grant, usage limits, audit filters, playground agent run), escalation keywords enforced, manual-takeover note carried into the thread, widget `/updates` poll for staff replies (I-18); Next.js admin: shell, auth (memory token + refresh cookie, proxy guard), typed OpenAPI client, EN/UR RTL, dark mode, 11 pages; isolation suite extended; `test_inbox.py`, `test_superadmin.py`, `scripts.admin_smoke`, `admin/scripts/e2e.mjs` (+ axe) | `p5_s1` OK; API ruff/mypy/unit OK; **`p5_s4`/`p5_s11` not run — Docker engine down** | see 5.x blocks; one-shot: `feat(admin): phase 5 admin panel, inbox takeover and admin api` |
 | 2026-11-03 | S5 | 4.1–4.4 | Phase 4: widget API (`/widget/config`, sessions w/ origin allowlist + 24h JWT, SSE turn with status hooks → approved message → citation/slots/quick_replies/lead_form, lead + wa-link, IP/session limits + abuse lockout, `/institution/widget-snippet`), lazy agent runtime in the API + `AGENT_LLM=demo` zero-spend agent, widget bundle (Shadow DOM, i18n EN/UR/RU + RTL + Nastaliq, slot picker, lead form, citations, WhatsApp), `/widget/v1/widget.js` + test pages, Chrome e2e via playwright-core, install/theming docs. Found: API image lacked libpq → `psycopg[binary]`. Minimal tests per user (1 integration test for D-11; rest via smoke/e2e scripts) | `all.sh` (see below) · p4_s1 smoke 27/27 · p4_s3 e2e 19/19 | per step blocks; one-shot: `feat: phase 4 — widget chat api, embeddable widget, embed e2e, docs` |
 | 2026-11-03 | S4 | 3.1–3.10 | Phase 3 (agent core) offline: wrapper `complete`/`stream` + prefix guard + cost rows, FakeLLM; 10 prompts + loader; 9 skills + loader; strict registry + 12 admissions/common tools + 6 gated fee stubs + `/internal/tools`; LangGraph inbound graph (guard → router → context → agent tool loop → check → repair/fallback → compose → persist → summarize → handoff interrupt/resume) + `run_inbound` gates; context builder; guards + numeric grounding; summarizer/LTM; eval harness (6 suites, 330 cases, judge, reports, evals-live workflow, CI smoke); chat CLI + 9 demo scripts | `all.sh` OK (31 scripts); live smoke ✔ (cache hit), 9 live demo transcripts ($0.13; 2 live bugs fixed: system-role placement, checker profile/CTA); live eval deferred by user | per step blocks; one-shot: `feat: phase 3 — agent core, tools, langgraph graph, guards, eval harness` |
 | 2026-11-02 | S3b | 2.4, 2.6, 2.2 | User decisions applied: D-01 Voyage (live bake-off; `.env` switched; `app.cli reembed`; 429-aware Voyage provider + batched eval queries), live Opus extractor run ($0.16) recorded as cassettes + replay test, PDF parser rewritten on pdfplumber + pypdfium2 (PyMuPDF removed) with Urdu fragmentation check and Chrome-printed Naskh/Nastaliq fixtures | `all.sh` OK (28 scripts) | `feat(kb): voyage embeddings, recorded extractor cassettes, permissive pdf parser` |
@@ -641,6 +632,10 @@ Ordering rationale: KB (2) precedes agent (3) because grounding depends on retri
 | D-20 | 2026-11-03 | Eval CI smoke replays only router/tone (request hashes independent of DB state); agent suites are live-only (tool results depend on seeded slots/ids); evals run against the disposable test DB (they write contacts/leads/bookings) | decided (impl.) | §6 I-14 |
 | D-21 | 2026-11-03 | Widget: stateless session JWT (no sessions table) bound to institution/contact/visitor/origin; contact created at session start so status hooks can be keyed before the turn; slots/lead form derived deterministically from tool outputs/route (no prompt changes → cassettes unaffected); transcript only in sessionStorage | decided (impl.) | HANDOFF 4.1/4.2 |
 | D-22 | 2026-11-03 | Testing style from Phase 4 on (user): only invariant tests in pytest; behaviour verified by runnable scripts (API smoke, browser e2e) inside the verify scripts | decided by user | HANDOFF 4.x |
+| D-23 | 2026-11-04 | Admin is a client-rendered app behind Next rewrites (same origin as the API proxy): access token in memory, refresh token httpOnly cookie, `raabta_auth` hint cookie only for the `proxy.ts` optimistic redirect; fits Netlify (D-04) | decided (impl.) | HANDOFF 5.1 |
+| D-24 | 2026-11-04 | Inbox live updates = fetch-SSE of changed conversation ids, DB-polled (2 s) instead of Redis pub/sub — no write-path plumbing, works across processes; 20 s query polling fallback | decided (impl.) — revisit at scale | HANDOFF 5.4 |
+| D-25 | 2026-11-04 | Superadmin impersonation = audited 1-hour Redis grant per institution (no token minting, no fake membership); UI banner while active | decided (impl.) | HANDOFF 5.9 |
+| D-26 | 2026-11-04 | Phase 5 verification consolidated into `p5_s1` (static), `p5_s4` (API), `p5_s11` (browser e2e + axe) instead of 11 scripts (user: minimal tests) | decided by user preference | HANDOFF Phase 5 |
 | D-12 | 2026-11-01 | **Hybrid agent routing**: router `complexity=simple` (FAQ: fees, timings, transport, greetings) → `claude-haiku-5-5` agent with the same tools + answer_check; `complex` (booking, fee module, multi-step, unhappy/escalation, low router confidence) → `claude-opus-5-5`. Eval gate in 3.9 compares simple-route quality Haiku vs Opus; if Haiku fails thresholds, try `claude-sonnet-5-5` for simple route. Implemented via `models_registry` keys `agent_simple` / `agent_complex` | **decided by user 2026-11-01** | PLAN §7, §19; unblocks D-05 |
 
 ---
@@ -657,17 +652,23 @@ Ordering rationale: KB (2) precedes agent (3) because grounding depends on retri
 | I-07 | 2026-11-02 | Meta test-number send (`hello_world` → user's phone) accepted, then failed via webhook `131031 Business Account locked`; `account_update` event `BUSINESS_VERIFICATION_NEEDED` for WABA `2218657989053365`. So the test number **cannot send until business verification**. User has no SECP/business-name NTN yet. Workaround: develop/test 6.x with recorded webhook payloads + mocked Graph API; real-phone E2E after U-01 | open (user) |
 | I-08 | 2026-11-02 | CI runs no DB-backed tests (minimal CI by user choice) → integration + isolation suites run only via `scripts/verify/*.sh` locally. Add a CI job with postgres(pgvector)+redis services + `infra/db/init.sql` in Phase 8 (was 1.7.3) | open (Phase 8) |
 | I-09 | 2026-11-02 | Migration 0002 creates a BYPASSRLS role → migration role must be superuser (or have BYPASSRLS). Check the free backend host's Postgres allows it at 9.1; fallback = policy-based admin bypass GUC | open (9.1) |
-| I-10 | 2026-11-02 | Superadmin has no tenant access via `X-Institution` (needs membership); impersonation endpoint is step 5.9 | noted |
+| I-10 | 2026-11-02 | Superadmin has no tenant access via `X-Institution` → **resolved 2026-11-04** by the audited impersonation grant (D-25) | resolved |
 | I-11 | 2026-11-02 | ~~PyMuPDF is AGPL-3.0~~ → **resolved 2026-11-02**: replaced by pdfplumber + pypdfium2 (D-17). Original note: Using it in a hosted SaaS may oblige releasing source of the service unless a commercial Artifex licence is bought. Options before pilots: buy licence, or swap to `pypdf`/`pdfplumber` (MIT/BSD; loses page rendering for vision-OCR → render via `pdf2image`/poppler). Isolated to `app/kb/parsers/pdf.py` + `render_page_png` | resolved |
 | I-12 | 2026-11-02 | Demo corpus is tiny (~2 chunks per document, ~4 per institution) → recall@5 saturates at 1.00; recall@1/MRR are the useful signals. Need one real (anonymized) prospectus PDF, ideally with Urdu pages, to make the bake-off and the 90% gate meaningful (also tests the PDF parser + Urdu flags on real data, I-01) | open (user: provide a sample prospectus) |
 | I-13 | 2026-11-02 | Voyage account has no payment method → 3 requests/min, 10K tokens/min. Dev/evals cope (waits + batching); live widget/WhatsApp traffic would stall. Add billing before pilots (U-14) | open (user, before pilots) |
 | I-14 | 2026-11-03 | Agent-node cassettes are only replayable on the same DB state (seeded slots are relative to seed time; booking codes random) → CI smoke replays router/tone only; agent suites need `--mode live` | noted (D-20) |
 | I-15 | 2026-11-03 | API: `role: system` must follow a user message (or tool results) — not the assistant's final text. Fixed via `append_operator_note` (marked user turn in that case). **CLAUDE.md "Operator notes = appended role:system" needs this nuance (user to update)** | resolved 2026-11-03 |
-| I-18 | 2026-11-03 | Widget in human mode shows "our team will reply here" but staff replies have no path back to the widget yet (no polling/stream for outbound staff messages) → add `GET /widget/sessions/{id}/messages?after=` or an SSE channel in 5.4 | open (5.4) |
+| I-18 | 2026-11-03 | Widget in human mode shows "our team will reply here" but staff replies have no path back to the widget yet → **resolved 2026-11-04**: `GET /widget/sessions/{id}/updates?after=` + widget polling while `human` (verify in `p5_s4`/`p5_s11`) | resolved (pending verify) |
 | I-19 | 2026-11-03 | `widget:wa_code:*` (Redis, 30 d) maps the wa.me prefill code → (institution, contact); Phase 6 webhook must read it to link the WhatsApp thread to the widget contact | open (6.2) |
-| I-20 | 2026-11-03 | Allowed origins are only editable via `institutions.settings.widget` (seed/SQL) until the 5.8 settings page | open (5.8) |
+| I-20 | 2026-11-03 | Allowed origins only editable via SQL → **resolved 2026-11-04** (Settings → Website widget, validated origins) | resolved |
 | I-17 | 2026-11-03 | Haiku answer_check false negatives: 2/27 demo turns fell back although drafts were correct (pass on rerun). Measure in the live eval (`fallback_rate`); options: checker effort/prompt tweak, or let deterministic numeric check + Haiku disagreement retry once | open (3.9 live run) |
 | I-16 | 2026-11-03 | Fee tools are stubs ("not enabled → hand off") until Phase 7; fee-module turns always end in handoff | noted (Phase 7) |
+| I-21 | 2026-11-04 | Docker Desktop engine never came up this session (socket missing, app unresponsive to Quit) → DB-backed Phase 5 checks (`p5_s4`, `p5_s11`) not run yet; first run may surface fixes in new code | open (user: restart Docker, run both) |
+| I-22 | 2026-11-04 | `settings.escalation.max_ai_turns` is stored/editable but not enforced yet (keywords are) | open (Phase 6/8) |
+| I-23 | 2026-11-04 | Lighthouse ≥ 90 (5.11.4) not automated (no Lighthouse dep); run manually: `npx lighthouse http://localhost:3010/ --preset=desktop` against the `p5_s11` admin | open |
+| I-24 | 2026-11-04 | Playground full-agent runs are real turns (sandbox contact): hidden from inbox/metrics but they count in `llm_runs`/usage cost and the per-conversation daily cap | noted |
+| I-25 | 2026-11-04 | Urdu admin copy (`admin/src/messages/ur.json`) was machine-written — needs a native review (5.11.5) | open (user) |
+| I-26 | 2026-11-04 | Next dev/prod rewrite proxy may buffer SSE; inbox falls back to 20 s polling. If live updates lag on the chosen host, point the events fetch at the API origin directly (needs CORS for the admin origin) | noted |
 | I-05 | 2026-11-01 | Preserved-thinking prefix check is enforced for accounts created on/after 2026-08-31 — confirm account age; design is append-only regardless | open |
 
 ---

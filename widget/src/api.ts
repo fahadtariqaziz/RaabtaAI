@@ -30,7 +30,12 @@ export type ServerEvent =
   | { type: "slots"; kind: string; slots: Slot[] }
   | { type: "lead_form"; fields: string[] }
   | { type: "error"; text: string }
-  | { type: "done"; status: string };
+  | { type: "done"; status: string; human?: boolean };
+
+export interface Updates {
+  mode: "ai" | "human";
+  messages: { seq: number; sender: string; text: string }[];
+}
 
 export interface Slot {
   slot_time: string;
@@ -146,6 +151,13 @@ export class WidgetApi {
       body: JSON.stringify(body),
     });
     if (!r.ok) throw new HttpError(r.status, "lead");
+  }
+
+  /** Staff replies while a human owns the chat (polled; I-18). */
+  async updates(after: number): Promise<Updates> {
+    const r = await this.authed(`/updates?after=${after}`, { method: "GET" });
+    if (!r.ok) throw new HttpError(r.status, "updates");
+    return (await r.json()) as Updates;
   }
 
   async whatsappLink(lang: Lang): Promise<string> {

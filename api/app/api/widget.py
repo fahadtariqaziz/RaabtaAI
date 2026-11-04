@@ -12,7 +12,7 @@ from collections.abc import AsyncIterator
 from typing import Annotated, Any
 
 import structlog
-from fastapi import APIRouter, Depends, Header, HTTPException, Request, status
+from fastapi import APIRouter, Depends, Header, HTTPException, Query, Request, status
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field
 from sqlalchemy import select
@@ -198,7 +198,8 @@ async def _turn_stream(
         await w.strike(request.app.state.resources.redis, sess.session_id)
     for event, data in w.turn_events(result):
         yield w.sse(event, data)
-    yield w.sse("done", {"status": result.status})
+    human = result.status in ("human_mode", "escalated") or result.reply_kind == "handoff"
+    yield w.sse("done", {"status": result.status, "human": human})
 
 
 @router.post("/sessions/{session_id}/messages")
@@ -269,6 +270,17 @@ async def get_whatsapp_link(
     if not number:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "WhatsApp not configured")
     return {"url": await w.whatsapp_link(redis, sess, str(number), w.ui_lang(lang))}
+
+
+@router.get("/sessions/{session_id}/updates")
+async def get_updates(
+    request: Request, sess: SessionTokenDep, after: Annotated[int, Query(ge=0)] = 0
+) -> dict[str, Any]:
+    """Polled by the widget while staff own the chat (I-18): outbound staff/system texts with
+    `seq > after` for this visitor's widget conversation + the current mode."""
+    sm = request.app.state.resources.sessionmaker
+    async with tenant_session(sm, sess.institution_id) as session:
+        return await w.staff_updates(session, sess.contact_id, after)
 
 
 @institution_router.get("/widget-snippet")

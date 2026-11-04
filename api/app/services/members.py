@@ -175,3 +175,16 @@ async def remove(
         entity_id=member_id,
         before=before,
     )
+
+
+async def invite_url_for(
+    session: AsyncSession, membership: Membership, invited_by: uuid.UUID, settings: Settings
+) -> str:
+    """(Re)issue a one-time invite token for an existing `invited` membership (superadmin
+    tenant creation); returns the shareable accept link."""
+    token = new_opaque_token()
+    membership.invited_by = invited_by
+    membership.invite_token_hash = token_hash(token)
+    membership.invite_expires_at = datetime.now(UTC) + timedelta(days=settings.invite_ttl_days)
+    await session.flush()
+    return f"{settings.admin_base_url.rstrip('/')}/invite/accept#token={token}"

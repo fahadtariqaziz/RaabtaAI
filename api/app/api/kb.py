@@ -2,7 +2,7 @@
 (PLAN §14 KB). Staff+ can view; admin+ uploads, deletes, re-indexes and approves facts."""
 
 import uuid
-from typing import Annotated
+from typing import Annotated, Any
 
 from fastapi import (
     APIRouter,
@@ -15,7 +15,9 @@ from fastapi import (
     UploadFile,
     status,
 )
+from pydantic import BaseModel, ConfigDict, Field
 
+from app.agent.inbound import InboundEvent, run_inbound
 from app.api.deps import (
     AdminCtx,
     BlobStoreDep,
@@ -229,3 +231,58 @@ async def playground(
         facts=await facts.match_facts(session, terms),
         packed_tokens=used,
     )
+
+
+class AgentPlaygroundIn(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    query: str = Field(min_length=1, max_length=1000)
+    session_key: str = Field(default="default", pattern=r"^[A-Za-z0-9]{1,24}$")
+
+
+@router.post("/playground/agent")
+async def playground_agent(
+    body: AgentPlaygroundIn, ctx: StaffCtx, request: Request
+) -> dict[str, Any]:
+    """Full agent run (5.7.4) as a sandbox widget contact (`sandbox-{user}-{key}`; hidden from the
+    inbox and metrics): answer + citations + retrieved sources + check verdict + route + cost.
+    Uses the configured agent LLM (`AGENT_LLM`), so it spends tokens on the live key."""
+    request.state.audited = True
+    rt = await request.app.state.agent.get()
+    result = await run_inbound(
+        rt.deps,
+        rt.graph,
+        InboundEvent(
+            institution_id=ctx.institution_id,
+            channel="widget",
+            text=body.query.strip(),
+            widget_visitor_id=f"sandbox-{ctx.user_id.hex[:12]}-{body.session_key}",
+        ),
+    )
+    return {
+        "status": result.status,
+        "reply": result.reply,
+        "reply_kind": result.reply_kind,
+        "language": result.language,
+        "citations": result.citations,
+        "sources": result.sources,
+        "check": result.check,
+        "route": result.route,
+        "guard": result.guard,
+        "tool_calls": result.tool_calls,
+        "runs": [
+            {
+                k: r.get(k)
+                for k in (
+                    "node",
+                    "model",
+                    "input_tokens",
+                    "output_tokens",
+                    "cache_read_tokens",
+                    "cost_usd",
+                    "latency_ms",
+                )
+            }
+            for r in result.runs
+        ],
+        "cost_usd": str(result.cost_usd),
+    }

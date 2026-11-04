@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Widget preview</title>
+    <style>
+      body { margin: 0; font: 14px system-ui, sans-serif; background: #f4f4f2; color: #333; }
+      .site { padding: 24px; } .bar { height: 12px; background: #ddd; border-radius: 6px; margin: 10px 0; }
+    </style>
+  </head>
+  <body>
+    <div class="site">
+      <strong>Your website</strong>
+      <div class="bar" style="width: 70%"></div><div class="bar" style="width: 55%"></div><div class="bar" style="width: 62%"></div>
+    </div>
+    <script>
+      // Same-origin preview for the admin's theme picker: the API is proxied by the admin.
+      const p = new URLSearchParams(location.search);
+      const s = document.createElement("script");
+      s.src = "/widget/v1/widget.js?preview=" + Date.now();
+      s.dataset.institution = p.get("slug") || "";
+      s.dataset.api = location.origin;
+      if (p.get("primary")) s.dataset.primary = p.get("primary");
+      if (p.get("position")) s.dataset.position = p.get("position");
+      if (p.get("lang")) s.dataset.lang = p.get("lang");
+      s.dataset.open = "";
+      document.body.appendChild(s);
+    </script>
+  </body>
+</html>

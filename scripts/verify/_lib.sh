@@ -66,3 +66,17 @@ start_demo_api() {
 }
 stop_demo_api() { pkill -f "uvicorn app.main:app --port $DEMO_API_PORT" 2>/dev/null; sleep 0.5; true; }
 flush_test_redis() { cd "$ROOT" && docker compose exec -T redis redis-cli -n 15 flushdb >/dev/null; }
+
+# Phase 5: the built admin (`next start`) proxying the demo API. Rewrites are baked at build time,
+# so the admin is built with API_URL pointing at the demo API.
+ADMIN_PORT="${ADMIN_PORT:-3010}"
+ADMIN="http://localhost:$ADMIN_PORT"
+start_admin() {
+  stop_admin
+  (cd "$ROOT/admin" && API_URL="$DEMO_API" pnpm build >/tmp/raabta-admin-build.log 2>&1) || {
+    tail -30 /tmp/raabta-admin-build.log; return 1; }
+  (cd "$ROOT/admin" && PORT="$ADMIN_PORT" pnpm start >/tmp/raabta-admin.log 2>&1 &)
+  for _ in $(seq 1 60); do curl -sf -o /dev/null "$ADMIN/login" && return 0; sleep 0.5; done
+  tail -20 /tmp/raabta-admin.log; return 1
+}
+stop_admin() { pkill -f "next start" 2>/dev/null; pkill -f "next-server" 2>/dev/null; sleep 0.5; true; }

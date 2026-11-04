@@ -22,7 +22,7 @@ from fastapi.testclient import TestClient
 
 from app.core.config import Settings
 from app.main import create_app
-from tests.support import Factory, Tenant, auth_headers, ingest, run
+from tests.support import Factory, Tenant, as_tenant, auth_headers, ingest, run
 
 pytestmark = [pytest.mark.isolation, pytest.mark.integration]
 
@@ -40,7 +40,12 @@ PUBLIC_ROUTES = {
     ("POST", "/widget/sessions/{session_id}/messages"): "session JWT bound to institution",
     ("POST", "/widget/sessions/{session_id}/lead"): "session JWT bound to institution/contact",
     ("GET", "/widget/sessions/{session_id}/whatsapp-link"): "session JWT bound to institution",
+    ("GET", "/widget/sessions/{session_id}/updates"): "session JWT bound to institution/contact",
 }
+# Platform routes (5.9): superadmin only (403 for everyone else) — tested in test_superadmin.py.
+SUPERADMIN_PREFIX = "/superadmin/"
+# Long-lived streams: covered by the 403 test only (never read to the end).
+STREAM_ROUTES = {("GET", "/conversations/events")}
 # Static dict or `fn(world) -> dict` (bodies that must carry the other tenant's ids).
 SAMPLE_BODIES: dict[tuple[str, str], Any] = {
     ("POST", "/members/invite"): {"email": "probe@raabta-test.pk", "name": "P", "role": "staff"},
@@ -49,13 +54,41 @@ SAMPLE_BODIES: dict[tuple[str, str], Any] = {
     ("PATCH", "/kb/facts/{kind}"): lambda w: {"ids": [_b_fact_id(w)], "status": "rejected"},
     ("PATCH", "/kb/facts/{kind}/{fact_id}"): {"status": "rejected"},
     ("POST", "/kb/playground"): {"query": "fee"},
+    ("POST", "/kb/playground/agent"): {"query": "fee"},
+    ("PATCH", "/institution"): {"city": "Probe City"},
+    ("PATCH", "/institution/settings"): {"details": {"probe": "x"}},
+    ("POST", "/institution/onboarding/{step}"): {},
+    ("POST", "/conversations/{conversation_id}/takeover"): None,
+    ("POST", "/conversations/{conversation_id}/return-to-ai"): {"note": "probe"},
+    ("POST", "/conversations/{conversation_id}/messages"): {"text": "probe"},
+    ("POST", "/conversations/{conversation_id}/notes"): {"text": "probe"},
+    ("PATCH", "/conversations/{conversation_id}"): {"flagged": True},
+    ("POST", "/leads"): {"student_name": "Probe"},
+    ("PATCH", "/leads/{lead_id}"): {"status": "lost"},
+    ("POST", "/slots"): {
+        "kind": "visit",
+        "starts_at": "2030-01-07T05:00:00Z",
+        "ends_at": "2030-01-07T06:00:00Z",
+        "capacity": 1,
+    },
+    ("POST", "/slots/bulk"): {
+        "kind": "visit",
+        "date_from": "2030-01-07",
+        "date_to": "2030-01-08",
+        "weekdays": ["mon"],
+        "times": ["10:00"],
+        "duration_minutes": 30,
+        "capacity": 1,
+    },
+    ("PATCH", "/slots/{slot_id}"): {"capacity": 9},
+    ("PATCH", "/bookings/{booking_id}"): {"status": "cancelled"},
 }
 # Multipart routes: files sent instead of a JSON body.
 SAMPLE_FILES: dict[tuple[str, str], dict[str, Any]] = {
     ("POST", "/kb/documents"): {"file": ("probe.csv", b"Class,Fee head,Amount\nX,Probe,1\n")},
 }
 # Path params that are not object ids (enum-like): not resolved to the other tenant's objects.
-NON_ID_PARAMS = {"kind": "fee_items"}
+NON_ID_PARAMS = {"kind": "fee_items", "step": "profile"}
 FACT_KINDS = ("programs", "fee_items", "key_dates", "scholarships", "transport_routes")
 MUTATING = {"POST", "PUT", "PATCH", "DELETE"}
 B_FEES_CSV = b"Class,Fee head,Amount (PKR),Frequency\nClass 9,Tuition fee,16500,Monthly\n"
@@ -75,7 +108,7 @@ class World:
         """Everything B's owner can see through list endpoints (to detect cross-tenant writes)."""
         parts = []
         for method, path in tenant_routes():
-            if method == "GET" and "{" not in path:
+            if method == "GET" and "{" not in path and (method, path) not in STREAM_ROUTES:
                 r = self.client.get(PREFIX + path, headers=self.b_owner)
                 parts.append(r.text)
         for kind in FACT_KINDS:
@@ -91,7 +124,12 @@ class World:
             | {m["id"] for m in members}
             | set(self.b.emails.values())
             | {d["id"] for d in docs}
-            | {"B-secret-fees"}
+            | {"B-secret-fees", "B-secret-parent", "B-secret-lead"}
+            | {
+                self.cache[k]
+                for k in ("conversation", "lead", "slot", "booking")
+                if k in self.cache
+            }
         )
 
 
@@ -127,7 +165,52 @@ def _b_fact_id(w: World) -> str:
     return w.cache["fact"]
 
 
+def _b_conversation(w: World) -> None:
+    """B owns a contact + conversation (+ message), a lead, a slot and a booking."""
+    if "conversation" in w.cache:
+        return
+    from app.models.conversations import Contact
+    from app.services.bookings import book_slot
+    from app.services.conversations import add_message, open_conversation
+
+    lead = w.client.post(
+        PREFIX + "/leads", json={"student_name": "B-secret-lead"}, headers=w.b_owner
+    )
+    assert lead.status_code == 201, lead.text
+    slot = w.client.post(
+        PREFIX + "/slots", json=SAMPLE_BODIES[("POST", "/slots")], headers=w.b_owner
+    )
+    assert slot.status_code == 201, slot.text
+
+    async def make(session: Any) -> tuple[str, str]:
+        contact = Contact(widget_visitor_id="v_bsecret", name="B-secret-parent")
+        session.add(contact)
+        await session.flush()
+        conv = await open_conversation(session, contact, channel="widget")
+        await add_message(session, conv, direction="in", sender="contact", text="B-secret hello")
+        booking = await book_slot(session, uuid.UUID(slot.json()["id"]), contact_id=contact.id)
+        return str(conv.id), str(booking.id)
+
+    ids: tuple[str, str] = run(as_tenant(w.settings, w.b.id, make))
+    conv_id, booking_id = ids
+    w.cache.update(
+        conversation=conv_id, lead=lead.json()["id"], slot=slot.json()["id"], booking=booking_id
+    )
+
+
+def _cached(key: str) -> Callable[[World], str]:
+    def resolve(w: World) -> str:
+        _b_conversation(w)
+        return w.cache[key]
+
+    return resolve
+
+
 ID_RESOLVERS: dict[str, Callable[[World], str]] = {
+    "conversation_id": _cached("conversation"),
+    "lead_id": _cached("lead"),
+    "slot_id": _cached("slot"),
+    "booking_id": _cached("booking"),
     "member_id": _b_member_id,
     "document_id": _b_document_id,
     "fact_id": _b_fact_id,
@@ -155,7 +238,11 @@ def all_routes() -> list[tuple[str, str]]:
 
 
 def tenant_routes() -> list[tuple[str, str]]:
-    return [rt for rt in all_routes() if rt not in PUBLIC_ROUTES]
+    return [
+        rt
+        for rt in all_routes()
+        if rt not in PUBLIC_ROUTES and not rt[1].startswith(SUPERADMIN_PREFIX)
+    ]
 
 
 def path_params(path: str) -> list[str]:
@@ -188,6 +275,7 @@ def world(client: TestClient, factory: Factory, it_settings: Settings) -> World:
         settings=it_settings,
     )
     _b_fact_id(w)  # B owns an ingested document + facts before any snapshot is taken
+    _b_conversation(w)  # … and inbox / lead / slot / booking rows
     return w
 
 
@@ -240,7 +328,12 @@ def test_foreign_ids_in_bodies_change_nothing(world: World) -> None:
 
 
 @pytest.mark.parametrize(
-    ("method", "path"), [rt for rt in tenant_routes() if rt[0] == "GET" and not path_params(rt[1])]
+    ("method", "path"),
+    [
+        rt
+        for rt in tenant_routes()
+        if rt[0] == "GET" and not path_params(rt[1]) and rt not in STREAM_ROUTES
+    ],
 )
 def test_list_endpoints_leak_nothing_from_other_tenant(
     world: World, method: str, path: str
@@ -255,6 +348,6 @@ def test_list_endpoints_leak_nothing_from_other_tenant(
     world.client.post(PREFIX + "/kb/playground", json={"query": "Probe"}, headers=world.b_owner)
     r = world.client.get(PREFIX + path, headers=world.a_owner)
     assert r.status_code == 200, (path, r.text)
-    text = json.dumps(r.json())
+    text = json.dumps(r.json()) if "json" in r.headers["content-type"] else r.text
     leaked = {m for m in markers if m in text}
     assert not leaked, f"{path} leaked {leaked}"

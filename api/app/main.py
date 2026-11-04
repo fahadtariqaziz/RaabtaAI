@@ -6,10 +6,16 @@ from fastapi import APIRouter, FastAPI
 from app.agent.runtime import AgentRuntimeHolder
 from app.api.audit_usage import router as audit_usage_router
 from app.api.auth import router as auth_router
+from app.api.conversations import router as conversations_router
 from app.api.health import router as health_router
+from app.api.institution import router as institution_admin_router
 from app.api.internal import router as internal_router
 from app.api.kb import router as kb_router
+from app.api.leads import router as leads_router
 from app.api.members import router as members_router
+from app.api.metrics import router as metrics_router
+from app.api.slots import router as slots_router
+from app.api.superadmin import router as superadmin_router
 from app.api.widget import institution_router
 from app.api.widget import router as widget_router
 from app.api.widget_assets import WidgetCorsMiddleware
@@ -49,6 +55,12 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         internal_router,
         widget_router,
         institution_router,
+        institution_admin_router,
+        conversations_router,
+        leads_router,
+        slots_router,
+        metrics_router,
+        superadmin_router,
     ):
         v1.include_router(router)
     app.include_router(v1)

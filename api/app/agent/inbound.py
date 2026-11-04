@@ -24,7 +24,7 @@ from psycopg_pool import AsyncConnectionPool
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.agent.graph import AgentDeps
+from app.agent.graph import HISTORY_KEEP, AgentDeps
 from app.agent.guards import (
     allow_contact_message,
     first_delivery,
@@ -42,7 +42,14 @@ from app.models.facts import FeeItem, KeyDate
 from app.services.conversations import add_message, get_or_create_contact, open_conversation
 
 Status = Literal[
-    "replied", "duplicate", "human_mode", "opted_out", "opted_in", "rate_limited", "daily_cap"
+    "replied",
+    "duplicate",
+    "human_mode",
+    "escalated",
+    "opted_out",
+    "opted_in",
+    "rate_limited",
+    "daily_cap",
 ]
 CTA_TEXT = {
     "school": "invite the parent for a campus visit",
@@ -88,6 +95,13 @@ class TurnResult:
     @property
     def cost_usd(self) -> Decimal:
         return sum((Decimal(r.get("cost_usd") or "0") for r in self.runs), Decimal("0"))
+
+
+def escalation_hit(settings: dict[str, Any], text: str) -> bool:
+    """Admin-configured escalation keywords (settings.escalation.keywords, step 5.8) → human."""
+    keywords = (settings.get("escalation") or {}).get("keywords") or []
+    low = text.casefold()
+    return any(isinstance(k, str) and k.strip() and k.strip().casefold() in low for k in keywords)
 
 
 def pg_url(database_url: str) -> str:
@@ -209,6 +223,10 @@ async def run_inbound(
             contact.opted_out_at = None
         if conv.mode == "human":
             return TurnResult(status="human_mode", contact_id=contact.id, conversation_id=conv.id)
+        inst = await session.get(Institution, event.institution_id)
+        if inst is not None and escalation_hit(inst.settings or {}, event.text):
+            conv.mode, conv.status, conv.flagged = "human", "pending", True
+            return await _static_reply(session, conv, phrase("handoff", lang), "escalated", lang)
         if not await allow_contact_message(deps.redis, event.institution_id, contact.id, now):
             return await _static_reply(
                 session, conv, phrase("rate_limited", lang), "rate_limited", lang
@@ -291,3 +309,14 @@ async def resume_after_handoff(
     snapshot = await graph.aget_state(config)
     if snapshot.next:  # paused in await_staff
         await graph.ainvoke(Command(resume={"staff_note": note}), config)
+    elif note and snapshot.values:  # manual takeover (thread not paused): carry the note over
+        values = snapshot.values
+        history = [*values.get("history", []), {"role": "staff", "text": note}]
+        await graph.aupdate_state(
+            config,
+            {
+                "staff_notes": [*values.get("staff_notes", []), note],
+                "history": history[-HISTORY_KEEP:],
+            },
+            as_node="await_staff",
+        )

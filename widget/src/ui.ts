@@ -27,6 +27,9 @@ export class Widget {
   private busy = false;
   private lines: Line[] = [];
   private leadDone = false;
+  private human = false; // staff own the chat → poll for their replies
+  private lastSeq = 0;
+  private pollTimer: number | null = null;
   private pendingSlot: string | null = null;
   private store: string;
   private root = el("div", "root");
@@ -55,8 +58,14 @@ export class Widget {
       const saved = JSON.parse(sessionStorage.getItem(this.store) ?? "null") as {
         lines: Line[];
         leadDone: boolean;
+        human?: boolean;
+        lastSeq?: number;
       } | null;
-      if (saved) ({ lines: this.lines, leadDone: this.leadDone } = saved);
+      if (saved) {
+        ({ lines: this.lines, leadDone: this.leadDone } = saved);
+        this.human = !!saved.human;
+        this.lastSeq = saved.lastSeq ?? 0;
+      }
     } catch {
       /* ignore */
     }
@@ -102,13 +111,42 @@ export class Widget {
     this.shadow.append(style, this.root);
     this.applyLang();
     this.renderLog();
+    if (this.human) this.startPolling();
+  }
+
+  private startPolling(): void {
+    this.human = true;
+    this.persist();
+    if (this.pollTimer !== null) return;
+    const tick = async (): Promise<void> => {
+      try {
+        const u = await this.api.updates(this.lastSeq);
+        for (const m of u.messages) {
+          this.lastSeq = Math.max(this.lastSeq, m.seq);
+          this.bubble("ai", m.text);
+          this.lines.push({ role: "ai", text: m.text });
+        }
+        if (u.messages.length) this.scroll();
+        if (u.mode === "ai") this.human = false;
+        this.persist();
+      } catch {
+        /* offline / expired — retry next tick */
+      }
+      this.pollTimer = this.human ? window.setTimeout(() => void tick(), 4000) : null;
+    };
+    this.pollTimer = window.setTimeout(() => void tick(), 1500);
   }
 
   private persist(): void {
     try {
       sessionStorage.setItem(
         this.store,
-        JSON.stringify({ lines: this.lines.slice(-40), leadDone: this.leadDone }),
+        JSON.stringify({
+          lines: this.lines.slice(-40),
+          leadDone: this.leadDone,
+          human: this.human,
+          lastSeq: this.lastSeq,
+        }),
       );
     } catch {
       /* ignore */
@@ -355,6 +393,7 @@ export class Widget {
           this.bubble("ai", e.text);
           break;
         case "done":
+          if (e.human) this.startPolling();
           break;
       }
     };

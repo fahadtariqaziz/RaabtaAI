@@ -55,6 +55,17 @@ RedisDep = Annotated[ArqRedis, Depends(get_redis)]
 BlobStoreDep = Annotated[BlobStore, Depends(get_blobstore)]
 
 
+IMPERSONATION_TTL = 3600
+
+
+def impersonation_key(user_id: uuid.UUID, institution_id: uuid.UUID) -> str:
+    return f"imp:{user_id}:{institution_id}"
+
+
+async def impersonating(redis: ArqRedis, user_id: uuid.UUID, institution_id: uuid.UUID) -> bool:
+    return bool(await redis.exists(impersonation_key(user_id, institution_id)))
+
+
 def _unauthorized(detail: str = "Not authenticated") -> HTTPException:
     return HTTPException(
         status.HTTP_401_UNAUTHORIZED, detail, headers={"WWW-Authenticate": "Bearer"}
@@ -104,6 +115,15 @@ async def get_tenant(
         select(Membership).where(Membership.user_id == user.id, Membership.status == "active")
     )
     if membership is None:
+        # Superadmin impersonation (5.9): explicit, audited, time-boxed grant in Redis.
+        if user.is_superadmin and await impersonating(
+            request.app.state.resources.redis, user.id, institution_id
+        ):
+            ctx = TenantContext(
+                institution_id=institution_id, user_id=user.id, role="owner", membership_id=None
+            )
+            request.state.tenant = ctx
+            return ctx
         raise HTTPException(status.HTTP_403_FORBIDDEN, "Not a member of this institution")
     ctx = TenantContext(
         institution_id=institution_id,

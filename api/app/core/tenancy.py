@@ -45,7 +45,7 @@ class TenantContext:
     institution_id: uuid.UUID
     user_id: uuid.UUID
     role: str
-    membership_id: uuid.UUID
+    membership_id: uuid.UUID | None  # None = superadmin impersonation (step 5.9)
 
 
 async def scope_to_tenant(session: AsyncSession, institution_id: uuid.UUID) -> None:
