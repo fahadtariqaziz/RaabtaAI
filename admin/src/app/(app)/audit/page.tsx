@@ -161,10 +161,19 @@ export default function AuditPage() {
                   <TableRow
                     className="cursor-pointer"
                     onClick={() => setOpen(open === r.id ? null : r.id)}
-                    aria-expanded={open === r.id}
                   >
                     <TableCell className="whitespace-nowrap">
-                      {fmtDateTime(r.created_at, locale)}
+                      <button
+                        type="button"
+                        className="focus-visible:ring-ring rounded-sm underline-offset-2 hover:underline focus-visible:ring-2 focus-visible:outline-none"
+                        aria-expanded={open === r.id}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setOpen(open === r.id ? null : r.id);
+                        }}
+                      >
+                        {fmtDateTime(r.created_at, locale)}
+                      </button>
                     </TableCell>
                     <TableCell>{r.actor_email ?? "system"}</TableCell>
                     <TableCell className="font-mono text-xs">{r.action}</TableCell>

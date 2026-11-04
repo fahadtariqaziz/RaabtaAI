@@ -41,6 +41,10 @@ PUBLIC_ROUTES = {
     ("POST", "/widget/sessions/{session_id}/lead"): "session JWT bound to institution/contact",
     ("GET", "/widget/sessions/{session_id}/whatsapp-link"): "session JWT bound to institution",
     ("GET", "/widget/sessions/{session_id}/updates"): "session JWT bound to institution/contact",
+    # WhatsApp webhook (6.2): Meta verify token / HMAC over the raw body; tenant comes only from
+    # the payload's phone_number_id (or WABA id) → institutions row, never from a header.
+    ("GET", "/webhooks/whatsapp"): "Meta verify token handshake (echo only)",
+    ("POST", "/webhooks/whatsapp"): "X-Hub-Signature-256; tenant from phone_number_id",
 }
 # Platform routes (5.9): superadmin only (403 for everyone else) — tested in test_superadmin.py.
 SUPERADMIN_PREFIX = "/superadmin/"
@@ -81,6 +85,11 @@ SAMPLE_BODIES: dict[tuple[str, str], Any] = {
         "capacity": 1,
     },
     ("PATCH", "/slots/{slot_id}"): {"capacity": 9},
+    ("POST", "/templates/seed"): None,
+    ("POST", "/templates/sync"): None,
+    ("POST", "/templates/{template_id}/submit"): None,
+    ("POST", "/templates"): {"name": "probe_tpl", "language": "en", "body": "Hi {{name}} probe."},
+    ("PATCH", "/templates/{template_id}"): {"body": "Changed {{name}} by A."},
     ("PATCH", "/bookings/{booking_id}"): {"status": "cancelled"},
 }
 # Multipart routes: files sent instead of a JSON body.
@@ -136,6 +145,19 @@ class World:
 def _b_member_id(w: World) -> str:
     members = w.client.get(PREFIX + "/members", headers=w.b_owner).json()
     return str(next(m["id"] for m in members if m["role"] == "staff"))
+
+
+def _b_template_id(w: World) -> str:
+    """B owns one draft WhatsApp template."""
+    if "template" not in w.cache:
+        r = w.client.post(
+            PREFIX + "/templates",
+            json={"name": "b_secret", "language": "en", "body": "Hello {{name}}, B only."},
+            headers=w.b_owner,
+        )
+        assert r.status_code == 201, r.text
+        w.cache["template"] = r.json()["id"]
+    return w.cache["template"]
 
 
 def _const(value: str) -> Callable[[World], str]:
@@ -214,6 +236,7 @@ ID_RESOLVERS: dict[str, Callable[[World], str]] = {
     "member_id": _b_member_id,
     "document_id": _b_document_id,
     "fact_id": _b_fact_id,
+    "template_id": _b_template_id,
     **{name: _const(value) for name, value in NON_ID_PARAMS.items()},
 }
 
@@ -289,6 +312,20 @@ def _send(w: World, method: str, route: str, url: str, headers: dict[str, str]) 
     return w.client.request(method, url, headers=headers, json=body)
 
 
+def assert_unchanged(before: str, after: str) -> None:
+    """B's snapshot must not change; on failure show each differing line, before vs after."""
+    if before != after:
+        old, new = before.splitlines(), after.splitlines()
+        diffs = [
+            f"[{i}] before: {o[:200]}\n    after:  {n[:200]}"
+            for i, (o, n) in enumerate(zip(old, new, strict=False))
+            if o != n
+        ]
+        raise AssertionError(
+            f"B's data changed ({len(old)} → {len(new)} lines):\n" + "\n".join(diffs[:4])
+        )
+
+
 def id_params(path: str) -> list[str]:
     return [p for p in path_params(path) if p not in NON_ID_PARAMS]
 
@@ -300,22 +337,22 @@ def _fill(path: str, values: dict[str, str]) -> str:
 @pytest.mark.parametrize(("method", "path"), tenant_routes())
 def test_foreign_institution_header_is_forbidden(world: World, method: str, path: str) -> None:
     """A's owner names B's institution → 403 on every tenant route, nothing written in B."""
+    ids = {p: ID_RESOLVERS[p](world) for p in path_params(path)}  # may create B's objects
     before = world.b_snapshot()
     headers = {**world.a_owner, "X-Institution": str(world.b.id)}
-    ids = {p: ID_RESOLVERS[p](world) for p in path_params(path)}
     r = _send(world, method, path, PREFIX + _fill(path, ids), headers)
     assert r.status_code == 403, (method, path, r.status_code, r.text)
-    assert world.b_snapshot() == before
+    assert_unchanged(before, world.b_snapshot())
 
 
 @pytest.mark.parametrize(("method", "path"), [rt for rt in tenant_routes() if id_params(rt[1])])
 def test_foreign_object_ids_are_not_found(world: World, method: str, path: str) -> None:
     """A's owner, own institution header, but B's object ids in the path → 404, B unchanged."""
+    ids = {p: ID_RESOLVERS[p](world) for p in path_params(path)}  # may create B's objects
     before = world.b_snapshot()
-    ids = {p: ID_RESOLVERS[p](world) for p in path_params(path)}
     r = _send(world, method, path, PREFIX + _fill(path, ids), world.a_owner)
     assert r.status_code == 404, (method, path, r.status_code, r.text)
-    assert world.b_snapshot() == before
+    assert_unchanged(before, world.b_snapshot())
 
 
 def test_foreign_ids_in_bodies_change_nothing(world: World) -> None:

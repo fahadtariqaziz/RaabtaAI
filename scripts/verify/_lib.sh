@@ -13,6 +13,8 @@ check() { # check "description" command...
     echo "  ✔ $desc"
   else
     echo "  ✘ $desc"
+    # Failing sub-checks first (they can scroll out of the tail), then the tail for context.
+    echo "$out" | grep -E '✘' | head -20 | sed 's/^/      /'
     echo "$out" | tail -20 | sed 's/^/      /'
     FAILED=1
   fi
@@ -59,8 +61,10 @@ DEMO_API_PORT="${DEMO_API_PORT:-8010}"
 DEMO_API="http://localhost:$DEMO_API_PORT"
 start_demo_api() {
   stop_demo_api
+  # Redirect the whole background subshell (not just uv): otherwise it keeps check()'s $(...)
+  # pipe open and the check never returns.
   (kb_test_env && cd "$ROOT/api" && ENV=test AGENT_LLM=demo \
-    uv run uvicorn app.main:app --port "$DEMO_API_PORT" >/tmp/raabta-demo-api.log 2>&1 &)
+    exec uv run uvicorn app.main:app --port "$DEMO_API_PORT") </dev/null >/tmp/raabta-demo-api.log 2>&1 &
   for _ in $(seq 1 60); do curl -sf "$DEMO_API/healthz" >/dev/null && return 0; sleep 0.5; done
   tail -20 /tmp/raabta-demo-api.log; return 1
 }
@@ -75,7 +79,7 @@ start_admin() {
   stop_admin
   (cd "$ROOT/admin" && API_URL="$DEMO_API" pnpm build >/tmp/raabta-admin-build.log 2>&1) || {
     tail -30 /tmp/raabta-admin-build.log; return 1; }
-  (cd "$ROOT/admin" && PORT="$ADMIN_PORT" pnpm start >/tmp/raabta-admin.log 2>&1 &)
+  (cd "$ROOT/admin" && PORT="$ADMIN_PORT" exec pnpm start) </dev/null >/tmp/raabta-admin.log 2>&1 &
   for _ in $(seq 1 60); do curl -sf -o /dev/null "$ADMIN/login" && return 0; sleep 0.5; done
   tail -20 /tmp/raabta-admin.log; return 1
 }

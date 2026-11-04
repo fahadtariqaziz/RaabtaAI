@@ -61,7 +61,7 @@
   --secondary: oklch(0.97 0 0);
   --secondary-foreground: oklch(0.205 0 0);
   --muted: oklch(0.97 0 0);
-  --muted-foreground: oklch(0.556 0 0);
+  --muted-foreground: oklch(0.5 0 0); /* ≥ 4.5:1 on --muted (axe color-contrast) */
   --accent: oklch(0.97 0 0);
   --accent-foreground: oklch(0.205 0 0);
   --destructive: oklch(0.577 0.245 27.325);
@@ -147,4 +147,13 @@
 html[lang="ur"] body {
   font-family: var(--font-nastaliq), var(--font-inter), sans-serif;
   line-height: 2;
+}
+
+/* Sonner rich-colour toasts: the stock light-theme text colours sit at or below 4.5:1 on their
+   pale backgrounds (axe color-contrast). Darker text, same hues. */
+:root [data-sonner-toaster][data-sonner-theme="light"] {
+  --success-text: hsl(140, 100%, 20%);
+  --info-text: hsl(210, 92%, 33%);
+  --warning-text: hsl(31, 92%, 28%);
+  --error-text: hsl(360, 100%, 35%);
 }

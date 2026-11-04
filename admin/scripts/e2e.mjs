@@ -34,7 +34,12 @@ async function axe(page, label) {
     const r = await axe.run(document, { resultTypes: ["violations"] });
     return r.violations
       .filter((v) => v.impact === "serious" || v.impact === "critical")
-      .map((v) => `${v.id}(${v.nodes.length}): ${v.nodes[0]?.target?.join(" ")}`);
+      .map(
+        (v) =>
+          `${v.id}(${v.nodes.length}): ${v.nodes[0]?.target?.join(" ")} — ${
+            v.nodes[0]?.any?.[0]?.message ?? ""
+          }`,
+      );
   });
   ok(res.length === 0, `a11y ${label}: no serious/critical axe violations`, res.join(" | "));
 }
@@ -95,15 +100,27 @@ try {
   ok(new URL(page.url()).pathname === "/inbox", "login returns to the requested page");
 
   // 2) inbox takeover flow (5.4)
-  await page.getByRole("option").first().waitFor({ timeout: 15_000 });
-  ok((await page.getByRole("option").count()) >= 1, "inbox lists conversations");
-  await page.getByRole("option").first().locator("button").click();
+  await page
+    .getByRole("list", { name: "Inbox" })
+    .getByRole("button")
+    .first()
+    .waitFor({ timeout: 15_000 });
+  ok(
+    (await page.getByRole("list", { name: "Inbox" }).getByRole("button").count()) >= 1,
+    "inbox lists conversations",
+  );
+  await page.getByRole("list", { name: "Inbox" }).getByRole("button").first().click();
   await page.getByRole("button", { name: /take over/i }).click();
   await page.getByRole("button", { name: /return to ai/i }).waitFor();
   ok(true, "take over → mode switches to staff");
   await page.getByRole("tab", { name: /^reply$/i }).click();
   await page.getByLabel(/^reply$/i).fill("Salam, Imran from admissions here.");
+  // The bubble is optimistic (renders before the POST lands) → wait for the API response.
+  const sent = page.waitForResponse(
+    (r) => r.request().method() === "POST" && /\/conversations\/[^/]+\/messages$/.test(r.url()),
+  );
   await page.getByRole("button", { name: /^send$/i }).click();
+  ok((await sent).status() === 201, "staff reply accepted (201)");
   await page.getByText("Salam, Imran from admissions here.").first().waitFor();
   const up = await visitor.updates();
   ok(
@@ -140,6 +157,7 @@ try {
     ["/settings", /settings/i],
     ["/usage", /usage/i],
     ["/audit", /audit log/i],
+    ["/templates", /whatsapp templates/i],
   ]) {
     await page.goto(`${BASE}${path}`);
     const h = page.getByRole("heading", { level: 1, name: heading });
@@ -157,6 +175,37 @@ try {
     await axe(page, path);
     await shot(page, `page${path.replaceAll("/", "_") || "_home"}`);
   }
+
+  // 3b) WhatsApp templates (6.5): seed the default set → edit a draft → live preview
+  await page.goto(`${BASE}/templates`);
+  await page.getByRole("button", { name: /add default set/i }).click();
+  await page.getByRole("cell", { name: "visit_reminder", exact: false }).first().waitFor();
+  ok((await page.getByRole("row").count()) >= 34, "default templates seeded (11 × 3 languages)");
+  // The "added" toast fades behind the modal backdrop; let it go before auditing the editor.
+  await page.waitForFunction(() => !document.querySelector("[data-sonner-toast]"), null, {
+    timeout: 15_000,
+  });
+  await page
+    .getByRole("button", { name: /^edit$/i })
+    .first()
+    .click();
+  const dialog = page.getByRole("dialog");
+  await dialog.getByLabel(/^message$/i).fill("Dear {{name}}, welcome to our open day.");
+  await dialog.getByLabel(/example for name/i).fill("Ayesha");
+  ok(
+    await dialog.getByText("Dear Ayesha, welcome to our open day.").isVisible(),
+    "template editor shows a live preview",
+  );
+  await axe(page, "templates editor");
+  await page.keyboard.press("Escape");
+  await page.goto(`${BASE}/settings`);
+  await page.getByRole("tab", { name: /whatsapp/i }).click();
+  await page
+    .getByText(/daily summary/i)
+    .first()
+    .waitFor();
+  ok(true, "WhatsApp settings tab shows the daily summary form");
+  await axe(page, "settings whatsapp");
 
   // 4) dashboard data + leads interactions (5.3, 5.5)
   await page.goto(`${BASE}/`);
@@ -189,7 +238,7 @@ try {
   ok(true, "assistant settings saved");
 
   // 6) Urdu RTL + dark mode (5.1.4 / 5.1.1)
-  await page.getByRole("button", { name: /language/i }).click();
+  await page.getByRole("button", { name: "اردو", exact: true }).click();
   await page.waitForFunction(() => document.documentElement.dir === "rtl");
   ok(
     (await page.evaluate(() => document.documentElement.lang)) === "ur",
@@ -200,7 +249,7 @@ try {
     "Urdu strings render",
   );
   await shot(page, "settings-ur");
-  await page.getByRole("button", { name: /زبان/ }).click();
+  await page.getByRole("button", { name: "English", exact: true }).click();
   await page.waitForFunction(() => document.documentElement.dir === "ltr");
   await page.getByRole("button", { name: /theme/i }).click();
   await page.waitForFunction(() => document.documentElement.classList.contains("dark"));
@@ -218,15 +267,18 @@ try {
   const m = await mctx.newPage();
   await login(m, "staff@abc.demo.raabta.pk");
   await m.goto(`${BASE}/inbox`);
-  await m.getByRole("option").first().waitFor();
-  await m.getByRole("option").first().locator("button").click();
+  await m.getByRole("list", { name: "Inbox" }).getByRole("button").first().waitFor();
+  await m.getByRole("list", { name: "Inbox" }).getByRole("button").first().click();
   ok(
     await m.getByRole("button", { name: /back/i }).isVisible(),
     "mobile: conversation full-width with back button",
   );
   await shot(m, "inbox-mobile");
   await m.getByRole("button", { name: /back/i }).click();
-  ok(await m.getByRole("option").first().isVisible(), "mobile: back to the list");
+  ok(
+    await m.getByRole("list", { name: "Inbox" }).getByRole("button").first().isVisible(),
+    "mobile: back to the list",
+  );
   ok(
     !(await m.getByRole("link", { name: /audit log/i }).count()),
     "staff role: admin pages hidden",

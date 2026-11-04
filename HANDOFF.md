@@ -10,11 +10,11 @@
 
 | Field | Value |
 |---|---|
-| Phase / step in progress | **Phase 5 code complete** (2026-11-04) · ◐ DB-backed verification pending (`p5_s4`, `p5_s11` — Docker engine was down all session) · 👤 visual/Urdu review |
-| Last completed step | Phase 5 (2026-11-04): admin API (institution/settings/onboarding, metrics, inbox + takeover + SSE events, leads + CSV, slots/bookings, superadmin + impersonation, usage limits, audit filters, playground agent run), widget staff-reply polling (I-18), Next.js admin (shell, auth, EN/UR RTL, dark mode, 11 pages) |
-| Last verification run | `p5_s1` OK (lint, types, prettier, OpenAPI client in sync, i18n keys, build) + API ruff/mypy/unit tests OK (2026-11-04). **Not yet run:** `p5_s4`, `p5_s11` (need Docker) |
-| Next action | 👤 Restart Docker Desktop, then `bash scripts/verify/p5_s4.sh` and `bash scripts/verify/p5_s11.sh` (add `--headed` to watch); fix anything red (new code, first DB run). Then Phase 6 (WhatsApp). Still pending: `bash scripts/verify/p3_s9.sh --live` (first live eval) |
-| Blocked on user | Nothing for Phase 3–5. Before pilots: Voyage billing (U-14), sample prospectus (U-12). Live WhatsApp sends blocked until Meta business verification (U-01, I-07) |
+| Phase / step in progress | **Phase 6 code complete** (2026-11-04) · 👤 6.1 Meta setup (blocked by business verification U-01), 6.4 STT bake-off (key + samples), 6.5 template wording review + submission |
+| Last completed step | Phase 5 verified on the DB (`p5_s4`, `p5_s11` OK — fixed staff-reply 422, a11y, e2e races) · Phase 6 (2026-11-04): signed webhook + idempotent events → worker → `run_inbound`; single queued→deliver outbound path with 24h window; statuses; voice notes behind STT interface; templates (0005) + admin page + Meta submit/sync; widget-code linking; follow-ups/booking reminders/daily summary cron; policy gate (opt-out, quiet hours + Jumma, weekly cap, plan hold); privacy line; runbook |
+| Last verification run | 2026-11-04 (end of S7): `p5_s1` OK, `p5_s4` OK, `p5_s11` OK (incl. templates page + WhatsApp settings), `p6_s2` OK. Not run: `p6_s1` (needs Meta token + public URL) |
+| Next action | 👤 Meta: finish business verification (U-01) → token + webhook → `bash scripts/verify/p6_s1.sh https://<public-host>/api/v1/webhooks/whatsapp`; 👤 review default templates (Admin → Templates → "Add default set") then submit; 👤 STT bake-off (U-06). Then **Phase 7 (fee recovery)** — does not need Meta to build (templates + FakeLLM). Still pending: `bash scripts/verify/p3_s9.sh --live` (first live eval) |
+| Blocked on user | Live WhatsApp (U-01/I-07), STT key + samples (U-06), Voyage billing (U-14) and prospectus (U-12) before pilots |
 | Open decisions needing user confirmation | D-05 pricing (after 3.9 evals), D-02 STT, D-03 WhatsApp number model; D-01 decided (Voyage), D-04 decided |
 
 ---
@@ -45,8 +45,8 @@ Verify-script conventions: `scripts/verify/pN_sM.sh` sources `scripts/verify/_li
 | 2 Knowledge base | ingestion, chunking, embeddings, hybrid search, facts, citations | 2.1–2.8 (8) | ☑ (2026-11-02) |
 | 3 Agent core + evals | Claude wrapper, prompts, skills, tools, graph, guards, context, eval harness, CLI | 3.1–3.10 (10) | ◐ all ☑ except first live eval (2026-11-03) |
 | 4 Widget + chat API | public chat API (SSE), widget bundle, booking/lead UI, embed tests | 4.1–4.4 (4) | ☑ (2026-11-03) · 👤 visual check |
-| 5 Admin panel | Next.js foundation, onboarding, dashboard, inbox, leads, slots, KB, settings, super-admin, audit/usage, quality pass | 5.1–5.11 (11) | ◐ code complete (2026-11-04); DB-backed verify + 👤 visual/Urdu review pending |
-| 6 WhatsApp | Meta app, webhook, sender + 24h window, voice notes, templates, handoff, follow-ups, channel guards | 6.1–6.8 (8) | ☐ |
+| 5 Admin panel | Next.js foundation, onboarding, dashboard, inbox, leads, slots, KB, settings, super-admin, audit/usage, quality pass | 5.1–5.11 (11) | ☑ (2026-11-04; `p5_s4` + `p5_s11` OK) · 👤 visual/Urdu review |
+| 6 WhatsApp | Meta app, webhook, sender + 24h window, voice notes, templates, handoff, follow-ups, channel guards | 6.1–6.8 (8) | ◐ code ☑ (2026-11-04, `p6_s2`); 👤 6.1 Meta, 6.4 bake-off, 6.5 submission |
 | 7 Fee recovery | data/import, identity, sequences, fee agent, receipts, fee UI, fee evals | 7.1–7.7 (7) | ☐ |
 | 8 Hardening | security, observability, cost/limits, load, backups, privacy/compliance, docs | 8.1–8.7 (7) | ☐ |
 | 9 Pilot launch kit | deploy, staging/prod, onboarding runbook, demo script, pilot ops | 9.1–9.5 (5) | ☐ |
@@ -366,46 +366,46 @@ Ordering rationale: KB (2) precedes agent (3) because grounding depends on retri
 - Needs user: 👤 visual check light/dark + UR RTL (screenshots from `p5_s11` in `/tmp/raabta-admin-shots`)
 - Commit: `feat(admin): next.js shell, auth, i18n and design system`
 
-#### 5.2 Onboarding wizard — ◐ (code done; verify `p5_s4` smoke + `p5_s11`)
-- Sub-steps: 5.2.1 ☑ steps profile → documents (dropzone, live pipeline statuses) → facts review/approve → WhatsApp status card → widget (theme, origins, wa number, snippet copy, live preview iframe `public/widget-preview.html`) → done checklist; 5.2.2 ☑ `GET /institution/onboarding` (completed + computed checklist) and `POST /institution/onboarding/{step}` (profile/widget steps carry their form; resume = first incomplete step; stored in `settings.onboarding`, a dict → never in the prompt); 5.2.3 ◐ e2e (page render + axe in `p5_s11`)
+#### 5.2 Onboarding wizard — ☑ (2026-11-04; `p5_s4`, `p5_s11`)
+- Sub-steps: 5.2.1 ☑ steps profile → documents (dropzone, live pipeline statuses) → facts review/approve → WhatsApp status card → widget (theme, origins, wa number, snippet copy, live preview iframe `public/widget-preview.html`) → done checklist; 5.2.2 ☑ `GET /institution/onboarding` (completed + computed checklist) and `POST /institution/onboarding/{step}` (profile/widget steps carry their form; resume = first incomplete step; stored in `settings.onboarding`, a dict → never in the prompt); 5.2.3 ☑ e2e (page render + axe in `p5_s11`)
 - Commit: `feat(admin): onboarding wizard`
 
-#### 5.3 Overview dashboard & metrics API — ◐ (verify `p5_s4`, `p5_s11`)
+#### 5.3 Overview dashboard & metrics API — ☑ (2026-11-04; `p5_s4`, `p5_s11`)
 - Sub-steps: 5.3.1 ☑ `GET /metrics/overview?range=7d|30d|90d` (KPIs + previous period, daily trend in the institution tz, channel split, cumulative funnel, needs-attention), `/metrics/funnel`, `/metrics/response-times` — live from source tables (today included), sandbox contacts excluded, fee KPIs null until Phase 7; 5.3.2 ☑ KPI tiles with deltas, trend line chart (2 series, one axis, legend, crosshair tooltip, table view), funnel (ordinal blue ramp), channels, attention list with deep links; 5.3.3 ☑ palette from the dataviz reference instance (validated; not re-stepped)
 - Commit: `feat(admin): overview dashboard and metrics api`
 
-#### 5.4 Live inbox with human takeover — ◐ (verify `p5_s4` incl. `test_inbox.py`, `p5_s11`) · 👤 UX check
+#### 5.4 Live inbox with human takeover — ☑ (2026-11-04; `p5_s4`, `p5_s11`) · 👤 UX check
 - PLAN §6.1 (takeover), §17
-- Sub-steps: 5.4.1 ☑ `/conversations` (filters channel/mode/status/assigned/flagged/awaiting/q), detail (contact, lead, bookings, summary, assignee), messages (author names), `GET /conversations/events` fetch-SSE (DB-polled every 2 s, 5-min lifetime, client reconnects; 20 s query polling fallback); 5.4.2 ☑ 3-pane UI (list / bubbles with citations + collapsible tool calls + system notes / context pane); 5.4.3 ☑ take over, return to AI (dialog with note → `resume_after_handoff`; manual takeovers now also carry the note into thread state via `aupdate_state(as_node="await_staff")`), assign to me, flag, resolve/reopen (`PATCH /conversations/{id}`), staff reply (auto-takeover; optimistic), internal notes (`type=note`, never delivered); 5.4.4 ☑ j/k, r, n, t; 5.4.5 ◐ `test_inbox.py`: AI reply → takeover → no AI reply while human → staff reply reaches `GET /widget/sessions/{id}/updates` → note not delivered → return with note → next agent call contains the note
+- Sub-steps: 5.4.1 ☑ `/conversations` (filters channel/mode/status/assigned/flagged/awaiting/q), detail (contact, lead, bookings, summary, assignee), messages (author names), `GET /conversations/events` fetch-SSE (DB-polled every 2 s, 5-min lifetime, client reconnects; 20 s query polling fallback); 5.4.2 ☑ 3-pane UI (list / bubbles with citations + collapsible tool calls + system notes / context pane); 5.4.3 ☑ take over, return to AI (dialog with note → `resume_after_handoff`; manual takeovers now also carry the note into thread state via `aupdate_state(as_node="await_staff")`), assign to me, flag, resolve/reopen (`PATCH /conversations/{id}`), staff reply (auto-takeover; optimistic), internal notes (`type=note`, never delivered); 5.4.4 ☑ j/k, r, n, t; 5.4.5 ☑ `test_inbox.py`: AI reply → takeover → no AI reply while human → staff reply reaches `GET /widget/sessions/{id}/updates` → note not delivered → return with note → next agent call contains the note
 - Also (I-18): widget `done` event carries `human: true`; the widget polls `/updates` every 4 s while staff own the chat (state in sessionStorage; 7.5 KB gz)
 - Commit: `feat(admin): live inbox with takeover and return-to-ai`
 
-#### 5.5 Leads pipeline — ◐ (verify `p5_s4`, `p5_s11`)
-- Sub-steps: 5.5.1 ☑ `/leads` (status/owner/source/q, sort), `POST` (PK phone normalisation → 422), `PATCH` (owner must be an active member; audited before/after), `GET /leads/{id}` (bookings, conversations, timeline incl. audited changes), `export.csv` (BOM for Excel/Urdu, formula-injection neutralised); 5.5.2 ☑ kanban (native drag-and-drop + per-card status select as keyboard alternative), sortable table with bulk status, drawer (owner, follow-up, notes, timeline), new-lead dialog; 5.5.3 ◐ e2e (create + move in `p5_s11`)
+#### 5.5 Leads pipeline — ☑ (2026-11-04; `p5_s4`, `p5_s11`)
+- Sub-steps: 5.5.1 ☑ `/leads` (status/owner/source/q, sort), `POST` (PK phone normalisation → 422), `PATCH` (owner must be an active member; audited before/after), `GET /leads/{id}` (bookings, conversations, timeline incl. audited changes), `export.csv` (BOM for Excel/Urdu, formula-injection neutralised); 5.5.2 ☑ kanban (native drag-and-drop + per-card status select as keyboard alternative), sortable table with bulk status, drawer (owner, follow-up, notes, timeline), new-lead dialog; 5.5.3 ☑ e2e (create + move in `p5_s11`)
 - Commit: `feat(admin): leads kanban and table with export`
 
-#### 5.6 Slot calendar — ◐ (verify `p5_s4`, `p5_s11`)
+#### 5.6 Slot calendar — ☑ (2026-11-04; `p5_s4`, `p5_s11`)
 - Sub-steps: 5.6.1 ☑ `/slots` (range, kind), `POST`/`PATCH`/`DELETE` (admin+; delete refused while active bookings), `POST /slots/bulk` (weekly pattern in institution tz, idempotent on kind+start, ≤ 500), `/bookings`, `PATCH /bookings/{id}` (confirm/attended/no-show/cancel; reschedule = atomic capacity take on target + release); 5.6.2 ☑ week view (Karachi), slot sheet (edit/delete/bookings), bookings list with actions; 5.6.3 ☑ booking changes post a staff message into the contact's latest conversation (widget delivers via poll; WhatsApp template in 6.x)
 - Commit: `feat(admin): visit, test and counselling slot calendar`
 
-#### 5.7 Knowledge base manager & playground — ◐ (verify `p5_s4`, `p5_s11`) · 👤 try playground with the real key
+#### 5.7 Knowledge base manager & playground — ☑ (2026-11-04; `p5_s4`, `p5_s11`) · 👤 try playground with the real key
 - Sub-steps: 5.7.1 ☑ documents table (status chips, polling while in pipeline, re-index, delete), multi-file dropzone; 5.7.2 ☑ chunk viewer sheet (page, lang, tokens, suspicious, RTL for Urdu); 5.7.3 ☑ facts tabs per kind with approve/reject/edit (+ approve all pending); 5.7.4 ☑ playground: retrieval-only (free) or `POST /kb/playground/agent` full graph run as a sandbox widget contact `sandbox-{user}-{key}` (hidden from inbox + metrics) → answer, citations, check, route, per-node runs + cost
 - Commit: `feat(admin): knowledge base manager and playground`
 
-#### 5.8 Settings — ◐ (verify `p5_s4`, `p5_s11`)
+#### 5.8 Settings — ☑ (2026-11-04; `p5_s4`, `p5_s11`)
 - Sub-steps: 5.8.1 ☑ `GET/PATCH /institution` (name, type, city, tz, languages, quiet hours) + `GET/PATCH /institution/settings`: "details" = top-level string settings the assistant sees (key/value editor), escalation keywords (**now enforced** in `run_inbound` → static handoff, `mode=human`, flagged, status `escalated`), CTA; 5.8.2 ☑ team & roles on the existing members API (invite → shareable link, role change, remove); 5.8.3 ☑ widget theme/position/origins/wa number + snippet + live preview (resolves I-20); 5.8.4 ☑ WhatsApp status card (read-only until 6.x)
 - Commit: `feat(admin): settings, team and roles`
 
-#### 5.9 Super-admin — ◐ (verify `p5_s4` incl. `test_superadmin.py`, `p5_s11`)
-- Sub-steps: 5.9.1 ☑ `/superadmin/plans`, `/institutions` (plan, status, members, 30-day conversations/cost, last activity), `POST /institutions` (trial tenant + owner invite link), `PATCH` (plan/status), `POST|DELETE /impersonate/{id}` (Redis grant `imp:{user}:{inst}` 1 h → `get_tenant` admits the superadmin as owner with `membership_id=None`; start/stop audited in the tenant's own log), `/usage`; 5.9.2 ☑ platform page + amber impersonation banner with Stop; 5.9.3 ◐ isolation: superadmin routes excluded from the tenant matrix and covered by `test_superadmin.py` (owners get 403 everywhere; no tenant access without a grant; grant is per institution; revoked on stop) — resolves I-10
+#### 5.9 Super-admin — ☑ (2026-11-04; `p5_s4`, `p5_s11`)
+- Sub-steps: 5.9.1 ☑ `/superadmin/plans`, `/institutions` (plan, status, members, 30-day conversations/cost, last activity), `POST /institutions` (trial tenant + owner invite link), `PATCH` (plan/status), `POST|DELETE /impersonate/{id}` (Redis grant `imp:{user}:{inst}` 1 h → `get_tenant` admits the superadmin as owner with `membership_id=None`; start/stop audited in the tenant's own log), `/usage`; 5.9.2 ☑ platform page + amber impersonation banner with Stop; 5.9.3 ☑ isolation: superadmin routes excluded from the tenant matrix and covered by `test_superadmin.py` (owners get 403 everywhere; no tenant access without a grant; grant is per institution; revoked on stop) — resolves I-10
 - Commit: `feat(admin): super-admin tenant management`
 
-#### 5.10 Usage & billing + audit log pages — ◐ (verify `p5_s4`, `p5_s11`)
+#### 5.10 Usage & billing + audit log pages — ☑ (2026-11-04; `p5_s4`, `p5_s11`)
 - Sub-steps: 5.10.1 ☑ `GET /usage/limits?month=` (live month-to-date conversations + AI cost, template sends from `usage_daily`, seats) → limit bars + daily table; 5.10.2 ☑ `/audit-log` gains `actor`, `since`, action-prefix filter, `actor_email`; table with infinite paging + field-level before/after diff
 - Commit: `feat(admin): usage, billing and audit log pages`
 
-#### 5.11 UI quality pass — ◐ 👤
-- Sub-steps: 5.11.1 ◐ axe on every page incl. login, dark mode, superadmin (`p5_s11` fails on serious/critical), labelled controls, focus rings, `aria-current`/`aria-pressed`/`aria-selected`; 5.11.2 ☑ mobile inbox (list ↔ conversation with back), responsive grids, horizontal kanban scroll; 5.11.3 ☑ loading/empty/error states via `QueryView` everywhere; 5.11.4 ☐ Lighthouse not automated (I-23); 5.11.5 ☐ 👤 Urdu copy review (`admin/src/messages/ur.json`)
+#### 5.11 UI quality pass — ◐ (axe ☑ on every page; 👤 Lighthouse + Urdu review)
+- Sub-steps: 5.11.1 ☑ axe on every page incl. login, dark mode, superadmin (`p5_s11` fails on serious/critical), labelled controls, focus rings, `aria-current`/`aria-pressed`/`aria-selected`; 5.11.2 ☑ mobile inbox (list ↔ conversation with back), responsive grids, horizontal kanban scroll; 5.11.3 ☑ loading/empty/error states via `QueryView` everywhere; 5.11.4 ☐ Lighthouse not automated (I-23); 5.11.5 ☐ 👤 Urdu copy review (`admin/src/messages/ur.json`)
 - Verify: `bash scripts/verify/p5_s11.sh [--headed]`
 - Commit: `feat(admin): accessibility, responsive and polish pass`
 
@@ -413,52 +413,46 @@ Ordering rationale: KB (2) precedes agent (3) because grounding depends on retri
 
 ### Phase 6 — WhatsApp channel
 
-#### 6.1 Meta app & number setup — ☐ 👤
-- PLAN §15.2
-- Sub-steps (user, guided by session): 6.1.1 ☐ WABA created, phone number added, display name approved; 6.1.2 ☐ permanent system-user token with `whatsapp_business_messaging` + `whatsapp_business_management`; 6.1.3 ☐ webhook URL (ngrok/cloudflared for dev) + verify token; subscribe fields `messages`, `message_template_status_update`; 6.1.4 ☐ `.env`: `META_APP_SECRET`, `META_ACCESS_TOKEN`, `META_VERIFY_TOKEN`, `META_PHONE_NUMBER_ID` (dev); institution row gets `wa_phone_number_id`
-- Verify: `scripts/verify/p6_s1.sh` — `GET /{phone_number_id}` via Graph API returns display name (needs token); webhook GET verify round-trip via public URL
-- Needs user: 👤 all of it; expected output printed by script
-- Commit: none / `docs: whatsapp setup notes`
+> Verification is consolidated like Phase 5 (D-26): **`p6_s1`** = live Meta (👤: number, display name, quality, webhook handshake via a public URL); **`p6_s2`** = the whole pipeline with zero spend — `tests/unit/test_whatsapp_units.py` (signature, payload shapes, status order, window, compose, templates, policy gate, Graph retries, STT confidence) + `tests/integration/test_whatsapp.py` (FakeLLM + FakeSTT + recording Graph over `httpx.MockTransport`) + isolation over every route + worker job registration + lint/types/unit; the admin side (templates page, inbox window banner, WhatsApp settings) runs in **`p5_s11`**. Code: `api/app/channels/whatsapp/` (client, webhook, window, compose, templates, policy), `api/app/channels/stt/`, `api/app/services/{whatsapp,followups,daily_summary}.py`, `api/app/api/{whatsapp,templates}.py`, worker jobs, migration 0005.
 
-#### 6.2 Webhook receiver — ☐
-- Sub-steps: 6.2.1 ☐ `GET /webhooks/whatsapp` verify; `POST` signature check (`X-Hub-Signature-256`, raw body), `webhook_events` idempotency, enqueue, 200 fast; 6.2.2 ☐ payload parsing for text/audio/image/interactive/button/document/location + statuses; tenant by `phone_number_id`; 6.2.3 ☐ contact upsert by `wa_id`, conversation open/reuse, `last_inbound_at`; 6.2.4 ☐ worker task → `run_inbound`
-- Verify: `scripts/verify/p6_s2.sh` — `pytest tests/channels/test_whatsapp_webhook.py` (fixtures of real payload shapes; bad signature → 403; duplicate ignored)
+#### 6.1 Meta app & number setup — ☐ 👤
+- PLAN §15.2 · runbook `docs/runbooks/meta-policy-checklist.md`
+- Sub-steps (user): 6.1.1 ☐ WABA + number + display name (blocked by business verification U-01 / I-07); 6.1.2 ☐ permanent system-user token (`whatsapp_business_messaging` + `whatsapp_business_management`) → `META_ACCESS_TOKEN`; 6.1.3 ☐ public webhook URL `https://<host>/api/v1/webhooks/whatsapp` (ngrok/cloudflared in dev) + `META_VERIFY_TOKEN`, subscribe `messages` + `message_template_status_update`; 6.1.4 ☐ set the tenant row: `UPDATE institutions SET wa_phone_number_id='<id>', waba_id='<waba>' WHERE slug='<slug>'`
+- Verify: 👤 `bash scripts/verify/p6_s1.sh https://<public-host>/api/v1/webhooks/whatsapp` → `✔ number … · name '…' · quality GREEN`, template list, `✔ webhook verify round-trip`
+- Commit: none
+
+#### 6.2 Webhook receiver — ☑ (2026-11-04; `p6_s2`)
+- Sub-steps: 6.2.1 ☑ `GET /api/v1/webhooks/whatsapp` (verify token, constant-time) / `POST` (HMAC `X-Hub-Signature-256` over the raw body → 403; 503 until `META_APP_SECRET` set; 1 MB cap) → one `webhook_events` row per item (`ON CONFLICT DO NOTHING` on provider+event_id; unknown number → `ignored`) → `whatsapp_event_job` per new row → 200; 6.2.2 ☑ parser for text/audio/voice/image/document/interactive/button/location + statuses + template status, tenant by `metadata.phone_number_id` (template events by WABA id); 6.2.3 ☑ contact by `wa_id` (profile name), conversation reuse, `last_inbound_at`; 6.2.4 ☑ `process_event` → `run_inbound` (channel whatsapp) → delivery; row marked processed/failed (error type only, no PII)
 - Commit: `feat(whatsapp): signed webhook receiver with idempotency`
 
-#### 6.3 Sender & 24-hour window — ☐
-- Sub-steps: 6.3.1 ☐ Graph API client (text, interactive buttons/list, template, image), retries/backoff, error mapping; 6.3.2 ☐ `window.py` (free-form allowed iff `now - last_inbound_at < 24h`), sender refuses free-form otherwise; 6.3.3 ☐ status webhooks → `messages.status`; 6.3.4 ☐ compose for WhatsApp (length, no tables, buttons ≤ 3)
-- Verify: `scripts/verify/p6_s3.sh` — `pytest tests/channels/test_sender.py tests/unit/test_window.py` (httpx mock); live: send test text to user's number on approval
-- Needs user: 👤 confirm receipt of test message on phone
+#### 6.3 Sender & 24-hour window — ☑ (2026-11-04; `p6_s2`) · 👤 live test send after 6.1
+- Sub-steps: 6.3.1 ☑ `WhatsAppClient` (text, reply buttons, list, template, image, mark-read, media download, phone number, template create/list) with 429/5xx/transport retries + typed `WhatsAppError` (`outside_window` = 131047); 6.3.2 ☑ `window.py` (24 h − 2 min margin); **one outbound path**: every WhatsApp message is a `queued` row first, `deliver_message` sends it or fails it with `messages.error` (new column); staff send outside the window → 409, inside → `deliver_message_job` after commit; booking-change notes go the same way; 6.3.3 ☑ status webhooks → `messages.status` (never regress read → delivered; failed keeps Meta's error); 6.3.4 ☑ `compose.py` (WhatsApp markup, tables → lines, ≤ 4096 split, quick replies → ≤ 3 buttons or a ≤ 10-row list); inbox shows window state + "Not delivered — reason"
+- Needs user: 👤 `cd api && uv run python -m scripts.wa_check --send-test 92300XXXXXXX` after messaging the business number from that phone
 - Commit: `feat(whatsapp): outbound sender with 24h window enforcement`
 
-#### 6.4 Voice notes (STT) & media — ☐ 👤
+#### 6.4 Voice notes (STT) & media — ◐ (code ☑; bake-off 👤)
 - PLAN §4 (STT), D-02
-- Sub-steps: 6.4.1 ☐ media download (`GET /{media_id}` → URL → bytes) + storage; 6.4.2 ☐ `SpeechToTextProvider` interface, `OpenAIProvider` (`gpt-4o-transcribe`, fallback `whisper-1`), `FakeProvider`; 6.4.3 ☐ `scripts/bakeoff_stt.py` on 20 sample voice notes (user-provided) → ADR `0004-stt.md`; 6.4.4 ☐ transcript into graph; confidence < 0.6 → ask to type; transcript visible in inbox
-- Verify: `scripts/verify/p6_s4.sh` — unit tests with fake provider; live transcription of one sample on approval
-- Needs user: 👤 STT key + 20 sample voice notes (UR/RU) for bake-off
+- Sub-steps: 6.4.1 ☑ media download (`GET /{media_id}` → URL → bytes, 16 MB cap) → blob `wa/<inst>/<wamid>.<ext>` for an allowlist of audio/image/pdf types (G16); 6.4.2 ☑ `SpeechToTextProvider` + `OpenAISTT` (httpx; `gpt-4o-transcribe` with logprob confidence, fallback `whisper-1` verbose_json) + `FakeSTT`, `STT_PROVIDER=fake|openai`; 6.4.3 ◐ `api/scripts/bakeoff_stt.py` (WER/CER per language, confidence calibration, latency → `evals/reports/stt-bakeoff-*.md`) written — needs samples + key → then ADR `0004-stt.md`; 6.4.4 ☑ transcript stored on the message (inbox shows 🎙), reply prefixed "Aap ka voice note mil gaya —", confidence < 0.6 / STT failure → "please type"; image/document without caption → static "what is this about?" (fee proofs: 7.5)
+- Needs user: 👤 `STT_API_KEY` + ~20 voice notes (`<name>.ogg` + `<name>.txt`), then `cd api && uv run python -m scripts.bakeoff_stt --dir ~/raabta-voice-samples` (cents)
 - Commit: `feat(whatsapp): voice note transcription behind stt interface`
 
-#### 6.5 Template manager — ☐ 👤
-- Sub-steps: 6.5.1 ☐ `templates` CRUD, variables, language variants; 6.5.2 ☐ submit via Graph API `/{waba_id}/message_templates`, status sync (webhook + poll); 6.5.3 ☐ seed templates EN/UR/RU: `admission_followup_1/2`, `visit_confirmation`, `visit_reminder`, `fee_reminder_1..4`, `promise_followup`, `receipt_received`, `daily_summary`; 6.5.4 ☐ admin UI: list, editor, preview, submit, sync
-- Verify: `scripts/verify/p6_s5.sh` — api tests (mock Graph); live: submit one template and show status
-- Needs user: 👤 review template wording (tone) before submission; approvals take hours–days
+#### 6.5 Template manager — ◐ (code ☑; wording review + submission 👤)
+- Sub-steps: 6.5.1 ☑ `templates` table (0005, RLS; name+language unique; named `{{vars}}` → positional on submit/send; Roman Urdu = `<name>_ru` under Meta code `en`); 6.5.2 ☑ `POST /templates/{id}/submit` (admin, audited) → Graph `/{waba_id}/message_templates`; status via webhook + `POST /templates/sync`; 6.5.3 ☑ `POST /templates/seed` → 11 defaults × EN/UR/RU = 33 drafts (all pass Meta's start/end-variable rule — a unit test caught 15 that ended in `{{institution}}`); 6.5.4 ☑ admin `/templates` (table, editor with live WhatsApp-style preview, seed, submit, sync; staff read-only)
+- Needs user: 👤 review the default wording (EN/UR/RU) with a pilot institution, then submit; approvals take minutes–days
 - Commit: `feat(whatsapp): message template manager with meta sync`
 
-#### 6.6 Widget → WhatsApp continuity — ☐
-- Sub-steps: 6.6.1 ☐ session code in prefilled text; on first WA message containing code → link contact to widget session, import summary; 6.6.2 ☐ tests
-- Verify: `scripts/verify/p6_s6.sh` — `pytest tests/channels/test_handoff_link.py`
+#### 6.6 Widget → WhatsApp continuity — ☑ (2026-11-04; `p6_s2`) — resolves I-19
+- Sub-steps: 6.6.1 ☑ inbound text containing `W` + 6 hex → Redis `widget:wa_code:*` (same institution only, single use) → WhatsApp contact gets the widget contact's name/language + `profile.linked_widget_contact_id` + `profile.widget_summary`; 6.6.2 ☑ integration test
 - Commit: `feat(whatsapp): link widget sessions to whatsapp conversations`
 
-#### 6.7 Admissions follow-ups & daily summary — ☐
+#### 6.7 Admissions follow-ups & daily summary — ☑ (2026-11-04; `p6_s2`)
 - PLAN §6.2
-- Sub-steps: 6.7.1 ☐ followups scheduler (24h/72h no-reply, `schedule_followup` dates, booking reminders day-before) → policy gate → template send; 6.7.2 ☐ daily principal summary 18:00 PKT (counts, top questions, leads, bookings, flagged) via WhatsApp template to configured numbers + in-app; 6.7.3 ☐ tests with frozen clock
-- Verify: `scripts/verify/p6_s7.sh` — `pytest tests/unit/test_followups.py tests/unit/test_daily_summary.py`
+- Sub-steps: 6.7.1 ☑ after each AI reply on an admissions WhatsApp conversation: `admission_followup_1/2` at +24 h / +72 h (any inbound cancels + re-arms); `schedule_followup` tool rows; booking reminders created from 10:00 local the day before (once per booking); cron `dispatch_followups_job` every minute (Redis lock) → policy gate → `send_template` (inside the window: same text free-form; outside: approved template or fail with reason) → followup `sent/failed/cancelled/held/rescheduled`; 6.7.2 ☑ `daily_summary_job` 18:00 PKT → `daily_summary` template to `settings.daily_summary.numbers` (Settings → WhatsApp; ≤ 5, PK numbers normalised) + in-app `GET /metrics/daily-summary`; 6.7.3 ☑ tests with explicit clocks (quiet hours, Friday, cap)
 - Commit: `feat(followups): scheduled admissions follow-ups and daily summary`
 
-#### 6.8 Channel guardrails & Meta policy checklist — ☐
+#### 6.8 Channel guardrails & Meta policy checklist — ☑ (2026-11-04; `p6_s2`)
 - PLAN §10 (G6–G8, G12), §21
-- Sub-steps: 6.8.1 ☐ opt-out keywords multi-language + confirmation + sequence cancellation; 6.8.2 ☐ quiet hours + Jumma window in policy gate; 6.8.3 ☐ per-contact caps; 6.8.4 ☐ privacy line on first reply; 6.8.5 ☐ `docs/runbooks/meta-policy-checklist.md`
-- Verify: `scripts/verify/p6_s8.sh` — `pytest tests/unit/test_policy_gate.py tests/channels/test_optout.py`
+- Sub-steps: 6.8.1 ☑ opt-out (existing EN/RU/UR words) now cancels every pending/held follow-up and confirms **once**; staff replies to opted-out contacts → 409; 6.8.2 ☑ `policy.py` gate: opted out / staff mode → cancel, plan template limit → hold, quiet hours (institution tz) + Friday 12:30–14:30 → reschedule to window end; 6.8.3 ☑ ≤ 3 proactive messages / contact / 7 days → +1 day; 6.8.4 ☑ privacy line appended to the first AI/system reply of each WhatsApp conversation; 6.8.5 ☑ `docs/runbooks/meta-policy-checklist.md`
 - Commit: `feat(whatsapp): opt-out, quiet hours and policy gate`
 
 ---
@@ -593,6 +587,7 @@ Ordering rationale: KB (2) precedes agent (3) because grounding depends on retri
 
 | Date | Session | Step(s) | What was done | Verification | Commit suggested |
 |---|---|---|---|---|---|
+| 2026-11-04 | S7 | 5.x verify, 6.2–6.8 | Phase 5 DB verification: started Docker; fixed `_lib.sh` background-subshell pipe hang, `check` now prints failing sub-checks; real bugs: inbox staff reply sent `""` (TanStack v5 re-applies options to the in-flight mutation → text now a mutation variable), contrast (`--muted-foreground` 0.5, bubble meta, sonner rich colours), nested-interactive listbox → list of buttons, focusable context pane, `aria-expanded` on `<tr>`, language button label; e2e races. Phase 6: `app/channels/whatsapp/*` (Graph client, webhook parse + HMAC, window, compose, templates, policy), `app/channels/stt/*`, services `whatsapp`/`followups`/`daily_summary`, routers `webhooks/whatsapp` + `templates`, `metrics/daily-summary`, settings `daily_summary`, worker jobs + 2 crons, migration 0005 (templates, messages.error, followups.payload/error/held), opt-out cancels follow-ups, admin `/templates` + inbox window banner + failure reasons + WhatsApp settings form, `bakeoff_stt.py`, `wa_check.py`, policy runbook; isolation ids resolved before snapshot + readable paired diffs; intermittent isolation snapshot flake seen twice, unresolved (I-27) | `p5_s4` OK, `p5_s11` OK, `p6_s2` OK; `p6_s1` 👤 | `feat(whatsapp): phase 6 webhook, sender, templates, follow-ups, policy` |
 | 2026-11-04 | S6 | 5.1–5.11 | Phase 5: admin API (institution/settings/onboarding, metrics, conversations + takeover/return/notes/flag/assign + fetch-SSE events, leads + CSV, slots/bulk/bookings + change notices, superadmin + Redis impersonation grant, usage limits, audit filters, playground agent run), escalation keywords enforced, manual-takeover note carried into the thread, widget `/updates` poll for staff replies (I-18); Next.js admin: shell, auth (memory token + refresh cookie, proxy guard), typed OpenAPI client, EN/UR RTL, dark mode, 11 pages; isolation suite extended; `test_inbox.py`, `test_superadmin.py`, `scripts.admin_smoke`, `admin/scripts/e2e.mjs` (+ axe) | `p5_s1` OK; API ruff/mypy/unit OK; **`p5_s4`/`p5_s11` not run — Docker engine down** | see 5.x blocks; one-shot: `feat(admin): phase 5 admin panel, inbox takeover and admin api` |
 | 2026-11-03 | S5 | 4.1–4.4 | Phase 4: widget API (`/widget/config`, sessions w/ origin allowlist + 24h JWT, SSE turn with status hooks → approved message → citation/slots/quick_replies/lead_form, lead + wa-link, IP/session limits + abuse lockout, `/institution/widget-snippet`), lazy agent runtime in the API + `AGENT_LLM=demo` zero-spend agent, widget bundle (Shadow DOM, i18n EN/UR/RU + RTL + Nastaliq, slot picker, lead form, citations, WhatsApp), `/widget/v1/widget.js` + test pages, Chrome e2e via playwright-core, install/theming docs. Found: API image lacked libpq → `psycopg[binary]`. Minimal tests per user (1 integration test for D-11; rest via smoke/e2e scripts) | `all.sh` (see below) · p4_s1 smoke 27/27 · p4_s3 e2e 19/19 | per step blocks; one-shot: `feat: phase 4 — widget chat api, embeddable widget, embed e2e, docs` |
 | 2026-11-03 | S4 | 3.1–3.10 | Phase 3 (agent core) offline: wrapper `complete`/`stream` + prefix guard + cost rows, FakeLLM; 10 prompts + loader; 9 skills + loader; strict registry + 12 admissions/common tools + 6 gated fee stubs + `/internal/tools`; LangGraph inbound graph (guard → router → context → agent tool loop → check → repair/fallback → compose → persist → summarize → handoff interrupt/resume) + `run_inbound` gates; context builder; guards + numeric grounding; summarizer/LTM; eval harness (6 suites, 330 cases, judge, reports, evals-live workflow, CI smoke); chat CLI + 9 demo scripts | `all.sh` OK (31 scripts); live smoke ✔ (cache hit), 9 live demo transcripts ($0.13; 2 live bugs fixed: system-role placement, checker profile/CTA); live eval deferred by user | per step blocks; one-shot: `feat: phase 3 — agent core, tools, langgraph graph, guards, eval harness` |
@@ -636,6 +631,9 @@ Ordering rationale: KB (2) precedes agent (3) because grounding depends on retri
 | D-24 | 2026-11-04 | Inbox live updates = fetch-SSE of changed conversation ids, DB-polled (2 s) instead of Redis pub/sub — no write-path plumbing, works across processes; 20 s query polling fallback | decided (impl.) — revisit at scale | HANDOFF 5.4 |
 | D-25 | 2026-11-04 | Superadmin impersonation = audited 1-hour Redis grant per institution (no token minting, no fake membership); UI banner while active | decided (impl.) | HANDOFF 5.9 |
 | D-26 | 2026-11-04 | Phase 5 verification consolidated into `p5_s1` (static), `p5_s4` (API), `p5_s11` (browser e2e + axe) instead of 11 scripts (user: minimal tests) | decided by user preference | HANDOFF Phase 5 |
+| D-27 | 2026-11-04 | WhatsApp outbound = one path: every message is a `queued` row, `deliver_message` sends or fails it (`messages.error`); free-form only inside 24 h (staff send outside → 409); proactive sends via `send_template` (free-form text inside the window, approved template outside) | decided (impl.) | HANDOFF 6.3 |
+| D-28 | 2026-11-04 | Templates: named `{{vars}}` per language row (order may differ by language), positional on submit/send; Roman Urdu submitted as `<name>_ru` under Meta language `en`; webhook path `/api/v1/webhooks/whatsapp` | decided (impl.) | HANDOFF 6.5 |
+| D-29 | 2026-11-04 | Admissions follow-ups at +24 h/+72 h after each AI reply (re-armed by any inbound); weekly cap 3 proactive/contact; default Jumma window Fri 12:30–14:30 on top of institution quiet hours; Phase 6 verification consolidated into `p6_s1` (live) + `p6_s2` | decided (impl.) — tune with pilots | HANDOFF 6.7/6.8 |
 | D-12 | 2026-11-01 | **Hybrid agent routing**: router `complexity=simple` (FAQ: fees, timings, transport, greetings) → `claude-haiku-5-5` agent with the same tools + answer_check; `complex` (booking, fee module, multi-step, unhappy/escalation, low router confidence) → `claude-opus-5-5`. Eval gate in 3.9 compares simple-route quality Haiku vs Opus; if Haiku fails thresholds, try `claude-sonnet-5-5` for simple route. Implemented via `models_registry` keys `agent_simple` / `agent_complex` | **decided by user 2026-11-01** | PLAN §7, §19; unblocks D-05 |
 
 ---
@@ -659,16 +657,21 @@ Ordering rationale: KB (2) precedes agent (3) because grounding depends on retri
 | I-14 | 2026-11-03 | Agent-node cassettes are only replayable on the same DB state (seeded slots are relative to seed time; booking codes random) → CI smoke replays router/tone only; agent suites need `--mode live` | noted (D-20) |
 | I-15 | 2026-11-03 | API: `role: system` must follow a user message (or tool results) — not the assistant's final text. Fixed via `append_operator_note` (marked user turn in that case). **CLAUDE.md "Operator notes = appended role:system" needs this nuance (user to update)** | resolved 2026-11-03 |
 | I-18 | 2026-11-03 | Widget in human mode shows "our team will reply here" but staff replies have no path back to the widget yet → **resolved 2026-11-04**: `GET /widget/sessions/{id}/updates?after=` + widget polling while `human` (verify in `p5_s4`/`p5_s11`) | resolved (pending verify) |
-| I-19 | 2026-11-03 | `widget:wa_code:*` (Redis, 30 d) maps the wa.me prefill code → (institution, contact); Phase 6 webhook must read it to link the WhatsApp thread to the widget contact | open (6.2) |
+| I-19 | 2026-11-03 | `widget:wa_code:*` → WhatsApp contact linking → **resolved 2026-11-04** (6.6) | resolved |
 | I-20 | 2026-11-03 | Allowed origins only editable via SQL → **resolved 2026-11-04** (Settings → Website widget, validated origins) | resolved |
 | I-17 | 2026-11-03 | Haiku answer_check false negatives: 2/27 demo turns fell back although drafts were correct (pass on rerun). Measure in the live eval (`fallback_rate`); options: checker effort/prompt tweak, or let deterministic numeric check + Haiku disagreement retry once | open (3.9 live run) |
 | I-16 | 2026-11-03 | Fee tools are stubs ("not enabled → hand off") until Phase 7; fee-module turns always end in handoff | noted (Phase 7) |
-| I-21 | 2026-11-04 | Docker Desktop engine never came up this session (socket missing, app unresponsive to Quit) → DB-backed Phase 5 checks (`p5_s4`, `p5_s11`) not run yet; first run may surface fixes in new code | open (user: restart Docker, run both) |
+| I-21 | 2026-11-04 | Docker down during S6 → **resolved 2026-11-04** (S7 ran `p5_s4`/`p5_s11`; fixes logged in §4) | resolved |
 | I-22 | 2026-11-04 | `settings.escalation.max_ai_turns` is stored/editable but not enforced yet (keywords are) | open (Phase 6/8) |
 | I-23 | 2026-11-04 | Lighthouse ≥ 90 (5.11.4) not automated (no Lighthouse dep); run manually: `npx lighthouse http://localhost:3010/ --preset=desktop` against the `p5_s11` admin | open |
 | I-24 | 2026-11-04 | Playground full-agent runs are real turns (sandbox contact): hidden from inbox/metrics but they count in `llm_runs`/usage cost and the per-conversation daily cap | noted |
 | I-25 | 2026-11-04 | Urdu admin copy (`admin/src/messages/ur.json`) was machine-written — needs a native review (5.11.5) | open (user) |
 | I-26 | 2026-11-04 | Next dev/prod rewrite proxy may buffer SSE; inbox falls back to 20 s polling. If live updates lag on the chosen host, point the events fetch at the API origin directly (needs CORS for the admin origin) | noted |
+| I-27 | 2026-11-04 | Intermittent isolation failure "B's data changed" (twice inside `p6_s2` on a fresh DB, on `PATCH /conversations/{id}` and `PATCH /bookings/{id}`; 0 of 4 later runs, incl. `p6_s2` OK). Unified diff showed *every* snapshot line differing (whole-snapshot change, not one row). Cause not found; ruled out as fix: token TTL (test TTL raised to 240 min anyway). Now diagnosable: assertion prints paired before/after lines and `p6_s2` keeps `/tmp/raabta-isolation.log` — on recurrence read that file | open |
+| I-28 | 2026-11-04 | Daily-summary sends go to principal numbers that are not contacts → no `messages` row → not counted in `usage_daily.template_sends` (plan limit) | open (Phase 8 cost/limits) |
+| I-29 | 2026-11-04 | Booking-change notes on WhatsApp outside the 24 h window fail with a reason (inbox shows it); the day-before `visit_reminder` template still reaches the parent. A `visit_confirmation` template fallback could be added | noted |
+| I-30 | 2026-11-04 | Jumma window is code default only (`QuietHours` API model forbids extra keys) — make it editable if an institution needs different timing | noted |
+| I-31 | 2026-11-04 | `SADeprecationWarning` for `.distinct(col)` in `api/app/api/conversations.py` (use `postgresql.distinct_on`) | open (small) |
 | I-05 | 2026-11-01 | Preserved-thinking prefix check is enforced for accounts created on/after 2026-08-31 — confirm account age; design is append-only regardless | open |
 
 ---
@@ -682,7 +685,7 @@ Ordering rationale: KB (2) precedes agent (3) because grounding depends on retri
 | U-03 | Phone numbers for pilots + dev test number | 6.1 | ☐ |
 | U-04 | Anthropic API key in `.env` + spend cap (user has key) | 0.6 | ◐ |
 | U-05 | Voyage key in `.env` as `VOYAGE_API_KEY` (user has key) | 0.6 | ◐ |
-| U-06 | STT provider key + 20 sample voice notes | 6.4 | ☐ |
+| U-06 | STT provider key (`STT_API_KEY`) + ~20 voice notes (`<name>.ogg` + `<name>.txt`, UR/RU/EN) → `uv run python -m scripts.bakeoff_stt --dir …` → confirm D-02 | 6.4 | ☐ |
 | U-07 | Confirm decisions D-02, D-03, D-05 (D-01 ✔ Voyage, D-04 ✔) | Phase 3 / 6 | ◐ |
 | U-11 | Approve small spends: 2.4 Voyage bake-off, 2.6 live extractor ($0.16) | Phase 2 | ☑ (done 2026-11-02) |
 | U-12 | Provide one real (anonymized) prospectus PDF, ideally with Urdu pages (I-12, I-01) | before pilots | ⏭ later (user) |
@@ -691,4 +694,6 @@ Ordering rationale: KB (2) precedes agent (3) because grounding depends on retri
 | U-15 | Approve Phase 3 live spends: 3.1 smoke ✔, 3.10 transcripts ✔ (2026-11-03); 3.9 first live eval (~$15–25) still pending | Phase 3 close | ◐ |
 | U-08 | Hosting: Netlify (admin/widget) + free backend host — at the end; personal email for now; domain optional | 9.1 | ⏭ later |
 | U-09 | Sentry projects | 8.2 | ☐ |
+| U-16 | Review default WhatsApp template wording (Admin → Templates → Add default set; EN/UR/RU), then submit to Meta once 6.1 is done | 6.5 | ☐ |
+| U-17 | After U-01: system-user token → `.env` `META_ACCESS_TOKEN`; public tunnel; set `institutions.wa_phone_number_id/waba_id`; run `p6_s1` | 6.1 | ☐ |
 | U-10 | Sample redacted fee receipts (HBL/JazzCash/Easypaisa) | 7.5 | ☐ |

@@ -11,17 +11,18 @@ import uuid
 from typing import Annotated, Literal
 from zoneinfo import ZoneInfo
 
-from fastapi import APIRouter, HTTPException, Query, Request, status
+from fastapi import APIRouter, BackgroundTasks, HTTPException, Query, Request, status
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 from sqlalchemy import select, update
 
-from app.api.deps import AdminCtx, SessionDep, StaffCtx, audit_mutations
+from app.api.deps import AdminCtx, RedisDep, SessionDep, StaffCtx, audit_mutations
 from app.core.tenancy import TenantContext
 from app.models.conversations import Booking, Contact, Conversation, Lead, Slot
 from app.models.core import Institution
 from app.services.audit import audit_ctx, snapshot
 from app.services.bookings import SlotUnavailableError, cancel_booking
 from app.services.conversations import add_message
+from app.services.whatsapp import enqueue_delivery
 
 router = APIRouter(tags=["slots"], dependencies=[audit_mutations])
 SlotKind = Literal["visit", "test", "counselling"]
@@ -302,11 +303,13 @@ async def list_bookings(
 
 async def notify_contact(
     session: SessionDep, ctx: TenantContext, contact_id: uuid.UUID | None, text: str
-) -> None:
+) -> uuid.UUID | None:
     """5.6.3: post the change into the contact's latest conversation (staff-authored, so the
-    widget poll delivers it; WhatsApp sends it as a template in 6.x)."""
+    widget poll delivers it). WhatsApp: returns the queued row's id → the caller schedules
+    `deliver_message_job` after commit (free-form inside the 24h window; otherwise it fails with
+    a reason and the day-before `visit_reminder` template still reaches the parent)."""
     if contact_id is None:
-        return
+        return None
     conv = await session.scalar(
         select(Conversation)
         .where(Conversation.contact_id == contact_id)
@@ -314,8 +317,8 @@ async def notify_contact(
         .limit(1)
     )
     if conv is None:
-        return
-    await add_message(
+        return None
+    msg = await add_message(
         session,
         conv,
         direction="out",
@@ -324,6 +327,7 @@ async def notify_contact(
         author_user_id=ctx.user_id,
         status="sent" if conv.channel == "widget" else "queued",
     )
+    return msg.id if conv.channel == "whatsapp" else None
 
 
 def _when(s: Slot, tz: str) -> str:
@@ -332,8 +336,15 @@ def _when(s: Slot, tz: str) -> str:
 
 @router.patch("/bookings/{booking_id}")
 async def patch_booking(
-    booking_id: uuid.UUID, body: BookingPatch, ctx: StaffCtx, request: Request, session: SessionDep
+    booking_id: uuid.UUID,
+    body: BookingPatch,
+    ctx: StaffCtx,
+    request: Request,
+    session: SessionDep,
+    background: BackgroundTasks,
+    redis: RedisDep,
 ) -> BookingOut:
+    outbox: list[uuid.UUID | None] = []
     booking = await session.scalar(select(Booking).where(Booking.id == booking_id))
     if booking is None:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Booking not found")
@@ -359,22 +370,27 @@ async def patch_booking(
         )
         booking.slot_id = target.id
         await session.refresh(target)
-        await notify_contact(
-            session,
-            ctx,
-            booking.contact_id,
-            f"Your {target.kind} (booking {booking.code}) has been moved to {_when(target, tz)}.",
+        outbox.append(
+            await notify_contact(
+                session,
+                ctx,
+                booking.contact_id,
+                f"Your {target.kind} (booking {booking.code}) has been moved to "
+                f"{_when(target, tz)}.",
+            )
         )
     if body.status == "cancelled":
         try:
             await cancel_booking(session, booking.id)
         except (LookupError, SlotUnavailableError):
             raise HTTPException(status.HTTP_404_NOT_FOUND, "Booking not found") from None
-        await notify_contact(
-            session,
-            ctx,
-            booking.contact_id,
-            f"Your booking {booking.code} has been cancelled. Reply here to pick another time.",
+        outbox.append(
+            await notify_contact(
+                session,
+                ctx,
+                booking.contact_id,
+                f"Your booking {booking.code} has been cancelled. Reply here to pick another time.",
+            )
         )
     elif body.status:
         if booking.status == "cancelled":
@@ -382,11 +398,13 @@ async def patch_booking(
         booking.status = body.status
         if body.status == "confirmed":
             slot = await _slot(session, booking.slot_id)
-            await notify_contact(
-                session,
-                ctx,
-                booking.contact_id,
-                f"Your {slot.kind} on {_when(slot, tz)} is confirmed (code {booking.code}).",
+            outbox.append(
+                await notify_contact(
+                    session,
+                    ctx,
+                    booking.contact_id,
+                    f"Your {slot.kind} on {_when(slot, tz)} is confirmed (code {booking.code}).",
+                )
             )
     if booking.lead_id and booking.status == "attended":
         lead = await session.get(Lead, booking.lead_id)
@@ -403,6 +421,8 @@ async def patch_booking(
         before=before,
         after={"status": booking.status, "slot_id": str(booking.slot_id)},
     )
+    for message_id in filter(None, outbox):  # background tasks run after the commit
+        background.add_task(enqueue_delivery, redis.enqueue_job, ctx.institution_id, message_id)
     slot = await _slot(session, booking.slot_id)
     contact = await session.get(Contact, booking.contact_id) if booking.contact_id else None
     return _booking_out(booking, slot, contact)

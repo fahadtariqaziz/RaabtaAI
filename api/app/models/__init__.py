@@ -21,6 +21,7 @@ from app.models.core import (
 )
 from app.models.facts import FeeItem, KeyDate, Program, Scholarship, TransportRoute
 from app.models.kb import Chunk, Document
+from app.models.templates import Template
 
 __all__ = [
     "AuditLog",
@@ -41,6 +42,7 @@ __all__ = [
     "Program",
     "Scholarship",
     "Slot",
+    "Template",
     "TransportRoute",
     "UsageDaily",
     "User",

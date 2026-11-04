@@ -11,7 +11,8 @@
     "audit": "Audit log",
     "superadmin": "Platform",
     "daily": "Daily work",
-    "manage": "Manage"
+    "manage": "Manage",
+    "templates": "Templates"
   },
   "common": {
     "save": "Save",
@@ -117,7 +118,10 @@
     "sources": "Sources",
     "shortcuts": "Shortcuts: j/k move · r reply · t take over · n note",
     "live": "Live",
-    "optedOut": "Opted out — messages cannot be sent"
+    "optedOut": "Opted out — messages cannot be sent",
+    "context": "Conversation details",
+    "windowClosed": "The 24-hour WhatsApp window has closed. The parent must write first; follow-ups go out as approved templates.",
+    "notDelivered": "Not delivered"
   },
   "leads": {
     "title": "Leads",
@@ -227,7 +231,14 @@
     "preview": "Preview",
     "waPending": "Pending Meta business verification",
     "waConnected": "Connected",
-    "waHint": "WhatsApp setup is handled by RaabtaAI during onboarding (Phase 6)."
+    "waHint": "Meta setup (number, display name, token) is done by RaabtaAI during onboarding. Replies within 24 hours of the parent's last message are free; later messages use approved templates.",
+    "waNumberId": "Phone number ID",
+    "dailySummary": "Daily summary (18:00)",
+    "dailySummaryHint": "Today's conversations, new leads, visits booked and items needing attention, sent on WhatsApp (needs the approved daily_summary template). Also shown in the admin.",
+    "dailySummaryEnabled": "Send the daily summary",
+    "dailySummaryNumbers": "Send to (up to 5 numbers)",
+    "dailySummaryNumbersHint": "Comma-separated, e.g. 0300 1234567",
+    "dailySummaryLanguage": "Language"
   },
   "usage": {
     "title": "Usage & billing",
@@ -285,5 +296,43 @@
     "allSet": "Your assistant is ready",
     "checklist": "Checklist",
     "goInbox": "Open the inbox"
+  },
+  "templates": {
+    "title": "WhatsApp templates",
+    "subtitle": "Approved by Meta before they can be sent outside the 24-hour window (reminders, follow-ups, summaries).",
+    "seed": "Add default set",
+    "sync": "Sync with Meta",
+    "new": "New template",
+    "empty": "No templates yet",
+    "emptyHint": "Add the default set (EN, Urdu, Roman Urdu), review the wording, then submit each one to Meta.",
+    "name": "Name",
+    "language": "Language",
+    "status": "Status",
+    "body": "Message",
+    "actions": "Actions",
+    "edit": "Edit",
+    "submit": "Submit",
+    "delete": "Delete {name}",
+    "seeded": "{n} templates added",
+    "synced": "{n} statuses updated",
+    "submitted": "Submitted to Meta — approval usually takes minutes to a day",
+    "lang_en": "English",
+    "lang_ur": "Urdu",
+    "lang_roman_ur": "Roman Urdu",
+    "st_draft": "Draft",
+    "st_pending": "Pending review",
+    "st_approved": "Approved",
+    "st_rejected": "Rejected",
+    "st_paused": "Paused",
+    "st_disabled": "Disabled",
+    "editTitle": "Edit {name}",
+    "rules": "Use '{{name}}'-style variables. Meta rejects messages that start or end with a variable; approved templates cannot be edited.",
+    "nameHint": "Lowercase letters, digits and underscores",
+    "category": "Category",
+    "utility": "Utility (reminders, confirmations)",
+    "marketing": "Marketing",
+    "bodyHint": "Max 1024 characters. Variables: '{{name}}', '{{institution}}', '{{date}}'…",
+    "example": "Example for {name}",
+    "preview": "Preview"
   }
 }

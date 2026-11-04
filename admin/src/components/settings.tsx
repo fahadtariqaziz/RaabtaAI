@@ -500,20 +500,117 @@ function AssistantInner({
 
 export function WhatsAppCard({ inst }: { inst: Inst }) {
   const t = useTranslations("settings");
+  const settings = useSettings();
   return (
-    <div className="max-w-xl space-y-2 rounded-xl border p-5">
-      <div className="flex items-center gap-2">
-        <h3 className="font-medium">{t("whatsapp")}</h3>
+    <div className="max-w-xl space-y-4">
+      <div className="space-y-2 rounded-xl border p-5">
+        <div className="flex items-center gap-2">
+          <h3 className="font-medium">{t("whatsapp")}</h3>
+          {inst.wa_phone_number_id ? (
+            <Pill tone="good">{t("waConnected")}</Pill>
+          ) : (
+            <Pill tone="warn">{t("waPending")}</Pill>
+          )}
+        </div>
         {inst.wa_phone_number_id ? (
-          <Pill tone="good">{t("waConnected")}</Pill>
-        ) : (
-          <Pill tone="warn">{t("waPending")}</Pill>
-        )}
+          <p className="text-muted-foreground text-sm">
+            {t("waNumberId")}: <span className="font-mono">{inst.wa_phone_number_id}</span>
+          </p>
+        ) : null}
+        <p className="text-muted-foreground text-sm">{t("waHint")}</p>
       </div>
-      {inst.wa_phone_number_id ? (
-        <p className="text-muted-foreground text-sm">Phone number id: {inst.wa_phone_number_id}</p>
-      ) : null}
-      <p className="text-muted-foreground text-sm">{t("waHint")}</p>
+      <QueryView q={settings}>
+        {(s) => (
+          <DailySummaryForm key={JSON.stringify(s.daily_summary)} value={s.daily_summary ?? {}} />
+        )}
+      </QueryView>
     </div>
+  );
+}
+
+function DailySummaryForm({ value }: { value: Record<string, unknown> }) {
+  const t = useTranslations("settings");
+  const tc = useTranslations("common");
+  const qc = useQueryClient();
+  const { can } = useMe();
+  const [enabled, setEnabled] = useState(value.enabled !== false);
+  const [numbers, setNumbers] = useState(
+    Array.isArray(value.numbers) ? (value.numbers as string[]).join(", ") : "",
+  );
+  const [language, setLanguage] = useState(String(value.language ?? "roman_ur"));
+  const save = useMutation({
+    mutationFn: () =>
+      unwrap(
+        api.PATCH("/api/v1/institution/settings", {
+          body: {
+            daily_summary: {
+              enabled,
+              numbers: numbers
+                .split(/[,\n]/)
+                .map((n) => n.trim())
+                .filter(Boolean),
+              language: language as "en" | "ur" | "roman_ur",
+            },
+          },
+        }),
+      ),
+    onSuccess: () => {
+      toast.success(tc("saved"));
+      void qc.invalidateQueries({ queryKey: ["settings"] });
+    },
+  });
+  const readOnly = !can("admin");
+  return (
+    <form
+      className="space-y-3 rounded-xl border p-5"
+      onSubmit={(e) => {
+        e.preventDefault();
+        save.mutate();
+      }}
+    >
+      <h3 className="font-medium">{t("dailySummary")}</h3>
+      <p className="text-muted-foreground text-sm">{t("dailySummaryHint")}</p>
+      <label className="flex items-center gap-2 text-sm">
+        <input
+          type="checkbox"
+          checked={enabled}
+          disabled={readOnly}
+          onChange={(e) => setEnabled(e.target.checked)}
+        />
+        {t("dailySummaryEnabled")}
+      </label>
+      <Field
+        label={t("dailySummaryNumbers")}
+        htmlFor="ds-numbers"
+        hint={t("dailySummaryNumbersHint")}
+      >
+        <Input
+          id="ds-numbers"
+          value={numbers}
+          disabled={readOnly}
+          placeholder="0300 1234567, 0321 7654321"
+          onChange={(e) => setNumbers(e.target.value)}
+        />
+      </Field>
+      <Field label={t("dailySummaryLanguage")} htmlFor="ds-lang">
+        <NativeSelect
+          id="ds-lang"
+          value={language}
+          disabled={readOnly}
+          onChange={(e) => setLanguage(e.target.value)}
+        >
+          {LANGS.map((l) => (
+            <option key={l.id} value={l.id}>
+              {l.label}
+            </option>
+          ))}
+        </NativeSelect>
+      </Field>
+      {readOnly ? null : (
+        <Button type="submit" disabled={save.isPending}>
+          {tc("save")}
+        </Button>
+      )}
+    </form>
   );
 }

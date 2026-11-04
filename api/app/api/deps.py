@@ -20,6 +20,7 @@ from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.channels.whatsapp.client import WhatsAppClient
 from app.core.config import Settings
 from app.core.security import TokenError, decode_access_token
 from app.core.tenancy import TenantContext, scope_to_admin, scope_to_tenant
@@ -50,7 +51,17 @@ def get_blobstore(request: Request) -> BlobStore:
     return store
 
 
+def get_wa_client(request: Request) -> WhatsAppClient | None:
+    """Process-wide Graph API client (None until META_ACCESS_TOKEN is set). Tests inject
+    `app.state.wa_client` (httpx.MockTransport)."""
+    state = request.app.state
+    if getattr(state, "wa_client", None) is None and state.settings.meta_access_token is not None:
+        state.wa_client = WhatsAppClient.from_settings(state.settings)
+    return getattr(state, "wa_client", None)
+
+
 SettingsDep = Annotated[Settings, Depends(get_settings_dep)]
+WaClientDep = Annotated[WhatsAppClient | None, Depends(get_wa_client)]
 RedisDep = Annotated[ArqRedis, Depends(get_redis)]
 BlobStoreDep = Annotated[BlobStore, Depends(get_blobstore)]
 

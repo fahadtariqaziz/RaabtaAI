@@ -205,7 +205,7 @@ export default function InboxPage() {
               data.length === 0 ? (
                 <EmptyState className="m-3" />
               ) : (
-                <ul role="listbox" aria-label={t("title")}>
+                <ul aria-label={t("title")}>
                   {data.map((r) => (
                     <ConversationItem
                       key={r.id}
@@ -254,9 +254,10 @@ function ConversationItem({
   const t = useTranslations("inbox");
   const name = row.contact.name || row.contact.phone || `Visitor ${row.contact.id.slice(0, 4)}`;
   return (
-    <li role="option" aria-selected={active}>
+    <li>
       <button
         onClick={onSelect}
+        aria-current={active ? "true" : undefined}
         className={cn(
           "hover:bg-muted/60 flex w-full gap-3 border-b px-3 py-3 text-start",
           active && "bg-muted",
@@ -363,10 +364,12 @@ function ConversationPane({
       unwrap(api.PATCH("/api/v1/conversations/{conversation_id}", { params: { path }, body })),
     onSuccess: refresh,
   });
+  // The text travels as the mutation variable: onMutate clears the composer, and a closure over
+  // `text` would then send "" (v5 re-applies the latest options to the in-flight mutation).
   const send = useMutation({
-    mutationFn: async () => {
-      const body = { text: text.trim() };
-      return mode === "reply"
+    mutationFn: async ({ value, kind }: { value: string; kind: "reply" | "note" }) => {
+      const body = { text: value };
+      return kind === "reply"
         ? unwrap(
             api.POST("/api/v1/conversations/{conversation_id}/messages", {
               params: { path },
@@ -377,7 +380,7 @@ function ConversationPane({
             api.POST("/api/v1/conversations/{conversation_id}/notes", { params: { path }, body }),
           );
     },
-    onMutate: () => {
+    onMutate: ({ value, kind }) => {
       // optimistic bubble
       const optimistic = {
         id: `tmp-${Date.now()}`,
@@ -386,8 +389,8 @@ function ConversationPane({
         sender: "staff",
         author_user_id: user?.id ?? null,
         author_name: user?.name ?? null,
-        type: mode === "note" ? "note" : "text",
-        text: text.trim(),
+        type: kind === "note" ? "note" : "text",
+        text: value,
         transcript: null,
         media_path: null,
         template_name: null,
@@ -421,6 +424,8 @@ function ConversationPane({
   const d = detail.data;
   const name = d ? d.contact.name || d.contact.phone || `Visitor ${d.contact.id.slice(0, 4)}` : "";
   const optedOut = !!d?.contact.opted_out_at;
+  // WhatsApp 24h window (6.3.2): free-form replies only while the parent's last message is < 24h old.
+  const windowClosed = d?.window_open === false;
 
   return (
     <div className="flex min-w-0 flex-1">
@@ -500,7 +505,7 @@ function ConversationPane({
           className="space-y-2 border-t p-3"
           onSubmit={(e) => {
             e.preventDefault();
-            if (text.trim()) send.mutate();
+            if (text.trim()) send.mutate({ value: text.trim(), kind: mode });
           }}
         >
           <div role="tablist" className="flex gap-1">
@@ -527,6 +532,13 @@ function ConversationPane({
           </div>
           {optedOut && mode === "reply" ? (
             <p className="text-destructive text-sm">{t("optedOut")}</p>
+          ) : windowClosed && mode === "reply" ? (
+            <p
+              role="status"
+              className="rounded-md bg-amber-500/15 px-2 py-1 text-sm text-amber-900 dark:text-amber-300"
+            >
+              {t("windowClosed")}
+            </p>
           ) : null}
           <div className="flex gap-2">
             <Textarea
@@ -543,14 +555,16 @@ function ConversationPane({
               onKeyDown={(e) => {
                 if (e.key === "Enter" && !e.shiftKey) {
                   e.preventDefault();
-                  if (text.trim()) send.mutate();
+                  if (text.trim()) send.mutate({ value: text.trim(), kind: mode });
                 }
                 if (e.key === "Escape") textRef.current?.blur();
               }}
             />
             <Button
               type="submit"
-              disabled={!text.trim() || send.isPending || (optedOut && mode === "reply")}
+              disabled={
+                !text.trim() || send.isPending || ((optedOut || windowClosed) && mode === "reply")
+              }
             >
               {t("send")}
             </Button>
@@ -610,7 +624,7 @@ function Bubble({ m, locale }: { m: Msg; locale: string }) {
               : "bg-muted",
         )}
       >
-        <div className="mb-0.5 flex items-center gap-1 text-[11px] opacity-75">
+        <div className="mb-0.5 flex items-center gap-1 text-[11px] font-medium">
           {note ? (
             <StickyNote className="size-3" />
           ) : m.sender === "ai" ? (
@@ -641,6 +655,12 @@ function Bubble({ m, locale }: { m: Msg; locale: string }) {
             ))}
           </div>
         ) : null}
+        {m.status === "failed" ? (
+          <p className="mt-1 text-[11px] font-medium">
+            ⚠ {t("notDelivered")}
+            {m.error ? ` — ${m.error}` : ""}
+          </p>
+        ) : null}
         {m.tool_calls?.length ? (
           <details className="mt-2 text-[11px] opacity-80">
             <summary className="cursor-pointer">
@@ -662,7 +682,11 @@ function ContextPane({ d }: { d: Detail }) {
   const { locale } = useLocale();
   const summary = d.summary as Record<string, unknown> | null;
   return (
-    <aside className="hidden w-72 shrink-0 space-y-4 overflow-y-auto border-s p-4 text-sm xl:block">
+    <aside
+      tabIndex={0}
+      aria-label={t("context")}
+      className="focus-visible:ring-ring hidden w-72 shrink-0 space-y-4 overflow-y-auto border-s p-4 text-sm focus-visible:ring-2 focus-visible:outline-none focus-visible:ring-inset xl:block"
+    >
       <section>
         <h3 className="text-muted-foreground mb-1 text-xs font-medium uppercase">{t("contact")}</h3>
         <p className="font-medium">{d.contact.name ?? "—"}</p>

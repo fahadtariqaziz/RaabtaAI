@@ -62,6 +62,33 @@ PHRASES: dict[str, dict[str, str]] = {
         "ur": "معذرت، ہماری طرف سے کوئی مسئلہ آ گیا۔ تھوڑی دیر بعد دوبارہ کوشش کریں، یا دفتر کا "
         "ساتھی آپ سے رابطہ کرے گا۔",
     },
+    # WhatsApp (Phase 6)
+    "voice_ack": {
+        "en": "Got your voice note —",
+        "roman_ur": "Aap ka voice note mil gaya —",
+        "ur": "آپ کا وائس نوٹ مل گیا —",
+    },
+    "voice_unclear": {
+        "en": "Sorry, I couldn't make out your voice note clearly. Could you please type your "
+        "question?",
+        "roman_ur": "Maazrat, aap ka voice note saaf samajh nahi aaya. Baraye meharbani apna "
+        "sawal likh kar bhej dein.",
+        "ur": "معذرت، آپ کا وائس نوٹ صاف سمجھ نہیں آیا۔ براہ کرم اپنا سوال لکھ کر بھیج دیں۔",
+    },
+    "media_ack": {
+        "en": "Thank you, I've received your file. Could you tell me what it is about?",
+        "roman_ur": "Shukriya, aap ki file mil gayi hai. Bataiye yeh kis baare mein hai?",
+        "ur": "شکریہ، آپ کی فائل مل گئی ہے۔ بتائیے یہ کس بارے میں ہے؟",
+    },
+    "privacy": {
+        "en": "_This is the institution's automated assistant. Your messages are used only to "
+        "answer your query. Reply STOP to opt out._",
+        "roman_ur": "_Yeh idaray ka automated assistant hai. Aap ke messages sirf aap ke sawal ka "
+        "jawab dene ke liye istemal hote hain. Messages band karne ke liye STOP likhein._",
+        "ur": "_یہ ادارے کا خودکار اسسٹنٹ ہے۔ آپ کے پیغامات صرف آپ کے سوال کا جواب دینے کے لیے "
+        "استعمال ہوتے ہیں۔ پیغامات بند کرنے کے لیے STOP لکھیں۔_",
+    },
+    "options": {"en": "Options", "roman_ur": "Options", "ur": "اختیارات"},
 }
 
 

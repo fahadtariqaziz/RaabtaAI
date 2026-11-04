@@ -21,7 +21,7 @@ from langgraph.graph.state import CompiledStateGraph
 from langgraph.types import Command
 from psycopg.rows import dict_row
 from psycopg_pool import AsyncConnectionPool
-from sqlalchemy import select
+from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.agent.graph import HISTORY_KEEP, AgentDeps
@@ -36,13 +36,15 @@ from app.agent.phrases import phrase
 from app.agent.state import turn_input
 from app.core.tenancy import tenant_session
 from app.kb.text import detect_lang
-from app.models.conversations import Contact, Conversation, Message
+from app.models.conversations import Contact, Conversation, Followup, Message
 from app.models.core import Institution
 from app.models.facts import FeeItem, KeyDate
 from app.services.conversations import add_message, get_or_create_contact, open_conversation
 
 Status = Literal[
     "replied",
+    "voice_unclear",
+    "media_ack",
     "duplicate",
     "human_mode",
     "escalated",
@@ -70,6 +72,12 @@ class InboundEvent:
     client_msg_id: str | None = None
     wa_message_id: str | None = None
     now: dt.datetime | None = None  # injected clock (tests/evals); default = now
+    # WhatsApp media (step 6.4): stored blob key, STT transcript; `voice_unclear` = no usable
+    # transcript (failed / confidence < 0.6) → ask the parent to type.
+    message_type: str = "text"
+    media_path: str | None = None
+    transcript: str | None = None
+    voice_unclear: bool = False
 
 
 @dataclass
@@ -211,18 +219,37 @@ async def run_inbound(
             conv,
             direction="in",
             sender="contact",
-            text=event.text,
+            type=event.message_type,
+            text=event.text or None,
+            media_path=event.media_path,
+            transcript=event.transcript,
             client_msg_id=event.client_msg_id,
             wa_message_id=event.wa_message_id,
         )
         lang = contact.preferred_language or language
         if is_opt_out(event.text):
-            contact.opted_out_at = now
+            already = contact.opted_out_at is not None
+            contact.opted_out_at = contact.opted_out_at or now
+            await session.execute(  # G7: every pending follow-up / sequence step is cancelled
+                update(Followup)
+                .where(Followup.contact_id == contact.id, Followup.status.in_(("pending", "held")))
+                .values(status="cancelled")
+            )
+            if already:  # confirmation is sent once
+                return TurnResult(
+                    status="opted_out", contact_id=contact.id, conversation_id=conv.id
+                )
             return await _static_reply(session, conv, phrase("opted_out", lang), "opted_out", lang)
         if contact.opted_out_at is not None and is_opt_in(event.text):
             contact.opted_out_at = None
         if conv.mode == "human":
             return TurnResult(status="human_mode", contact_id=contact.id, conversation_id=conv.id)
+        if event.voice_unclear:
+            return await _static_reply(
+                session, conv, phrase("voice_unclear", lang), "voice_unclear", lang
+            )
+        if not event.text.strip():  # image/document without caption (fee proofs: Phase 7)
+            return await _static_reply(session, conv, phrase("media_ack", lang), "media_ack", lang)
         inst = await session.get(Institution, event.institution_id)
         if inst is not None and escalation_hit(inst.settings or {}, event.text):
             conv.mode, conv.status, conv.flagged = "human", "pending", True

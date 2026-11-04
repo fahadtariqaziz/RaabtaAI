@@ -26,7 +26,8 @@ from tests.integration.test_widget_api import ORIGIN, events
 from tests.support import PASSWORD, Factory, as_admin, auth_headers
 
 pytestmark = pytest.mark.integration
-SECOND = "Ji, campus visit ke liye Saturday 10 baje ka slot available hai."
+# No numbers: the deterministic grounding check (G2) would (rightly) reject an unsourced time.
+SECOND = "Ji, campus visit ke liye Saturday ka slot available hai."
 
 
 def test_takeover_staff_reply_and_return_to_ai(

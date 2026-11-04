@@ -783,6 +783,29 @@
       "format": "date-time",
       "title": "Updated At",
       "type": "string"
+     },
+     "window_expires_at": {
+      "anyOf": [
+       {
+        "format": "date-time",
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Window Expires At"
+     },
+     "window_open": {
+      "anyOf": [
+       {
+        "type": "boolean"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Window Open"
      }
     },
     "required": [
@@ -895,6 +918,88 @@
      "updated_at"
     ],
     "title": "ConversationRow",
+    "type": "object"
+   },
+   "DailySummaryOut": {
+    "properties": {
+     "bookings": {
+      "title": "Bookings",
+      "type": "integer"
+     },
+     "conversations": {
+      "title": "Conversations",
+      "type": "integer"
+     },
+     "date": {
+      "title": "Date",
+      "type": "string"
+     },
+     "day": {
+      "title": "Day",
+      "type": "string"
+     },
+     "flagged": {
+      "title": "Flagged",
+      "type": "integer"
+     },
+     "institution": {
+      "title": "Institution",
+      "type": "string"
+     },
+     "leads": {
+      "title": "Leads",
+      "type": "integer"
+     },
+     "top_questions": {
+      "items": {
+       "type": "string"
+      },
+      "title": "Top Questions",
+      "type": "array"
+     }
+    },
+    "required": [
+     "date",
+     "day",
+     "institution",
+     "conversations",
+     "leads",
+     "bookings",
+     "flagged",
+     "top_questions"
+    ],
+    "title": "DailySummaryOut",
+    "type": "object"
+   },
+   "DailySummarySettings": {
+    "additionalProperties": false,
+    "description": "Step 6.7.2: 18:00 WhatsApp summary to the principal / admissions head.",
+    "properties": {
+     "enabled": {
+      "default": true,
+      "title": "Enabled",
+      "type": "boolean"
+     },
+     "language": {
+      "default": "roman_ur",
+      "enum": [
+       "en",
+       "ur",
+       "roman_ur"
+      ],
+      "title": "Language",
+      "type": "string"
+     },
+     "numbers": {
+      "items": {
+       "type": "string"
+      },
+      "maxItems": 5,
+      "title": "Numbers",
+      "type": "array"
+     }
+    },
+    "title": "DailySummarySettings",
     "type": "object"
    },
    "DocumentOut": {
@@ -2404,6 +2509,17 @@
       "title": "Direction",
       "type": "string"
      },
+     "error": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Error"
+     },
      "id": {
       "format": "uuid",
       "title": "Id",
@@ -2972,6 +3088,11 @@
       ],
       "title": "Cta"
      },
+     "daily_summary": {
+      "additionalProperties": true,
+      "title": "Daily Summary",
+      "type": "object"
+     },
      "details": {
       "additionalProperties": {
        "type": "string"
@@ -3018,6 +3139,16 @@
        }
       ],
       "title": "Cta"
+     },
+     "daily_summary": {
+      "anyOf": [
+       {
+        "$ref": "#/components/schemas/DailySummarySettings"
+       },
+       {
+        "type": "null"
+       }
+      ]
      },
      "details": {
       "anyOf": [
@@ -3214,6 +3345,227 @@
      }
     },
     "title": "SlotPatch",
+    "type": "object"
+   },
+   "SyncOut": {
+    "properties": {
+     "remote": {
+      "title": "Remote",
+      "type": "integer"
+     },
+     "updated": {
+      "title": "Updated",
+      "type": "integer"
+     }
+    },
+    "required": [
+     "updated",
+     "remote"
+    ],
+    "title": "SyncOut",
+    "type": "object"
+   },
+   "TemplateIn": {
+    "additionalProperties": false,
+    "properties": {
+     "body": {
+      "maxLength": 1024,
+      "minLength": 1,
+      "title": "Body",
+      "type": "string"
+     },
+     "category": {
+      "default": "utility",
+      "enum": [
+       "utility",
+       "marketing"
+      ],
+      "title": "Category",
+      "type": "string"
+     },
+     "examples": {
+      "items": {
+       "maxLength": 200,
+       "type": "string"
+      },
+      "title": "Examples",
+      "type": "array"
+     },
+     "language": {
+      "enum": [
+       "en",
+       "ur",
+       "roman_ur"
+      ],
+      "title": "Language",
+      "type": "string"
+     },
+     "name": {
+      "maxLength": 120,
+      "minLength": 1,
+      "title": "Name",
+      "type": "string"
+     }
+    },
+    "required": [
+     "name",
+     "language",
+     "body"
+    ],
+    "title": "TemplateIn",
+    "type": "object"
+   },
+   "TemplateOut": {
+    "properties": {
+     "body": {
+      "title": "Body",
+      "type": "string"
+     },
+     "category": {
+      "title": "Category",
+      "type": "string"
+     },
+     "examples": {
+      "items": {
+       "type": "string"
+      },
+      "title": "Examples",
+      "type": "array"
+     },
+     "id": {
+      "format": "uuid",
+      "title": "Id",
+      "type": "string"
+     },
+     "language": {
+      "title": "Language",
+      "type": "string"
+     },
+     "meta_name": {
+      "default": "",
+      "title": "Meta Name",
+      "type": "string"
+     },
+     "meta_template_id": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Meta Template Id"
+     },
+     "name": {
+      "title": "Name",
+      "type": "string"
+     },
+     "rejected_reason": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Rejected Reason"
+     },
+     "status": {
+      "title": "Status",
+      "type": "string"
+     },
+     "submitted_at": {
+      "anyOf": [
+       {
+        "format": "date-time",
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Submitted At"
+     },
+     "updated_at": {
+      "format": "date-time",
+      "title": "Updated At",
+      "type": "string"
+     },
+     "variables": {
+      "items": {
+       "type": "string"
+      },
+      "title": "Variables",
+      "type": "array"
+     }
+    },
+    "required": [
+     "id",
+     "name",
+     "language",
+     "category",
+     "body",
+     "variables",
+     "examples",
+     "status",
+     "meta_template_id",
+     "rejected_reason",
+     "submitted_at",
+     "updated_at"
+    ],
+    "title": "TemplateOut",
+    "type": "object"
+   },
+   "TemplatePatch": {
+    "additionalProperties": false,
+    "properties": {
+     "body": {
+      "anyOf": [
+       {
+        "maxLength": 1024,
+        "minLength": 1,
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Body"
+     },
+     "category": {
+      "anyOf": [
+       {
+        "enum": [
+         "utility",
+         "marketing"
+        ],
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Category"
+     },
+     "examples": {
+      "anyOf": [
+       {
+        "items": {
+         "maxLength": 200,
+         "type": "string"
+        },
+        "type": "array"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Examples"
+     }
+    },
+    "title": "TemplatePatch",
     "type": "object"
    },
    "TenantIn": {
@@ -5011,7 +5363,7 @@
     ]
    },
    "post": {
-    "description": "Staff reply. Sending while the AI owns the chat takes it over first (no double replies).",
+    "description": "Staff reply. Sending while the AI owns the chat takes it over first (no double replies).\nWhatsApp: only inside the 24h window (6.3.2); delivered by `deliver_message_job`.",
     "operationId": "staff_send_api_v1_conversations__conversation_id__messages_post",
     "parameters": [
      {
@@ -7295,6 +7647,78 @@
     ]
    }
   },
+  "/api/v1/metrics/daily-summary": {
+   "get": {
+    "description": "Step 6.7.2 in-app: the same numbers the 18:00 WhatsApp summary carries.",
+    "operationId": "daily_summary_api_v1_metrics_daily_summary_get",
+    "parameters": [
+     {
+      "in": "query",
+      "name": "date",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "format": "date",
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Date"
+      }
+     },
+     {
+      "in": "header",
+      "name": "x-institution",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "X-Institution"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/DailySummaryOut"
+        }
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "security": [
+     {
+      "HTTPBearer": []
+     }
+    ],
+    "summary": "Daily Summary",
+    "tags": [
+     "metrics"
+    ]
+   }
+  },
   "/api/v1/metrics/funnel": {
    "get": {
     "operationId": "funnel_api_v1_metrics_funnel_get",
@@ -8172,6 +8596,466 @@
     ]
    }
   },
+  "/api/v1/templates": {
+   "get": {
+    "operationId": "list_templates_api_v1_templates_get",
+    "parameters": [
+     {
+      "in": "query",
+      "name": "name",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Name"
+      }
+     },
+     {
+      "in": "query",
+      "name": "status",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Status"
+      }
+     },
+     {
+      "in": "header",
+      "name": "x-institution",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "X-Institution"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "items": {
+          "$ref": "#/components/schemas/TemplateOut"
+         },
+         "title": "Response List Templates Api V1 Templates Get",
+         "type": "array"
+        }
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "security": [
+     {
+      "HTTPBearer": []
+     }
+    ],
+    "summary": "List Templates",
+    "tags": [
+     "templates"
+    ]
+   },
+   "post": {
+    "operationId": "create_template_api_v1_templates_post",
+    "parameters": [
+     {
+      "in": "header",
+      "name": "x-institution",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "X-Institution"
+      }
+     }
+    ],
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/TemplateIn"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "201": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/TemplateOut"
+        }
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "security": [
+     {
+      "HTTPBearer": []
+     }
+    ],
+    "summary": "Create Template",
+    "tags": [
+     "templates"
+    ]
+   }
+  },
+  "/api/v1/templates/seed": {
+   "post": {
+    "description": "Create the default EN/UR/Roman-Urdu set (drafts) where missing. Idempotent.",
+    "operationId": "seed_templates_api_v1_templates_seed_post",
+    "parameters": [
+     {
+      "in": "header",
+      "name": "x-institution",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "X-Institution"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "items": {
+          "$ref": "#/components/schemas/TemplateOut"
+         },
+         "title": "Response Seed Templates Api V1 Templates Seed Post",
+         "type": "array"
+        }
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "security": [
+     {
+      "HTTPBearer": []
+     }
+    ],
+    "summary": "Seed Templates",
+    "tags": [
+     "templates"
+    ]
+   }
+  },
+  "/api/v1/templates/sync": {
+   "post": {
+    "description": "Poll Meta for template statuses (complements the status webhook).",
+    "operationId": "sync_templates_api_v1_templates_sync_post",
+    "parameters": [
+     {
+      "in": "header",
+      "name": "x-institution",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "X-Institution"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/SyncOut"
+        }
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "security": [
+     {
+      "HTTPBearer": []
+     }
+    ],
+    "summary": "Sync Templates",
+    "tags": [
+     "templates"
+    ]
+   }
+  },
+  "/api/v1/templates/{template_id}": {
+   "delete": {
+    "operationId": "delete_template_api_v1_templates__template_id__delete",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "template_id",
+      "required": true,
+      "schema": {
+       "format": "uuid",
+       "title": "Template Id",
+       "type": "string"
+      }
+     },
+     {
+      "in": "header",
+      "name": "x-institution",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "X-Institution"
+      }
+     }
+    ],
+    "responses": {
+     "204": {
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "security": [
+     {
+      "HTTPBearer": []
+     }
+    ],
+    "summary": "Delete Template",
+    "tags": [
+     "templates"
+    ]
+   },
+   "patch": {
+    "operationId": "patch_template_api_v1_templates__template_id__patch",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "template_id",
+      "required": true,
+      "schema": {
+       "format": "uuid",
+       "title": "Template Id",
+       "type": "string"
+      }
+     },
+     {
+      "in": "header",
+      "name": "x-institution",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "X-Institution"
+      }
+     }
+    ],
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/TemplatePatch"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/TemplateOut"
+        }
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "security": [
+     {
+      "HTTPBearer": []
+     }
+    ],
+    "summary": "Patch Template",
+    "tags": [
+     "templates"
+    ]
+   }
+  },
+  "/api/v1/templates/{template_id}/submit": {
+   "post": {
+    "description": "Human approval (G11): an admin explicitly submits each template to Meta.",
+    "operationId": "submit_template_api_v1_templates__template_id__submit_post",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "template_id",
+      "required": true,
+      "schema": {
+       "format": "uuid",
+       "title": "Template Id",
+       "type": "string"
+      }
+     },
+     {
+      "in": "header",
+      "name": "x-institution",
+      "required": false,
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "X-Institution"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/TemplateOut"
+        }
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "security": [
+     {
+      "HTTPBearer": []
+     }
+    ],
+    "summary": "Submit Template",
+    "tags": [
+     "templates"
+    ]
+   }
+  },
   "/api/v1/usage": {
    "get": {
     "description": "Daily usage rows in [from, to] (default: last 30 days) + totals.",
@@ -8332,6 +9216,92 @@
     "tags": [
      "audit",
      "usage"
+    ]
+   }
+  },
+  "/api/v1/webhooks/whatsapp": {
+   "get": {
+    "operationId": "verify_api_v1_webhooks_whatsapp_get",
+    "parameters": [
+     {
+      "in": "query",
+      "name": "hub.mode",
+      "required": false,
+      "schema": {
+       "default": "",
+       "title": "Hub.Mode",
+       "type": "string"
+      }
+     },
+     {
+      "in": "query",
+      "name": "hub.verify_token",
+      "required": false,
+      "schema": {
+       "default": "",
+       "title": "Hub.Verify Token",
+       "type": "string"
+      }
+     },
+     {
+      "in": "query",
+      "name": "hub.challenge",
+      "required": false,
+      "schema": {
+       "default": "",
+       "title": "Hub.Challenge",
+       "type": "string"
+      }
+     }
+    ],
+    "responses": {
+     "200": {
+      "content": {
+       "text/plain": {
+        "schema": {
+         "type": "string"
+        }
+       }
+      },
+      "description": "Successful Response"
+     },
+     "422": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      },
+      "description": "Validation Error"
+     }
+    },
+    "summary": "Verify",
+    "tags": [
+     "whatsapp"
+    ]
+   },
+   "post": {
+    "operationId": "receive_api_v1_webhooks_whatsapp_post",
+    "responses": {
+     "200": {
+      "content": {
+       "application/json": {
+        "schema": {
+         "additionalProperties": {
+          "type": "integer"
+         },
+         "title": "Response Receive Api V1 Webhooks Whatsapp Post",
+         "type": "object"
+        }
+       }
+      },
+      "description": "Successful Response"
+     }
+    },
+    "summary": "Receive",
+    "tags": [
+     "whatsapp"
     ]
    }
   },

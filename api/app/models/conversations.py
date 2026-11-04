@@ -181,6 +181,8 @@ class Message(UUIDPkMixin, TenantMixin, CreatedAtMixin, Base):
     wa_message_id: Mapped[str | None] = mapped_column(String(128))
     client_msg_id: Mapped[str | None] = mapped_column(String(64))
     status: Mapped[str] = mapped_column(String(16), server_default="received")
+    # Delivery failure reason (WhatsApp sender, step 6.3) — shown in the inbox, never PII.
+    error: Mapped[str | None] = mapped_column(Text)
     citations: Mapped[list[dict[str, Any]] | None] = mapped_column(JSONB)
     tool_calls: Mapped[list[dict[str, Any]] | None] = mapped_column(JSONB)
     llm_run_id: Mapped[uuid.UUID | None] = mapped_column(_uuid(), _fk("llm_runs", "SET NULL"))
@@ -238,3 +240,6 @@ class Followup(UUIDPkMixin, TenantMixin, CreatedAtMixin, Base):
     template_name: Mapped[str | None] = mapped_column(String(128))
     status: Mapped[str] = mapped_column(String(16), server_default="pending")
     sent_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    # Kind-specific data, e.g. {"booking_id": ...} for visit reminders (step 6.7).
+    payload: Mapped[dict[str, Any]] = mapped_column(JSONB, server_default=text("'{}'::jsonb"))
+    error: Mapped[str | None] = mapped_column(Text)

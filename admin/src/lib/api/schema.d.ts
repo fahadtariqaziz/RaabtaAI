@@ -215,6 +215,7 @@ export interface paths {
         /**
          * Staff Send
          * @description Staff reply. Sending while the AI owns the chat takes it over first (no double replies).
+         *     WhatsApp: only inside the 24h window (6.3.2); delivered by `deliver_message_job`.
          */
         post: operations["staff_send_api_v1_conversations__conversation_id__messages_post"];
         delete?: never;
@@ -634,6 +635,26 @@ export interface paths {
         patch: operations["update_member_api_v1_members__member_id__patch"];
         trace?: never;
     };
+    "/api/v1/metrics/daily-summary": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Daily Summary
+         * @description Step 6.7.2 in-app: the same numbers the 18:00 WhatsApp summary carries.
+         */
+        get: operations["daily_summary_api_v1_metrics_daily_summary_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/metrics/funnel": {
         parameters: {
             query?: never;
@@ -828,6 +849,102 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/templates": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Templates */
+        get: operations["list_templates_api_v1_templates_get"];
+        put?: never;
+        /** Create Template */
+        post: operations["create_template_api_v1_templates_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/templates/seed": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Seed Templates
+         * @description Create the default EN/UR/Roman-Urdu set (drafts) where missing. Idempotent.
+         */
+        post: operations["seed_templates_api_v1_templates_seed_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/templates/sync": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Sync Templates
+         * @description Poll Meta for template statuses (complements the status webhook).
+         */
+        post: operations["sync_templates_api_v1_templates_sync_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/templates/{template_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Delete Template */
+        delete: operations["delete_template_api_v1_templates__template_id__delete"];
+        options?: never;
+        head?: never;
+        /** Patch Template */
+        patch: operations["patch_template_api_v1_templates__template_id__patch"];
+        trace?: never;
+    };
+    "/api/v1/templates/{template_id}/submit": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Submit Template
+         * @description Human approval (G11): an admin explicitly submits each template to Meta.
+         */
+        post: operations["submit_template_api_v1_templates__template_id__submit_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/usage": {
         parameters: {
             query?: never;
@@ -863,6 +980,24 @@ export interface paths {
         get: operations["usage_limits_api_v1_usage_limits_get"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/webhooks/whatsapp": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Verify */
+        get: operations["verify_api_v1_webhooks_whatsapp_get"];
+        put?: never;
+        /** Receive */
+        post: operations["receive_api_v1_webhooks_whatsapp_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -1311,6 +1446,10 @@ export interface components {
              * Format: date-time
              */
             updated_at: string;
+            /** Window Expires At */
+            window_expires_at?: string | null;
+            /** Window Open */
+            window_open?: boolean | null;
         };
         /** ConversationRow */
         ConversationRow: {
@@ -1342,6 +1481,44 @@ export interface components {
              * Format: date-time
              */
             updated_at: string;
+        };
+        /** DailySummaryOut */
+        DailySummaryOut: {
+            /** Bookings */
+            bookings: number;
+            /** Conversations */
+            conversations: number;
+            /** Date */
+            date: string;
+            /** Day */
+            day: string;
+            /** Flagged */
+            flagged: number;
+            /** Institution */
+            institution: string;
+            /** Leads */
+            leads: number;
+            /** Top Questions */
+            top_questions: string[];
+        };
+        /**
+         * DailySummarySettings
+         * @description Step 6.7.2: 18:00 WhatsApp summary to the principal / admissions head.
+         */
+        DailySummarySettings: {
+            /**
+             * Enabled
+             * @default true
+             */
+            enabled?: boolean;
+            /**
+             * Language
+             * @default roman_ur
+             * @enum {string}
+             */
+            language?: "en" | "ur" | "roman_ur";
+            /** Numbers */
+            numbers?: string[];
         };
         /** DocumentOut */
         DocumentOut: {
@@ -1825,6 +2002,8 @@ export interface components {
             created_at: string;
             /** Direction */
             direction: string;
+            /** Error */
+            error?: string | null;
             /**
              * Id
              * Format: uuid
@@ -2018,6 +2197,10 @@ export interface components {
         SettingsOut: {
             /** Cta */
             cta: string | null;
+            /** Daily Summary */
+            daily_summary?: {
+                [key: string]: unknown;
+            };
             /** Details */
             details: {
                 [key: string]: string;
@@ -2037,6 +2220,7 @@ export interface components {
         SettingsPatch: {
             /** Cta */
             cta?: string | null;
+            daily_summary?: components["schemas"]["DailySummarySettings"] | null;
             /** Details */
             details?: {
                 [key: string]: string;
@@ -2102,6 +2286,80 @@ export interface components {
             location?: string | null;
             /** Starts At */
             starts_at?: string | null;
+        };
+        /** SyncOut */
+        SyncOut: {
+            /** Remote */
+            remote: number;
+            /** Updated */
+            updated: number;
+        };
+        /** TemplateIn */
+        TemplateIn: {
+            /** Body */
+            body: string;
+            /**
+             * Category
+             * @default utility
+             * @enum {string}
+             */
+            category?: "utility" | "marketing";
+            /** Examples */
+            examples?: string[];
+            /**
+             * Language
+             * @enum {string}
+             */
+            language: "en" | "ur" | "roman_ur";
+            /** Name */
+            name: string;
+        };
+        /** TemplateOut */
+        TemplateOut: {
+            /** Body */
+            body: string;
+            /** Category */
+            category: string;
+            /** Examples */
+            examples: string[];
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Language */
+            language: string;
+            /**
+             * Meta Name
+             * @default
+             */
+            meta_name?: string;
+            /** Meta Template Id */
+            meta_template_id: string | null;
+            /** Name */
+            name: string;
+            /** Rejected Reason */
+            rejected_reason: string | null;
+            /** Status */
+            status: string;
+            /** Submitted At */
+            submitted_at: string | null;
+            /**
+             * Updated At
+             * Format: date-time
+             */
+            updated_at: string;
+            /** Variables */
+            variables: string[];
+        };
+        /** TemplatePatch */
+        TemplatePatch: {
+            /** Body */
+            body?: string | null;
+            /** Category */
+            category?: ("utility" | "marketing") | null;
+            /** Examples */
+            examples?: string[] | null;
         };
         /** TenantIn */
         TenantIn: {
@@ -3892,6 +4150,39 @@ export interface operations {
             };
         };
     };
+    daily_summary_api_v1_metrics_daily_summary_get: {
+        parameters: {
+            query?: {
+                date?: string | null;
+            };
+            header?: {
+                "x-institution"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DailySummaryOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     funnel_api_v1_metrics_funnel_get: {
         parameters: {
             query?: never;
@@ -4375,6 +4666,238 @@ export interface operations {
             };
         };
     };
+    list_templates_api_v1_templates_get: {
+        parameters: {
+            query?: {
+                name?: string | null;
+                status?: string | null;
+            };
+            header?: {
+                "x-institution"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TemplateOut"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_template_api_v1_templates_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                "x-institution"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TemplateIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TemplateOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    seed_templates_api_v1_templates_seed_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                "x-institution"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TemplateOut"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    sync_templates_api_v1_templates_sync_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                "x-institution"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SyncOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    delete_template_api_v1_templates__template_id__delete: {
+        parameters: {
+            query?: never;
+            header?: {
+                "x-institution"?: string | null;
+            };
+            path: {
+                template_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    patch_template_api_v1_templates__template_id__patch: {
+        parameters: {
+            query?: never;
+            header?: {
+                "x-institution"?: string | null;
+            };
+            path: {
+                template_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TemplatePatch"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TemplateOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    submit_template_api_v1_templates__template_id__submit_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                "x-institution"?: string | null;
+            };
+            path: {
+                template_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TemplateOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     usage_api_v1_usage_get: {
         parameters: {
             query?: {
@@ -4438,6 +4961,61 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    verify_api_v1_webhooks_whatsapp_get: {
+        parameters: {
+            query?: {
+                "hub.mode"?: string;
+                "hub.verify_token"?: string;
+                "hub.challenge"?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "text/plain": string;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    receive_api_v1_webhooks_whatsapp_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: number;
+                    };
                 };
             };
         };

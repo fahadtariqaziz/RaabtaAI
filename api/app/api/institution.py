@@ -31,7 +31,7 @@ Lang = Literal["en", "ur", "roman_ur"]
 STEPS = ("profile", "documents", "facts", "whatsapp", "widget", "done")
 HHMM = re.compile(r"^([01]\d|2[0-3]):[0-5]\d$")
 DETAIL_KEY = re.compile(r"^[a-z][a-z0-9_]{1,39}$")
-RESERVED = {"widget", "escalation", "onboarding", "cta", "academic_year"}
+RESERVED = {"widget", "escalation", "onboarding", "cta", "academic_year", "daily_summary"}
 ORIGIN = re.compile(r"^https?://[a-z0-9.-]+(:\d{1,5})?$")
 PROFILE_FIELDS = ("name", "type", "city", "timezone", "languages", "quiet_hours", "status")
 
@@ -141,11 +141,34 @@ class EscalationSettings(BaseModel):
         return out
 
 
+class DailySummarySettings(BaseModel):
+    """Step 6.7.2: 18:00 WhatsApp summary to the principal / admissions head."""
+
+    model_config = ConfigDict(extra="forbid")
+    enabled: bool = True
+    numbers: list[str] = Field(default_factory=list, max_length=5)
+    language: Lang = "roman_ur"
+
+    @field_validator("numbers")
+    @classmethod
+    def _numbers(cls, v: list[str]) -> list[str]:
+        out = []
+        for n in v:
+            digits = re.sub(r"\D", "", n)
+            if digits.startswith("03") and len(digits) == 11:  # local PK mobile → E.164 digits
+                digits = "92" + digits[1:]
+            if not 10 <= len(digits) <= 15:
+                raise ValueError(f"not a phone number: {n}")
+            out.append(digits)
+        return sorted(set(out))
+
+
 class SettingsOut(BaseModel):
     details: dict[str, str]
     cta: str | None
     widget: dict[str, Any]
     escalation: dict[str, Any]
+    daily_summary: dict[str, Any] = Field(default_factory=dict)
     snippet: str
 
 
@@ -154,6 +177,7 @@ class SettingsPatch(BaseModel):
     details: dict[str, str] | None = None  # replaces all detail keys
     widget: WidgetSettings | None = None  # merged
     escalation: EscalationSettings | None = None  # replaced
+    daily_summary: DailySummarySettings | None = None  # replaced
     cta: str | None = Field(default=None, max_length=40)
 
     @field_validator("details")
@@ -196,6 +220,7 @@ def _settings_out(inst: Institution, settings: Any) -> SettingsOut:
         cta=raw.get("cta") if isinstance(raw.get("cta"), str) else None,
         widget=widget_settings(inst),
         escalation=dict(esc) if isinstance(esc, dict) else {},
+        daily_summary=dict(ds) if isinstance(ds := raw.get("daily_summary"), dict) else {},
         snippet=snippet(inst.slug, settings),
     )
 
@@ -263,6 +288,8 @@ def _apply_settings(inst: Institution, body: SettingsPatch) -> None:
             **(old if isinstance(old, dict) else {}),
             **body.escalation.model_dump(),
         }
+    if body.daily_summary is not None:
+        raw["daily_summary"] = body.daily_summary.model_dump()
     if body.cta is not None:
         raw["cta"] = body.cta
     inst.settings = raw

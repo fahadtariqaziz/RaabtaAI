@@ -8,6 +8,7 @@ null until the fee module (Phase 7)."""
 import datetime as dt
 from decimal import Decimal
 from typing import Any, Literal
+from zoneinfo import ZoneInfo
 
 from fastapi import APIRouter
 from pydantic import BaseModel
@@ -17,6 +18,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.api.deps import SessionDep, StaffCtx
 from app.core.tenancy import TenantContext
 from app.models.core import Institution
+from app.services.daily_summary import build_summary
 
 router = APIRouter(prefix="/metrics", tags=["metrics"])
 Range = Literal["7d", "30d", "90d"]
@@ -284,3 +286,26 @@ async def response_times(
         "median_first_response_s": k.median_first_response_s,
         "median_staff_response_s": k.median_staff_response_s,
     }
+
+
+class DailySummaryOut(BaseModel):
+    date: str
+    day: str
+    institution: str
+    conversations: int
+    leads: int
+    bookings: int
+    flagged: int
+    top_questions: list[str]
+
+
+@router.get("/daily-summary")
+async def daily_summary(
+    ctx: StaffCtx, session: SessionDep, date: dt.date | None = None
+) -> DailySummaryOut:
+    """Step 6.7.2 in-app: the same numbers the 18:00 WhatsApp summary carries."""
+    inst = await session.get(Institution, ctx.institution_id)
+    if inst is None:
+        raise LookupError("institution not found")
+    day = date or dt.datetime.now(ZoneInfo(inst.timezone)).date()
+    return DailySummaryOut(**await build_summary(session, inst, day))

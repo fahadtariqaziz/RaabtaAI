@@ -8,6 +8,7 @@ import {
   Gauge,
   Inbox,
   Languages,
+  MessageSquareText,
   LogOut,
   Menu,
   Moon,
@@ -39,6 +40,7 @@ const DAILY: Item[] = [
 const MANAGE: Item[] = [
   { href: "/knowledge", key: "knowledge", icon: BookOpen },
   { href: "/onboarding", key: "onboarding", icon: Rocket, min: "admin" },
+  { href: "/templates", key: "templates", icon: MessageSquareText },
   { href: "/settings", key: "settings", icon: Settings },
   { href: "/usage", key: "usage", icon: BarChart3, min: "admin" },
   { href: "/audit", key: "audit", icon: ClipboardList, min: "admin" },
@@ -130,9 +132,10 @@ function TopBar({ onMenu }: { onMenu: () => void }) {
           variant="ghost"
           size="sm"
           onClick={() => setLocale(locale === "en" ? "ur" : "en")}
-          aria-label={tc("language")}
+          title={tc("language")}
         >
-          <Languages /> {locale === "en" ? "اردو" : "English"}
+          <Languages aria-hidden />
+          <span lang={locale === "en" ? "ur" : "en"}>{locale === "en" ? "اردو" : "English"}</span>
         </Button>
         <Button
           variant="ghost"

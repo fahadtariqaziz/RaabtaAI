@@ -46,6 +46,9 @@ def it_settings() -> Settings:
         jwt_secret="test-secret-0123456789abcdef0123456789",  # noqa: S106
         blob_dir=Path(tempfile.mkdtemp(prefix="raabta-blobs-")),
         embedding_provider="fake",
+        # Module-scoped worlds (isolation suite) hold one access token for the whole module; on a
+        # large test DB the suite can outlive the 15-minute production TTL → spurious 401s.
+        access_token_ttl_minutes=240,
     )
 
 

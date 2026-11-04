@@ -18,7 +18,11 @@ LEAD_SOURCES = ("widget", "whatsapp", "manual", "import")
 LEAD_STATUSES = ("new", "contacted", "visit_booked", "applied", "admitted", "lost")
 SLOT_KINDS = ("visit", "test", "counselling")
 BOOKING_STATUSES = ("booked", "confirmed", "cancelled", "attended", "no_show")
-FOLLOWUP_STATUSES = ("pending", "sent", "cancelled", "failed")
+FOLLOWUP_STATUSES = ("pending", "sent", "cancelled", "failed", "held")
+TEMPLATE_CATEGORIES = ("utility", "marketing")
+# draft (local only) → pending (submitted to Meta) → approved | rejected; Meta may later pause or
+# disable an approved template (quality).
+TEMPLATE_STATUSES = ("draft", "pending", "approved", "rejected", "paused", "disabled")
 DOCUMENT_KINDS = ("pdf", "docx", "xlsx", "csv")
 # Pipeline order (PLAN §5 STEER): uploaded → parsing → chunking → embedding → extracting → ready.
 DOCUMENT_STATUSES = (

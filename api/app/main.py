@@ -16,6 +16,8 @@ from app.api.members import router as members_router
 from app.api.metrics import router as metrics_router
 from app.api.slots import router as slots_router
 from app.api.superadmin import router as superadmin_router
+from app.api.templates import router as templates_router
+from app.api.whatsapp import router as whatsapp_router
 from app.api.widget import institution_router
 from app.api.widget import router as widget_router
 from app.api.widget_assets import WidgetCorsMiddleware
@@ -37,6 +39,8 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         try:
             yield
         finally:
+            if getattr(app.state, "wa_client", None) is not None:
+                await app.state.wa_client.aclose()
             await app.state.agent.close()
             await app.state.resources.close()
 
@@ -61,6 +65,8 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         slots_router,
         metrics_router,
         superadmin_router,
+        templates_router,
+        whatsapp_router,
     ):
         v1.include_router(router)
     app.include_router(v1)

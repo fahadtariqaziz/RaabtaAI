@@ -14,18 +14,20 @@ import uuid
 from collections.abc import AsyncIterator
 from typing import Annotated, Any, Literal
 
-from fastapi import APIRouter, HTTPException, Query, Request, status
+from fastapi import APIRouter, BackgroundTasks, HTTPException, Query, Request, status
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, ConfigDict, Field
 from sqlalchemy import Select, func, or_, select
 
 from app.agent.inbound import resume_after_handoff
-from app.api.deps import SessionDep, StaffCtx, audit_mutations
+from app.api.deps import RedisDep, SessionDep, StaffCtx, audit_mutations
+from app.channels.whatsapp.window import free_form_allowed, window_expires_at
 from app.core.tenancy import TenantContext, tenant_session
 from app.models.conversations import Booking, Contact, Conversation, Lead, Message, Slot
 from app.models.core import Membership, User
 from app.services.audit import audit_ctx
 from app.services.conversations import add_message
+from app.services.whatsapp import enqueue_delivery
 
 router = APIRouter(prefix="/conversations", tags=["conversations"], dependencies=[audit_mutations])
 SANDBOX_PREFIX = "sandbox-"  # KB playground contacts (5.7.4) never show in the inbox
@@ -85,6 +87,9 @@ class BookingBrief(BaseModel):
 
 
 class ConversationDetail(ConversationRow):
+    # WhatsApp 24h window (step 6.3.2): free-form replies only while open; null for the widget.
+    window_open: bool | None = None
+    window_expires_at: dt.datetime | None = None
     summary: dict[str, Any] | None
     assigned_user_name: str | None
     lead: LeadBrief | None
@@ -105,6 +110,7 @@ class MessageOut(BaseModel):
     media_path: str | None
     template_name: str | None
     status: str
+    error: str | None = None
     citations: list[dict[str, Any]] | None
     tool_calls: list[dict[str, Any]] | None
     created_at: dt.datetime
@@ -251,8 +257,13 @@ async def _detail(session: SessionDep, conv: Conversation, contact: Contact) -> 
         )
     ).all()
     assignee = await session.get(User, conv.assigned_user_id) if conv.assigned_user_id else None
+    wa = conv.channel == "whatsapp"
     return ConversationDetail(
         **_row(conv, contact, last).model_dump(),
+        window_open=free_form_allowed(conv.last_inbound_at, dt.datetime.now(dt.UTC))
+        if wa
+        else None,
+        window_expires_at=window_expires_at(conv.last_inbound_at) if wa else None,
         summary=conv.summary,
         assigned_user_name=assignee.name if assignee else None,
         lead=LeadBrief.model_validate(lead) if lead else None,
@@ -420,12 +431,27 @@ async def return_to_ai(
 
 @router.post("/{conversation_id}/messages", status_code=status.HTTP_201_CREATED)
 async def staff_send(
-    conversation_id: uuid.UUID, body: TextIn, ctx: StaffCtx, request: Request, session: SessionDep
+    conversation_id: uuid.UUID,
+    body: TextIn,
+    ctx: StaffCtx,
+    request: Request,
+    session: SessionDep,
+    background: BackgroundTasks,
+    redis: RedisDep,
 ) -> MessageOut:
-    """Staff reply. Sending while the AI owns the chat takes it over first (no double replies)."""
+    """Staff reply. Sending while the AI owns the chat takes it over first (no double replies).
+    WhatsApp: only inside the 24h window (6.3.2); delivered by `deliver_message_job`."""
     conv, contact = await _get(session, conversation_id)
     if contact.opted_out_at is not None:
         raise HTTPException(status.HTTP_409_CONFLICT, "Contact has opted out")
+    if conv.channel == "whatsapp" and not free_form_allowed(
+        conv.last_inbound_at, dt.datetime.now(dt.UTC)
+    ):
+        raise HTTPException(
+            status.HTTP_409_CONFLICT,
+            "The 24-hour WhatsApp window has closed — the parent must write first, or send an "
+            "approved template",
+        )
     await _take(session, ctx, conv)
     # widget: delivered by the widget's poll → "sent"; WhatsApp: queued for the 6.3 sender
     msg = await add_message(
@@ -437,6 +463,8 @@ async def staff_send(
         author_user_id=ctx.user_id,
         status="sent" if conv.channel == "widget" else "queued",
     )
+    if conv.channel == "whatsapp":  # background tasks run after the commit
+        background.add_task(enqueue_delivery, redis.enqueue_job, ctx.institution_id, msg.id)
     request.state.audited = True  # message rows are their own record
     out = MessageOut.model_validate(msg)
     out.author_name = await _staff_name(session, ctx)
